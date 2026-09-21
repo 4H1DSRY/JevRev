@@ -4,14 +4,14 @@
 
 Cut 3-7 candidate approaches to the one or two worth building before you spend
 two days on the wrong one. Hard-constraint risks are surfaced and gated;
-duplicates are cut. One
-command, JSON out, no plugin, never touches your repo. Offline runs need no
-key; local judging has zero API spend and keeps the request on your machine.
+material duplicates are cut. One command, JSON out, no plugin, never touches
+your repo. Offline runs need no key; local judging has zero API spend and keeps
+the request on your machine.
 
 JevRev is a CLI gate between planning and implementation. Your coding agent
 drafts 3-7 materially different approaches. Jev (or a local judge) scores them
-against one brief, removes duplicates and hard-constraint failures, and returns
-a short queue to implement and test.
+against one brief, removes material duplicates and hard-constraint failures,
+and returns a short queue to implement and test.
 
 The first pass should feel like an octopus: several arms reach into the problem
 at once. JevRev keeps the arms that have earned another step. It does not edit
@@ -65,8 +65,8 @@ JevRev makes the agent compare first.
 
 - The calling agent proposes 3-7 candidate cards.
 - JevRev asks the same narrow questions about every card.
-- Deterministic policy removes hard-constraint failures, duplicates, and
-  low-value work outside the budget.
+- Deterministic policy removes hard-constraint failures, material duplicates,
+  and low-value work outside the budget.
 - The calling agent builds the few that remain.
 
 The input and output are ordinary JSON. That is the integration surface. Call it
@@ -108,8 +108,12 @@ JSON mode returns two queues. The example below is abridged:
 uncertain. Review is visible and deliberate, not an automatic approval.
 
 A decision includes the score, confidence, five signal values, reason codes,
-policy version, run ID, and provider token usage. The policy is deterministic;
-the judge supplies typed signals, not prose.
+policy version, thresholds and weights, provider profile, run ID, and provider
+token usage. The policy is deterministic; the judge supplies typed signals, not
+prose. Every result also includes `next_action` and `empty_reason`, so a host
+agent can tell whether to implement, ask for a human decision, revise the
+cards, or revisit a hard constraint without reverse-engineering an empty
+`selected` array.
 
 ## What gets checked
 
@@ -121,12 +125,23 @@ JevRev asks five small questions for each candidate:
 4. Can the validation plan catch a false win or regression?
 5. Is it worth one implementation slot right now?
 
-Candidate pairs are also checked for material duplication. Low-confidence answers go
-to review; they do not silently become rejections.
+Candidate pairs are also checked for material duplication. Low-confidence answers
+go to review unless the same answer also exposes a hard-constraint risk; a hard
+constraint failure remains a rejection even when the judge is uncertain.
+
+The duplicate check is deliberately conservative and pairwise. It catches a
+candidate that is materially the same as an already-kept card; it is not a
+general semantic clustering system, and the check grows quadratically with the
+number of cards.
 
 The calling agent still owns the repository, implementation, tests, benchmarks,
 and final decision. A JevRev result is a routing signal, not proof that a patch
 is correct.
+
+Captured responses used with `--replay` must carry a `candidate_order` list.
+This makes offline runs safe when request files are copied or edited: a changed
+candidate order fails loudly instead of silently attaching an answer to the
+wrong card.
 
 ## The numbers
 
@@ -291,6 +306,46 @@ The calling convention is short:
 
 No repository contents are sent unless the calling agent includes them in the
 request. Credentials are read from the environment and never printed.
+
+### Install the bundled skill
+
+The package includes the same instructions as a file-based agent skill. Install
+it into a known tool directory with an explicit target:
+
+```bash
+jevrev-skill-install --target codex
+jevrev-skill-install --target claude
+```
+
+`codex` uses `$CODEX_HOME/skills/jevrev` when `CODEX_HOME` is set, otherwise
+`~/.codex/skills/jevrev`. The `claude`, `agents`, and `dsh` targets use their
+matching directories under `~`. For a project-local install, pass the exact
+destination instead:
+
+```bash
+jevrev-skill-install --destination .agents/skills/jevrev
+```
+
+An existing, different `SKILL.md` is never replaced unless `--force` is given.
+The installer copies only the bundled skill and does not read or write API
+credentials. From a source checkout, use `node scripts/install-skill.mjs` in
+place of `jevrev-skill-install`.
+
+### Replay a case directory
+
+The evaluator is useful for a real case set such as the reports that accompany
+this release. It reads request JSON, calls the selected provider, and prints
+one line per case with survivors, review count, rejected count, tokens, and
+wall time. It does not write result files or print credentials:
+
+```bash
+npm run build
+node scripts/eval-cases.mjs --cases-dir C:\path\to\local-setup --provider jev
+```
+
+Use `--provider semif` for a local SemIf service or `--provider local` for the
+legacy scorer. `JEVREV_CASES_DIR`, `JEVREV_EVAL_PROVIDER`, and
+`JEVREV_EVAL_TIMEOUT_MS` are available for scripted runs.
 
 ## Development
 

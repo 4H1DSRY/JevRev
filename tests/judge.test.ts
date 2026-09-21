@@ -15,16 +15,24 @@ describe("judge adapters", () => {
   it("replays a complete captured response", async () => {
     const plan = buildQuestionPlan(minimalRequest);
     const response = makeResponse(plan);
+    const replay = {
+      ...response,
+      candidate_order: [...plan.candidateIds],
+    };
 
-    await expect(new ReplayJudge(response).evaluate(plan)).resolves.toEqual(response);
+    await expect(new ReplayJudge(replay).evaluate(plan)).resolves.toEqual(response);
   });
 
   it("rejects a response with a missing answer", async () => {
     const plan = buildQuestionPlan(minimalRequest);
     const response = makeResponse(plan);
     delete response.answers[Object.keys(response.answers)[0]!];
+    const replay = {
+      ...response,
+      candidate_order: [...plan.candidateIds],
+    };
 
-    await expect(new ReplayJudge(response).evaluate(plan)).rejects.toBeInstanceOf(
+    await expect(new ReplayJudge(replay).evaluate(plan)).rejects.toBeInstanceOf(
       ProtocolError,
     );
   });
@@ -33,9 +41,35 @@ describe("judge adapters", () => {
     const plan = buildQuestionPlan(minimalRequest);
     const response = makeResponse(plan);
     response.answers.unexpected = { type: "noul", noul: 0.5 };
+    const replay = {
+      ...response,
+      candidate_order: [...plan.candidateIds],
+    };
 
-    await expect(new ReplayJudge(response).evaluate(plan)).rejects.toBeInstanceOf(
+    await expect(new ReplayJudge(replay).evaluate(plan)).rejects.toBeInstanceOf(
       ProtocolError,
+    );
+  });
+
+  it("rejects a replay fixture without candidate order metadata", async () => {
+    const plan = buildQuestionPlan(minimalRequest);
+    const response = makeResponse(plan);
+
+    await expect(new ReplayJudge(response).evaluate(plan)).rejects.toThrow(
+      "candidate_order",
+    );
+  });
+
+  it("rejects a replay fixture captured with a different candidate order", async () => {
+    const plan = buildQuestionPlan(minimalRequest);
+    const response = makeResponse(plan);
+    const replay = {
+      ...response,
+      candidate_order: ["byte-fast-path", "allocation-cut"],
+    };
+
+    await expect(new ReplayJudge(replay).evaluate(plan)).rejects.toThrow(
+      "does not match the request",
     );
   });
 

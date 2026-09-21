@@ -39,14 +39,19 @@ export function renderHuman(result: RankResult): string {
     lines.push("");
   }
 
-  lines.push(
-    result.selected.length > 0
-      ? `Implement next: ${result.selected.join(", ")}`
-      : "No candidate cleared the current policy.",
-    result.shortlist.some((id) => !result.selected.includes(id))
-      ? `Review before implementation: ${result.shortlist.filter((id) => !result.selected.includes(id)).join(", ")}`
-      : "",
-  );
+  if (result.selected.length > 0) {
+    lines.push(`Implement next: ${result.selected.join(", ")}`);
+  } else {
+    lines.push(
+      "No candidate cleared the current policy.",
+      `Next action: ${result.next_action} (${result.empty_reason})`,
+    );
+  }
+  if (result.shortlist.some((id) => !result.selected.includes(id))) {
+    lines.push(
+      `Review before implementation: ${result.shortlist.filter((id) => !result.selected.includes(id)).join(", ")}`,
+    );
+  }
 
   return lines.join("\n");
 }

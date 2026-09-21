@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { readFileSync, rmSync } from "node:fs";
+import { readFileSync, rmSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -32,8 +32,12 @@ describe("jevrev CLI", () => {
 
     expect(result.status).toBe(0);
     expect(result.stderr).toBe("");
-    const output = JSON.parse(result.stdout) as { selected: string[] };
+    const output = JSON.parse(result.stdout) as {
+      selected: string[];
+      policy: { provider_profile: string };
+    };
     expect(output.selected).toEqual(["allocation-cut", "byte-fast-path"]);
+    expect(output.policy.provider_profile).toBe("replay");
   });
 
   it("keeps replay mode independent from provider configuration", () => {
@@ -68,6 +72,30 @@ describe("jevrev CLI", () => {
     expect(JSON.parse(result.stdout)).toMatchObject({
       summary: { evaluated: 7, kept: 2, shortlisted: 2, rejected: 5 },
     });
+  });
+
+  it("rejects replay against a differently ordered request", () => {
+    const reorderedRequest = resolve(root, "tests", "tmp-reordered-request.json");
+    const parsed = JSON.parse(readFileSync(request, "utf8")) as {
+      candidates: unknown[];
+    };
+    parsed.candidates.reverse();
+    writeFileSync(reorderedRequest, `${JSON.stringify(parsed)}\n`, "utf8");
+
+    try {
+      const result = run([
+        "rank",
+        "--input",
+        reorderedRequest,
+        "--replay",
+        replay,
+      ]);
+
+      expect(result.status).toBe(4);
+      expect(result.stderr).toContain("candidate_order");
+    } finally {
+      rmSync(reorderedRequest, { force: true });
+    }
   });
 
   it("uses the documented invalid-input exit code", () => {

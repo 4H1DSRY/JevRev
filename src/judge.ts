@@ -3,6 +3,7 @@ import { z } from "zod";
 import { ProtocolError, ProviderError } from "./domain/errors.js";
 import {
   judgeResponseSchema,
+  replayResponseSchema,
   type JudgeResponse,
 } from "./domain/schemas.js";
 import {
@@ -884,7 +885,26 @@ export class ReplayJudge implements Judge {
   }
 
   async evaluate(plan: QuestionPlan): Promise<JudgeResponse> {
-    return validateJudgeResponse(this.#response, plan);
+    const parsed = replayResponseSchema.safeParse(this.#response);
+    if (!parsed.success) {
+      throw new ProtocolError(
+        `Invalid replay response: ${parsed.error.message}. Replay fixtures must include candidate_order`,
+      );
+    }
+
+    const expectedOrder = plan.candidateIds;
+    const actualOrder = parsed.data.candidate_order;
+    if (
+      expectedOrder.length !== actualOrder.length ||
+      expectedOrder.some((candidateId, index) => candidateId !== actualOrder[index])
+    ) {
+      throw new ProtocolError(
+        `Replay candidate_order does not match the request (expected: ${expectedOrder.join(", ")}; received: ${actualOrder.join(", ")})`,
+      );
+    }
+
+    const { candidate_order: _candidateOrder, ...response } = parsed.data;
+    return validateJudgeResponse(response, plan);
   }
 }
 

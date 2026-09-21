@@ -34,6 +34,11 @@ jevrev run --input request.json --provider semif --format json
 7. Verify the implementation with the validation commands in the card. A
    JevRev decision is not evidence that the code works.
 
+When `selected` is empty, consume `next_action` and `empty_reason` instead of
+guessing from scores: ask for a decision on `ask_human`, revise cards on
+`revise_candidates`, and revisit the brief before using `relax_constraints`.
+The JSON also records `provider_profile` and the thresholds used for the run.
+
 ## Practical limits
 
 - Keep candidate mechanisms genuinely different; wording variants waste the
@@ -55,3 +60,7 @@ jevrev run --input request.json --provider semif --format json
 
 Credentials belong in `JEVREV_JEV_API_KEY` or `TYPESAFE_API_KEY`, never in a
 command-line argument.
+
+Replay fixtures must include `candidate_order` in the exact order used to
+record the answers. JevRev rejects a fixture captured for a differently ordered
+request.
