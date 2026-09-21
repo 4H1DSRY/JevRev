@@ -2,7 +2,10 @@
 
 > Pick the right path before you build.
 
-Cut 3–7 candidate approaches to the one or two worth building — before you spend two days finding out. Hard constraints enforced, duplicates cut, in about a second. One command, JSON out, no plugin, never touches your repo. Near-zero cost, near-instant: offline needs no key, hosted judge in a second, local judge ~20s, $0, evidence stays local.
+Cut 3-7 candidate approaches to the one or two worth building before you spend
+two days on the wrong one. Hard constraints enforced, duplicates cut. One
+command, JSON out, no plugin, never touches your repo. Offline runs need no
+key; local judging has zero API spend and keeps the request on your machine.
 
 JevRev is a CLI gate between planning and implementation. Your coding agent
 drafts 3-7 materially different approaches. Jev (or a local judge) scores them
