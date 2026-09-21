@@ -78,9 +78,20 @@ function responseFor(request, profile) {
   }
   return {
     model: "jevrev-demo-replay",
+    candidate_order: request.candidates.map((candidate) => candidate.id),
     answers,
     usage: { input_tokens: Object.keys(answers).length * 40, output_tokens: Object.keys(answers).length * 4 },
   };
+}
+
+function assertChildProcess(result, label) {
+  if (result.error) {
+    throw new Error(`${label}: unable to start ${process.execPath}: ${result.error.message}`);
+  }
+  if (result.status === null) {
+    const signal = result.signal ? ` (signal ${result.signal})` : "";
+    throw new Error(`${label}: child process did not exit normally${signal}`);
+  }
 }
 
 await mkdir(resultDir, { recursive: true });
@@ -93,16 +104,18 @@ for (const [name, profile] of Object.entries(profiles)) {
     cwd: root,
     encoding: "utf8",
   });
+  assertChildProcess(result, `${name} human run`);
   process.stdout.write(`\n=== ${name} ===\n`);
   process.stdout.write(result.stdout ?? "");
   if (result.status !== 0) {
     process.stderr.write(result.stderr ?? "");
-    process.exitCode = result.status ?? 1;
+    throw new Error(`${name}: human run failed with exit code ${result.status}`);
   }
   const validation = spawnSync(process.execPath, [cli, "run", "--input", requestPath, "--replay", replayPath, "--format", "json"], {
     cwd: root,
     encoding: "utf8",
   });
+  assertChildProcess(validation, `${name} JSON validation run`);
   if (validation.status !== 0) {
     throw new Error(`${name}: JSON validation run failed: ${validation.stderr || validation.stdout}`);
   }

@@ -127,6 +127,17 @@ export const judgeResponseSchema = z
   })
   .strict();
 
+/**
+ * A captured response must carry the request-order candidate IDs. Answer keys
+ * are positional, so without this metadata a reordered request could silently
+ * apply one candidate's judgment to another candidate.
+ */
+export const replayResponseSchema = judgeResponseSchema
+  .extend({
+    candidate_order: z.array(id).min(2).max(12),
+  })
+  .strict();
+
 export const reasonSchema = z
   .object({
     code: z.enum([
@@ -143,6 +154,22 @@ export const reasonSchema = z
   })
   .strict();
 
+export const nextActionSchema = z.enum([
+  "implement",
+  "ask_human",
+  "revise_candidates",
+  "relax_constraints",
+]);
+
+export const emptyReasonSchema = z.enum([
+  "none",
+  "all_rejected",
+  "all_review",
+  "mixed_no_survivor",
+  "budget_exhausted",
+  "invalid",
+]);
+
 export const rankResultSchema = z
   .object({
     version: z.literal("1"),
@@ -153,6 +180,7 @@ export const rankResultSchema = z
     policy: z
       .object({
         name: z.literal("default-v1"),
+        provider_profile: z.string().min(1),
         max_survivors: z.number().int().min(1),
         thresholds: z.record(z.string(), z.number()),
         weights: z.record(z.string(), z.number()),
@@ -168,6 +196,8 @@ export const rankResultSchema = z
         rejected: z.number().int().nonnegative(),
       })
       .strict(),
+    next_action: nextActionSchema,
+    empty_reason: emptyReasonSchema,
     selected: z.array(id),
     shortlist: z.array(id),
     decisions: z.array(
@@ -205,5 +235,8 @@ export type RankRequest = z.infer<typeof rankRequestSchema>;
 export type Candidate = z.infer<typeof candidateSchema>;
 export type JudgeAnswer = z.infer<typeof judgeAnswerSchema>;
 export type JudgeResponse = z.infer<typeof judgeResponseSchema>;
+export type ReplayResponse = z.infer<typeof replayResponseSchema>;
 export type RankResult = z.infer<typeof rankResultSchema>;
 export type DecisionReason = z.infer<typeof reasonSchema>;
+export type NextAction = z.infer<typeof nextActionSchema>;
+export type EmptyReason = z.infer<typeof emptyReasonSchema>;

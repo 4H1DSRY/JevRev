@@ -50,6 +50,53 @@ describe("rankCandidates", () => {
     expect(result.shortlist).toEqual(["allocation-cut", "byte-fast-path"]);
   });
 
+  it("rejects a low-confidence candidate when it also fails a policy gate", () => {
+    const request = structuredClone(minimalRequest);
+    request.budget.max_survivors = 2;
+    const plan = buildQuestionPlan(request);
+    const response = makeResponse(plan, [
+      {
+        goal: 2,
+        goalConfidence: 0.1,
+        constraint: 0.1,
+        value: 0.9,
+      },
+      { goal: 3, constraint: 0.9, value: 0.9 },
+    ]);
+
+    const result = rankCandidates(request, response);
+    const rejected = result.decisions.find((item) => item.candidate_id === "allocation-cut");
+
+    expect(rejected?.status).toBe("reject");
+    expect(rejected?.reasons).toEqual(
+      expect.arrayContaining([
+        { code: "CONSTRAINT_RISK" },
+        { code: "LOW_CONFIDENCE" },
+      ]),
+    );
+  });
+
+  it("keeps non-constraint failures in review while confidence is low", () => {
+    const request = structuredClone(minimalRequest);
+    request.budget.max_survivors = 2;
+    const plan = buildQuestionPlan(request);
+    const response = makeResponse(plan, [
+      {
+        goal: 0,
+        goalConfidence: 0.1,
+        constraint: 0.9,
+        value: 0.9,
+      },
+      { goal: 3, constraint: 0.9, value: 0.9 },
+    ]);
+
+    const result = rankCandidates(request, response);
+    const uncertain = result.decisions.find((item) => item.candidate_id === "allocation-cut");
+
+    expect(uncertain?.status).toBe("review");
+    expect(uncertain?.reasons).toEqual([{ code: "LOW_CONFIDENCE" }]);
+  });
+
   it("does not route an exact confidence-threshold Noul to review", () => {
     const plan = buildQuestionPlan(minimalRequest);
     const response = makeResponse(plan, [
@@ -157,5 +204,24 @@ describe("rankCandidates", () => {
 
     expect(result.selected).toEqual([]);
     expect(result.summary.rejected).toBe(2);
+    expect(result.next_action).toBe("relax_constraints");
+    expect(result.empty_reason).toBe("all_rejected");
+  });
+
+  it("marks an empty all-review result for human review", () => {
+    const request = structuredClone(minimalRequest);
+    request.budget.max_survivors = 2;
+    const plan = buildQuestionPlan(request);
+    const response = makeResponse(plan, [
+      { goal: 2.5, goalConfidence: 0.1, constraint: 0.9, value: 0.9 },
+      { goal: 2.5, goalConfidence: 0.1, constraint: 0.9, value: 0.9 },
+    ]);
+
+    const result = rankCandidates(request, response);
+
+    expect(result.selected).toEqual([]);
+    expect(result.summary.review).toBe(2);
+    expect(result.next_action).toBe("ask_human");
+    expect(result.empty_reason).toBe("all_review");
   });
 });

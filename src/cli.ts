@@ -24,7 +24,7 @@ type OutputFormat = "human" | "json";
 
 const DEFAULT_SEMIF_URL = "http://127.0.0.1:4878";
 const DEFAULT_LOCAL_URL = "http://127.0.0.1:4877";
-const VERSION = "0.1.0";
+const VERSION = "0.1.1";
 
 interface RankOptions {
   input: string;
@@ -156,7 +156,10 @@ async function runRank(options: RankOptions): Promise<void> {
             })
       : new ReplayJudge(await readJson(options.replay));
   const response = await judge.evaluate(plan);
-  const result = rankCandidates(request, response, plan.candidateOrder);
+  const providerProfile = options.replay === undefined
+    ? `${provider}/${response.model}`
+    : "replay";
+  const result = rankCandidates(request, response, plan.candidateOrder, { providerProfile });
   await emit(options.format === "json" ? renderJson(result) : `${renderHuman(result)}\n`, options.output);
 }
 

@@ -1,5 +1,14 @@
 {
   "model": "jev-1.13.0-demo",
+  "candidate_order": [
+    "allocation-cut",
+    "object-pool",
+    "bounded-memoization",
+    "byte-fast-path",
+    "incremental-cache",
+    "parallel-parser",
+    "native-extension"
+  ],
   "answers": {
     "candidate_0_goal_fit": {
       "type": "score",

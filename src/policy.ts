@@ -5,6 +5,8 @@ import {
   type DecisionReason,
   type JudgeAnswer,
   type JudgeResponse,
+  type EmptyReason,
+  type NextAction,
   type RankRequest,
   type RankResult,
 } from "./domain/schemas.js";
@@ -55,6 +57,11 @@ interface WorkingDecision {
   confidence: number;
   signals: Record<SignalName, number>;
   reasons: DecisionReason[];
+}
+
+export interface RankOptions {
+  /** Provider/model calibration profile recorded in the handoff. */
+  providerProfile?: string;
 }
 
 const round = (value: number): number => Math.round(value * 10_000) / 10_000;
@@ -151,15 +158,24 @@ function initialDecision(
   const reasons: DecisionReason[] = [];
   let status: WorkingDecision["status"] = "eligible";
 
-  if (confidence < DEFAULT_POLICY.thresholds.confidence) {
+  // Hard constraints are checked before confidence. A low-confidence answer
+  // can still expose a constraint violation; routing that card to review would
+  // hide the actionable failure and make the review queue unsafe to treat as
+  // unresolved-but-viable. The other semantic gates retain the original
+  // confidence-first behavior: uncertainty routes to review rather than
+  // becoming a rejection.
+  if (signals.constraint_fit < DEFAULT_POLICY.thresholds.constraint_fit) {
+    reasons.push({ code: "CONSTRAINT_RISK" });
+    status = "reject";
+    if (confidence < DEFAULT_POLICY.thresholds.confidence) {
+      reasons.push({ code: "LOW_CONFIDENCE" });
+    }
+  } else if (confidence < DEFAULT_POLICY.thresholds.confidence) {
     status = "review";
     reasons.push({ code: "LOW_CONFIDENCE" });
   } else {
     if (signals.goal_fit < DEFAULT_POLICY.thresholds.goal_fit) {
       reasons.push({ code: "GOAL_MISMATCH" });
-    }
-    if (signals.constraint_fit < DEFAULT_POLICY.thresholds.constraint_fit) {
-      reasons.push({ code: "CONSTRAINT_RISK" });
     }
     if (signals.feasibility < DEFAULT_POLICY.thresholds.feasibility) {
       reasons.push({ code: "LOW_FEASIBILITY" });
@@ -188,6 +204,47 @@ function initialDecision(
   };
 }
 
+interface OutcomeMetadata {
+  next_action: NextAction;
+  empty_reason: EmptyReason;
+}
+
+function outcomeMetadata(
+  selected: readonly string[],
+  decisions: readonly Pick<WorkingDecision, "status" | "reasons">[],
+): OutcomeMetadata {
+  if (selected.length > 0) {
+    return { next_action: "implement", empty_reason: "none" };
+  }
+
+  const allReview = decisions.every((decision) => decision.status === "review");
+  if (allReview) {
+    return { next_action: "ask_human", empty_reason: "all_review" };
+  }
+
+  const allRejected = decisions.every((decision) => decision.status === "reject");
+  if (allRejected) {
+    const allHardConstraintRisk = decisions.every((decision) =>
+      decision.reasons.some((reason) => reason.code === "CONSTRAINT_RISK"),
+    );
+    if (allHardConstraintRisk) {
+      return {
+        next_action: "relax_constraints",
+        empty_reason: "all_rejected",
+      };
+    }
+    const allBudgetCutoff = decisions.every((decision) =>
+      decision.reasons.some((reason) => reason.code === "BUDGET_CUTOFF"),
+    );
+    if (allBudgetCutoff) {
+      return { next_action: "ask_human", empty_reason: "budget_exhausted" };
+    }
+    return { next_action: "revise_candidates", empty_reason: "all_rejected" };
+  }
+
+  return { next_action: "ask_human", empty_reason: "mixed_no_survivor" };
+}
+
 function duplicateProbability(
   response: JudgeResponse,
   leftIndex: number,
@@ -204,6 +261,7 @@ export function rankCandidates(
   request: RankRequest,
   response: JudgeResponse,
   candidateOrder: readonly number[] = request.candidates.map((_candidate, index) => index),
+  options: RankOptions = {},
 ): RankResult {
   if (candidateOrder.length !== request.candidates.length) {
     throw new ProtocolError("Candidate order does not match request length");
@@ -277,6 +335,9 @@ export function rankCandidates(
     .slice(0, request.budget.max_survivors)
     .map((decision) => decision.candidate_id);
 
+  const selected = kept.map((decision) => decision.candidate_id);
+  const outcome = outcomeMetadata(selected, publicDecisions);
+
   const result = {
     version: "1" as const,
     run_id: `jvr_${createHash("sha256")
@@ -286,6 +347,7 @@ export function rankCandidates(
     model: response.model,
     policy: {
       name: DEFAULT_POLICY.name,
+      provider_profile: options.providerProfile ?? "library",
       max_survivors: request.budget.max_survivors,
       thresholds: { ...DEFAULT_POLICY.thresholds },
       weights: { ...DEFAULT_POLICY.weights },
@@ -298,7 +360,9 @@ export function rankCandidates(
       review: publicDecisions.filter((decision) => decision.status === "review").length,
       rejected: publicDecisions.filter((decision) => decision.status === "reject").length,
     },
-    selected: kept.map((decision) => decision.candidate_id),
+    next_action: outcome.next_action,
+    empty_reason: outcome.empty_reason,
+    selected,
     shortlist,
     decisions: publicDecisions,
     usage: response.usage,

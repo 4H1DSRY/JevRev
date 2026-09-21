@@ -1,6 +1,6 @@
 {
   "name": "jevrev",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A command-line shortlist engine for agent-generated approaches, powered by Jev or a local judge.",
   "type": "module",
   "main": "./dist/index.js",
@@ -13,7 +13,8 @@
   },
   "bin": {
     "jevrev": "dist/cli.js",
-    "specjev": "dist/cli.js"
+    "specjev": "dist/cli.js",
+    "jevrev-skill-install": "scripts/install-skill.mjs"
   },
   "files": [
     "dist",
@@ -35,7 +36,10 @@
     "test:watch": "vitest",
     "demo": "node dist/cli.js run --input examples/parser-speedup.json --replay examples/parser-jev-response.json --format human",
     "demo:all": "node scripts/run-demos.mjs",
+    "eval:cases": "node scripts/eval-cases.mjs",
     "benchmark:demos": "node scripts/benchmark-demos.mjs",
+    "install-skill": "node scripts/install-skill.mjs",
+    "prepare": "npm run build",
     "prepack": "npm run check && npm run test && npm run build"
   },
   "engines": {

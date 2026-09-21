@@ -11,6 +11,16 @@ describe("reporting", () => {
     const result = rankCandidates(minimalRequest, makeResponse(plan));
 
     expect(rankResultSchema.parse(JSON.parse(renderJson(result)))).toEqual(result);
+    expect(result.policy.provider_profile).toBe("library");
+  });
+
+  it("records an explicit provider profile when supplied by a host", () => {
+    const plan = buildQuestionPlan(minimalRequest);
+    const result = rankCandidates(minimalRequest, makeResponse(plan), undefined, {
+      providerProfile: "semif/Qwen3.5-4B-Q4_K_M",
+    });
+
+    expect(result.policy.provider_profile).toBe("semif/Qwen3.5-4B-Q4_K_M");
   });
 
   it("labels rules without claiming model-generated reasoning", () => {

@@ -114,8 +114,9 @@ must not overpower goal fit or hard constraints.
 
 Policy proceeds in this order:
 
-1. Route candidates with insufficient answer confidence to review.
-2. Reject sufficiently confident candidates that clearly fail a semantic gate.
+1. Reject candidates that clearly fail a hard constraint, even when the answer
+   is low-confidence; retain the `LOW_CONFIDENCE` reason for human review.
+2. Route other candidates with insufficient answer confidence to review.
 3. Sort eligible candidates by composite score.
 4. Walk the sorted list and reject candidates highly likely to duplicate an
    already-kept candidate.

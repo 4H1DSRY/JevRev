@@ -46,6 +46,9 @@ The CLI accepts one JSON object from `--input <path>` or stdin (`--input -`).
 Rules:
 
 - `version` must be `"1"`.
+- Protocol version `1` is still the wire version in 0.1.1, but the result now
+  includes `provider_profile`, `next_action`, and `empty_reason`; strict
+  consumers should accept those fields before upgrading.
 - Candidate and criterion IDs use lowercase letters, digits, `_`, and `-`.
 - Candidate IDs must be unique.
 - A request contains 2-12 candidates.
@@ -61,8 +64,32 @@ JSON mode returns one object:
   "version": "1",
   "run_id": "jvr_...",
   "model": "jev-1.13.0",
-  "policy": { "name": "default-v1", "max_survivors": 2 },
+  "policy": {
+    "name": "default-v1",
+    "provider_profile": "jev/jev-1.13.0",
+    "max_survivors": 2,
+    "thresholds": {
+      "goal_fit": 0.34,
+      "constraint_fit": 0.55,
+      "feasibility": 0.34,
+      "validation_quality": 0.25,
+      "execution_value": 0.45,
+      "confidence": 0.2,
+      "duplicate": 0.75,
+      "duplicate_confidence": 0.3
+    },
+    "weights": {
+      "goal_fit": 0.3,
+      "constraint_fit": 0.2,
+      "feasibility": 0.2,
+      "validation_quality": 0.1,
+      "execution_value": 0.2
+    },
+    "effort_multipliers": { "small": 1, "medium": 0.94, "large": 0.86 }
+  },
   "summary": { "evaluated": 7, "kept": 2, "shortlisted": 2, "review": 0, "rejected": 5 },
+  "next_action": "implement",
+  "empty_reason": "none",
   "selected": ["byte-fast-path", "allocation-cut"],
   "shortlist": ["byte-fast-path", "allocation-cut"],
   "decisions": [
@@ -92,6 +119,10 @@ Statuses:
 - `review`: uncertain; an agent or human must decide.
 - `reject`: do not spend implementation budget under the current policy.
 
+A hard-constraint risk is checked before the confidence route. A candidate can
+therefore be `reject` with both `CONSTRAINT_RISK` and `LOW_CONFIDENCE`; ordinary
+low-confidence semantic scores remain `review`.
+
 Reason codes:
 
 - `GOAL_MISMATCH`
@@ -109,6 +140,19 @@ natural-language explanation from Jev.
 `confidence` is a routing value computed by JevRev. It combines Jev's Score
 confidence with the decision margin of Noul probabilities; it is not an extra
 confidence field returned for Noul questions.
+
+`next_action` is the host-agent handoff: `implement` when at least one
+candidate was kept, `ask_human` when every candidate needs review or the
+budget is exhausted, `revise_candidates` when candidates were rejected for
+ordinary policy reasons, and `relax_constraints` when every candidate failed
+the hard-constraint gate. `empty_reason` is `none` for a non-empty selection;
+otherwise it identifies the empty result (`all_review`, `all_rejected`,
+`mixed_no_survivor`, or `budget_exhausted`).
+
+Replay fixtures must include `candidate_order`, an array of candidate IDs in
+the exact order used when the answers were recorded. JevRev rejects a replay
+whose order does not match the input instead of applying positional answers to
+the wrong candidate.
 
 ## Provider addresses
 

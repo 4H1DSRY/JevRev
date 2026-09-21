@@ -1,7 +1,7 @@
 # JevRev release acceptance
 
-Release candidate: `0.1.0`  
-Product: JevRev  
+Release candidate: `0.1.1`
+Product: JevRev
 Tagline: **Pick the right path before you build.**
 
 The checks below are the acceptance record for this package. Commands were run
@@ -17,9 +17,11 @@ requires Node.js 20 or newer.
 | Jev adapter | Official SDK, explicit `--jev-url`, model selection, API-key environment aliases, typed response validation | PASS |
 | SemIf adapter | Local Qwen3.5-4B option-logit protocol at `/v1/chat/completions`; no prose parsing | PASS |
 | Legacy local adapter | Reranker protocol at `/v1/score` retained as an explicit compatibility provider | PASS |
-| Policy | Hard gates, confidence review route, effort weighting, deduplication, survivor budget | PASS |
-| Handoff | JSON `selected`, `shortlist`, decisions, reason codes, usage, stable run IDs | PASS |
+| Policy | Hard gates, confidence review route, effort weighting, deduplication, survivor budget, empty-result action | PASS |
+| Handoff | JSON `selected`, `shortlist`, decisions, reason codes, usage, stable run IDs, provider profile, thresholds | PASS |
+| Replay safety | Candidate-order metadata checked before positional answers are accepted | PASS |
 | CLI | `run`, `rank` compatibility alias, stdin, file input, `--output`, stable exit codes | PASS |
+| Evaluation/skill tooling | Read-only case evaluator and explicit skill installer | PASS |
 | Operations | `doctor`, local health probes, PowerShell model lifecycle scripts | PASS |
 | Documentation | README, protocol, design, local setup, skill, release notes | PASS |
 | Packaging | `npm pack --dry-run`, compiled CLI, examples, docs, scripts, no generated benchmark results | PASS |
@@ -28,14 +30,15 @@ requires Node.js 20 or newer.
 
 ```text
 npm run check     PASS
-npm test          PASS — 52 tests
+npm test          PASS — 62 tests
 npm run build     PASS
 ```
 
 The tests cover schema rejection, question construction, official-client
 transport, local response mapping, SemIf option-logit normalization, policy
-invariants, JSON/human reporting, stdin, output files, provider errors, and
-the public input-address diagnostic.
+invariants, replay-order rejection, empty-result actions, JSON/human reporting,
+stdin, output files, provider errors, skill installation safety, and the public
+input-address diagnostic.
 
 The legacy Python reranker runtime suite also passes:
 
@@ -105,8 +108,24 @@ Raw observations and per-scenario JSON summaries are generated under
 from git and the npm tarball; the recorded summary values above are the release
 record.
 
-The recorded run is `bench_muagsjry_b903c3c2` with CLI artifact SHA-256
-`5853d720bb356e446af8383e51966d6e151532c789e1f491b557761a9febbce5`.
+The recorded v0.1.0 run is `bench_muagsjry_b903c3c2` with its then-current CLI
+artifact SHA-256 `5853d720bb356e446af8383e51966d6e151532c789e1f491b557761a9febbce5`.
+The v0.1.1 CLI artifact produced by this checkout is tracked separately in the
+release asset and changes because of the replay and handoff hardening.
+The final npm tarball asset is `jevrev-0.1.1.tgz`, SHA-256
+`E8389CF9D6635973A59ECDF48AA353CEBFF47534E3E0F188F9BF8BA8677AEA10`.
+
+## Real-case provider check
+
+The four hosted Jev cases were rerun after the hardening changes:
+
+```text
+4/4 cases passed; 29,886 input + 4,372 output tokens; 4.669 s total wall time
+```
+
+The exact commands and the local-model comparison are in
+[`CASE_STUDY.md`](CASE_STUDY.md). The API key used for that run was temporary
+and is not stored in this repository.
 
 ## Known boundaries
 
@@ -117,5 +136,5 @@ The recorded run is `bench_muagsjry_b903c3c2` with CLI artifact SHA-256
   it does not claim that JevRev alone improves production latency or defect
   rate.
 - The public repository is
-  `https://github.com/Alex314618-create/JevRev`. Tag `v0.1.0` points at the
-  release commit.
+  `https://github.com/Alex314618-create/JevRev`. Tag `v0.1.1` points at the
+  release commit for this acceptance record.

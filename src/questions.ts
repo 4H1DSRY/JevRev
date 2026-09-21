@@ -23,6 +23,8 @@ export interface QuestionPlan {
   expectedTypes: Readonly<Record<string, Question["type"]>>;
   /** Canonical candidate index -> original request index. */
   candidateOrder: readonly number[];
+  /** Candidate IDs in the exact positional order used by this plan. */
+  candidateIds: readonly string[];
 }
 
 const GOAL_RUBRIC = [
@@ -157,5 +159,6 @@ export function buildQuestionPlan(
     questions,
     expectedTypes,
     candidateOrder,
+    candidateIds: candidates.map((candidate) => candidate.id),
   };
 }
