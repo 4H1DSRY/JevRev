@@ -4,7 +4,7 @@ Tagline: **Spread wide. Keep what survives.**
 
 Package: `jevrev@0.1.0`  
 Publish artifact: `jevrev-0.1.0.tgz`  
-Suggested Git tag: `v0.1.0`
+Git tag: `v0.1.0`
 
 ## Publish sequence
 

@@ -101,7 +101,9 @@ The “slots saved” column is a candidate-card count relative to trying every
 card, not a measured engineering-token or wall-clock saving.
 
 Raw observations and per-scenario JSON summaries are generated under
-`benchmarks/results/`; they are excluded from the npm tarball.
+`benchmarks/results/` when the benchmark runs. They are intentionally excluded
+from git and the npm tarball; the recorded summary values above are the release
+record.
 
 The recorded run is `bench_muagsjry_b903c3c2` with CLI artifact SHA-256
 `5853d720bb356e446af8383e51966d6e151532c789e1f491b557761a9febbce5`.
@@ -115,5 +117,5 @@ The recorded run is `bench_muagsjry_b903c3c2` with CLI artifact SHA-256
   it does not claim that JevRev alone improves production latency or defect
   rate.
 - The public repository is
-  `https://github.com/Alex314618-create/JevRev`. The publish tag for this
-  release is `v0.1.0`; create it when the release commit is pushed.
+  `https://github.com/Alex314618-create/JevRev`. Tag `v0.1.0` points at the
+  release commit.

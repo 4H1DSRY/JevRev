@@ -124,9 +124,10 @@ is correct.
 
 ## The numbers
 
-We ran the three included scenarios against a local Qwen3.5-4B SemIf service.
-For each scenario, candidate order was rotated until every card had appeared
-first at least once.
+We ran the three included scenarios against a local Qwen3.5-4B Q4_K_M SemIf
+service on Windows. This is one recorded local run, not a production
+benchmark. For each scenario, candidate order was rotated until every card had
+appeared first at least once.
 
 The first-choice column is the mean utility of the card a naive workflow would
 try first. The next column is the sample standard deviation of first-choice
@@ -140,11 +141,11 @@ equally good.
 The three scenarios ran 7, 6, and 6 rotations respectively. CLI time is
 process wall time, including Node startup and the provider request.
 
-| Scenario | Naive first-choice mean (0-1) | Order sensitivity (sample sd): first choice -> shortlist best | Best shortlist utility (0-1) | CLI wall time (mean +/- sd) | Judge tokens (mean) |
+| Scenario | Naive first-choice mean (0-1) | Order sensitivity (sample sd): first choice -> shortlist best | Shortlist utility, best / mean (0-1) | CLI wall time (mean +/- sd) | Judge tokens (mean) |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| Parser speedup | 0.550 | 0.382 -> 0.000 | 1.000 | 10.234s +/- 0.189 | 27,488 in / 56 out |
-| API boundary hardening | 0.412 | 0.385 -> 0.000 | 1.000 | 8.005s +/- 0.035 | 21,430 in / 45 out |
-| Flaky CI concurrency | 0.433 | 0.448 -> 0.000 | 1.000 | 8.148s +/- 0.022 | 21,539 in / 45 out |
+| Parser speedup | 0.550 | 0.382 -> 0.000 | 1.000 / 0.975 | 10.234s +/- 0.189 | 27,488 in / 56 out |
+| API boundary hardening | 0.412 | 0.385 -> 0.000 | 1.000 / 0.850 | 8.005s +/- 0.035 | 21,430 in / 45 out |
+| Flaky CI concurrency | 0.433 | 0.448 -> 0.000 | 1.000 / 0.975 | 8.148s +/- 0.022 | 21,539 in / 45 out |
 
 The useful result is the middle column. In this fixed local run, changing which
 candidate appeared first changed the naive choice a lot, but did not change the
@@ -153,11 +154,17 @@ final JevRev shortlist. Order sensitivity fell from 0.382, 0.385, and 0.448 to
 precision and recall of 1.00; the full per-scenario figures are in the
 acceptance report.
 
+This is a routing comparison, not an apples-to-apples quality uplift: the
+first-choice number describes one path, while `best` is the maximum utility in
+a returned set. The shortlist mean is included to make that distinction
+visible.
+
 This is a decision-stability measurement, not a claim that the model is always
 right or that production engineering time will drop by the same amount. The
 rubric was written before the run by a human, and the experiment used one local
-model. Full precision/recall, token deltas, raw observations, and the exact
-method are in [docs/ACCEPTANCE.md](docs/ACCEPTANCE.md).
+model. Full precision/recall, token deltas, benchmark summaries, and the exact
+method are in [docs/ACCEPTANCE.md](docs/ACCEPTANCE.md). The raw observations
+are regenerated locally by `npm run benchmark:demos`.
 
 Run the benchmark yourself after starting the local SemIf service (see
 [Provider setup](#provider-setup)):
