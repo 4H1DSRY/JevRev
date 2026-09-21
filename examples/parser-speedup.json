@@ -1,0 +1,163 @@
+{
+  "version": "1",
+  "task": {
+    "goal": "Make the parser at least 2x faster on the representative corpus.",
+    "context": "The parser is single-threaded TypeScript. Profiling shows time in token construction and recursive descent. Inputs are mostly ASCII source files between 2 KB and 500 KB.",
+    "constraints": [
+      {
+        "id": "public-api",
+        "text": "Do not change the public parser API or AST shape.",
+        "kind": "hard"
+      },
+      {
+        "id": "compatibility",
+        "text": "The package must remain pure JavaScript and run on every currently supported Node.js platform.",
+        "kind": "hard"
+      },
+      {
+        "id": "memory",
+        "text": "Peak memory should not grow by more than 15 percent.",
+        "kind": "soft"
+      }
+    ],
+    "success": [
+      {
+        "id": "throughput",
+        "text": "Median throughput is at least 2.0x the recorded baseline on the representative corpus."
+      },
+      {
+        "id": "correctness",
+        "text": "All existing tests and differential parser checks pass."
+      }
+    ]
+  },
+  "budget": {
+    "max_survivors": 2
+  },
+  "candidates": [
+    {
+      "id": "allocation-cut",
+      "title": "Remove hot-path token allocations",
+      "summary": "Represent transient tokens as offsets into the source buffer.",
+      "mechanism": "Keep start and end offsets during recursive descent and materialize token objects only when they become part of the public AST.",
+      "assumptions": [
+        "Token construction and garbage collection are meaningful measured costs."
+      ],
+      "risks": [
+        "Lazy materialization could expose incorrect source spans."
+      ],
+      "validation": [
+        "Run the complete and differential test suites.",
+        "Compare allocation counts, peak memory, and corpus throughput against baseline."
+      ],
+      "effort": "small"
+    },
+    {
+      "id": "object-pool",
+      "title": "Pool temporary token objects",
+      "summary": "Reuse token objects instead of allocating them for every parse.",
+      "mechanism": "Introduce a bounded per-parse token pool and reset objects as the parser advances.",
+      "assumptions": [
+        "Temporary token allocation is the dominant source of garbage collection."
+      ],
+      "risks": [
+        "A reused token could escape and be mutated after publication."
+      ],
+      "validation": [
+        "Run mutation-oriented correctness tests.",
+        "Compare allocations and throughput against baseline."
+      ],
+      "effort": "small"
+    },
+    {
+      "id": "bounded-memoization",
+      "title": "Memoize repeated grammar decisions",
+      "summary": "Cache expensive lookahead decisions at stable source offsets.",
+      "mechanism": "Store the result of selected ambiguous grammar predicates in a bounded offset-indexed cache for the duration of one parse.",
+      "assumptions": [
+        "The same ambiguous predicates are evaluated repeatedly at identical offsets."
+      ],
+      "risks": [
+        "Cache bookkeeping may cost more than the repeated predicates.",
+        "Unbounded entries could violate the memory target."
+      ],
+      "validation": [
+        "Instrument cache hit rate and size.",
+        "Benchmark with and without the cache on each corpus category."
+      ],
+      "effort": "medium"
+    },
+    {
+      "id": "byte-fast-path",
+      "title": "Add an ASCII byte fast path",
+      "summary": "Parse common ASCII identifiers and punctuation without building intermediate strings.",
+      "mechanism": "Recognize the dominant ASCII token classes directly from code units, falling back to the existing lexer for Unicode and uncommon syntax.",
+      "assumptions": [
+        "ASCII-heavy files dominate the representative corpus.",
+        "Lexer overhead is a measured hotspot."
+      ],
+      "risks": [
+        "Fast and fallback paths could disagree at Unicode boundaries."
+      ],
+      "validation": [
+        "Differentially compare both paths over generated ASCII and Unicode inputs.",
+        "Benchmark each corpus category and measure fallback frequency."
+      ],
+      "effort": "medium"
+    },
+    {
+      "id": "incremental-cache",
+      "title": "Add cross-call incremental parsing",
+      "summary": "Reuse unchanged subtrees between repeated parser calls.",
+      "mechanism": "Persist a source-range keyed tree cache across invocations and invalidate ranges affected by edits.",
+      "assumptions": [
+        "Most real parser calls are edits of a previously parsed document."
+      ],
+      "risks": [
+        "The current API provides neither document identity nor edit ranges.",
+        "Cache invalidation could change observable AST identity."
+      ],
+      "validation": [
+        "Create an edit-trace benchmark and compare full reparsing with cached reparsing."
+      ],
+      "effort": "large"
+    },
+    {
+      "id": "parallel-parser",
+      "title": "Parse grammar regions in parallel",
+      "summary": "Split an input into regions and parse them on worker threads.",
+      "mechanism": "Pre-scan for top-level boundaries, send regions to worker threads, and merge the resulting AST fragments.",
+      "assumptions": [
+        "Top-level regions can be found cheaply before parsing.",
+        "Worker startup and serialization are small relative to parse time."
+      ],
+      "risks": [
+        "Grammar state crosses proposed region boundaries.",
+        "Small and medium inputs may become slower."
+      ],
+      "validation": [
+        "Run correctness tests on boundary-heavy syntax.",
+        "Benchmark by input size with worker overhead separated."
+      ],
+      "effort": "large"
+    },
+    {
+      "id": "native-extension",
+      "title": "Rewrite the lexer as a native extension",
+      "summary": "Move lexing into a Rust Node.js addon.",
+      "mechanism": "Implement lexing in Rust, expose tokens through N-API, and keep recursive descent in TypeScript.",
+      "assumptions": [
+        "Native lexing is fast enough to offset the JavaScript/native boundary."
+      ],
+      "risks": [
+        "Introduces platform-specific builds and distribution artifacts.",
+        "Boundary conversion may erase the expected gain."
+      ],
+      "validation": [
+        "Run compatibility tests on every target platform.",
+        "Benchmark lexing and end-to-end parsing separately."
+      ],
+      "effort": "large"
+    }
+  ]
+}

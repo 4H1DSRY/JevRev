@@ -1,0 +1,80 @@
+{
+  "version": "1",
+  "task": {
+    "goal": "Stop malformed API requests from causing crashes while preserving the public response contract.",
+    "context": "A Node service accepts JSON requests through three HTTP handlers. Current failures include uncaught validation exceptions, inconsistent 400 responses, and one oversized-body path.",
+    "constraints": [
+      { "id": "contract", "text": "Do not change successful response shapes or status codes for valid requests", "kind": "hard" },
+      { "id": "security", "text": "Do not remove payload limits or expose stack traces to clients", "kind": "hard" },
+      { "id": "scope", "text": "Keep the change within the HTTP boundary and shared validation code", "kind": "soft" }
+    ],
+    "success": [
+      { "id": "bad-input", "text": "Malformed and oversized requests return a consistent documented 400 or 413 response" },
+      { "id": "regression", "text": "The existing valid-request contract tests remain green" },
+      { "id": "fuzz", "text": "A bounded malformed-input suite produces no uncaught 5xx responses" }
+    ]
+  },
+  "budget": { "max_survivors": 2 },
+  "candidates": [
+    {
+      "id": "shared-boundary-validator",
+      "title": "Centralize validation at the HTTP boundary",
+      "summary": "Validate each request with the existing schema and map failures to one safe error contract.",
+      "mechanism": "Add a small middleware wrapper around the three handlers, preserve successful values, classify schema and size failures, and emit a sanitized error body with a request ID.",
+      "assumptions": ["The existing schemas cover the required fields", "Handlers can share one middleware"],
+      "risks": ["A handler may depend on an undocumented coercion"],
+      "validation": ["Contract tests for valid requests", "Malformed corpus and oversized-body tests", "Assert no stack trace is returned"],
+      "effort": "medium"
+    },
+    {
+      "id": "handler-try-catch",
+      "title": "Wrap each handler in a local try/catch",
+      "summary": "Convert thrown validation errors into 400 responses at each route.",
+      "mechanism": "Add repeated try/catch blocks to the three handlers and return a common error helper when parsing fails.",
+      "assumptions": ["All malformed input failures are thrown synchronously"],
+      "risks": ["One route can drift from the others", "Unexpected programming errors may be hidden"],
+      "validation": ["Route-by-route invalid request tests", "Review logs for swallowed exceptions"],
+      "effort": "small"
+    },
+    {
+      "id": "coerce-everything",
+      "title": "Coerce all request fields before validation",
+      "summary": "Convert values to strings or defaults to reduce validation failures.",
+      "mechanism": "Normalize every incoming field and accept values that the current schema rejects.",
+      "assumptions": ["Clients prefer permissive coercion"],
+      "risks": ["Invalid data can pass the boundary", "The public contract becomes ambiguous"],
+      "validation": ["Add examples for common coercions"],
+      "effort": "small"
+    },
+    {
+      "id": "raise-body-limit",
+      "title": "Increase the request body limit",
+      "summary": "Avoid oversized-body errors by allowing larger payloads.",
+      "mechanism": "Raise the global body parser limit and leave route validation unchanged.",
+      "assumptions": ["Large requests are legitimate"],
+      "risks": ["Memory pressure and denial-of-service exposure increase", "Does not fix uncaught validation failures"],
+      "validation": ["Send a larger request through one handler"],
+      "effort": "small"
+    },
+    {
+      "id": "rewrite-http-layer",
+      "title": "Replace the HTTP validation layer",
+      "summary": "Move all handlers to a new framework with built-in validation.",
+      "mechanism": "Rewrite the server adapter and route definitions, then port the existing handlers.",
+      "assumptions": ["A framework migration can be isolated"],
+      "risks": ["Large compatibility surface", "Unrelated deployment changes"],
+      "validation": ["Full integration test suite", "Load test after migration"],
+      "effort": "large"
+    },
+    {
+      "id": "fuzz-only",
+      "title": "Add malformed-input fuzz tests only",
+      "summary": "Improve detection without changing the request boundary.",
+      "mechanism": "Generate malformed JSON and field combinations against the current handlers and record failures.",
+      "assumptions": ["Tests alone will prevent regressions"],
+      "risks": ["The current production crash path remains", "No consistent response contract"],
+      "validation": ["Run the fuzzer for 1,000 cases"],
+      "effort": "medium"
+    }
+  ]
+}

@@ -1,0 +1,75 @@
+{
+  "name": "jevrev",
+  "version": "0.1.0",
+  "description": "A command-line shortlist engine for agent-generated approaches, powered by Jev or a local judge.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "bin": {
+    "jevrev": "dist/cli.js",
+    "specjev": "dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "docs",
+    "examples",
+    "benchmarks/README.md",
+    "scripts",
+    "skills/jevrev",
+    "runtime",
+    "README.md",
+    "CHANGELOG.md",
+    "RELEASE.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "check": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "demo": "node dist/cli.js run --input examples/parser-speedup.json --replay examples/parser-jev-response.json --format human",
+    "demo:all": "node scripts/run-demos.mjs",
+    "benchmark:demos": "node scripts/benchmark-demos.mjs",
+    "prepack": "npm run check && npm run test && npm run build"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Alex314618-create/JevRev.git"
+  },
+  "homepage": "https://github.com/Alex314618-create/JevRev#readme",
+  "bugs": {
+    "url": "https://github.com/Alex314618-create/JevRev/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "jev",
+    "agents",
+    "coding-agents",
+    "candidate-selection",
+    "cli",
+    "evaluation"
+  ],
+  "dependencies": {
+    "@typesafe-ai/sdk": "^0.6.0",
+    "commander": "^14.0.1",
+    "zod": "^4.1.11"
+  },
+  "devDependencies": {
+    "@types/node": "^24.5.2",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2",
+    "vitest": "^4.1.11"
+  }
+}

@@ -1,0 +1,80 @@
+{
+  "version": "1",
+  "task": {
+    "goal": "Remove nondeterministic failures from the integration test suite without hiding real regressions.",
+    "context": "The suite uses a shared temporary database and fake timers. Failures appear in parallel CI runs about 1 in 20 executions; local serial runs are green.",
+    "constraints": [
+      { "id": "no-skip", "text": "Do not skip, quarantine, or blanket-retry failing tests", "kind": "hard" },
+      { "id": "runtime", "text": "Keep total CI runtime within 20 percent of the current baseline", "kind": "hard" },
+      { "id": "signal", "text": "Preserve failures that indicate a real product regression", "kind": "hard" }
+    ],
+    "success": [
+      { "id": "repeatability", "text": "The suite passes 100 repeated runs with parallel workers enabled" },
+      { "id": "diagnostics", "text": "A failed run identifies the conflicting resource or clock assumption" },
+      { "id": "runtime_budget", "text": "Median CI runtime stays within 20 percent of baseline" }
+    ]
+  },
+  "budget": { "max_survivors": 2 },
+  "candidates": [
+    {
+      "id": "isolated-db-namespace",
+      "title": "Give each worker an isolated database namespace",
+      "summary": "Remove cross-worker state collisions while preserving parallel execution.",
+      "mechanism": "Derive a worker-specific schema or database name, create it during setup, and clean it up in teardown with the existing fixture API.",
+      "assumptions": ["The database supports cheap isolated namespaces", "Tests already use a fixture factory"],
+      "risks": ["A test may still reach a hard-coded shared table"],
+      "validation": ["Run 100 parallel repetitions", "Log namespace ownership", "Add a guard against shared names"],
+      "effort": "medium"
+    },
+    {
+      "id": "injected-clock",
+      "title": "Inject a deterministic test clock",
+      "summary": "Replace wall-clock sleeps only in timer-dependent tests while leaving production behavior unchanged.",
+      "mechanism": "Pass a clock and scheduler into the affected test fixtures, advance them explicitly, and remove wall-clock sleeps from those tests; the production API and parallel worker model stay unchanged.",
+      "assumptions": ["The observed failures depend on timer ordering", "The fixture layer can accept a clock without changing production responses"],
+      "risks": ["A small number of unrelated asynchronous races may still need separate isolation"],
+      "validation": ["Repeat timer-focused tests", "Run the full suite under parallel workers", "Assert no production behavior changed"],
+      "effort": "medium"
+    },
+    {
+      "id": "blanket-retry",
+      "title": "Retry every failed test once",
+      "summary": "Reduce visible CI failures by repeating the failed test.",
+      "mechanism": "Configure the test runner to rerun any failed test before reporting failure.",
+      "assumptions": ["Most failures are transient"],
+      "risks": ["Real regressions are masked", "Failure rate becomes less observable"],
+      "validation": ["Compare the green rate before and after retries"],
+      "effort": "small"
+    },
+    {
+      "id": "longer-timeouts",
+      "title": "Increase all timeouts and sleeps",
+      "summary": "Give slow CI jobs more time to settle.",
+      "mechanism": "Multiply test timeouts and add delays around database cleanup.",
+      "assumptions": ["The failures are caused by slow machines"],
+      "risks": ["Runtime constraint is likely violated", "Race conditions remain"],
+      "validation": ["Run the suite on the slowest CI worker"],
+      "effort": "small"
+    },
+    {
+      "id": "serialize-suite",
+      "title": "Run the entire suite serially",
+      "summary": "Remove concurrency as a source of interference.",
+      "mechanism": "Set the worker count to one for all integration tests.",
+      "assumptions": ["The runtime increase is acceptable"],
+      "risks": ["Parallel behavior is no longer exercised", "Runtime constraint is likely violated"],
+      "validation": ["Compare serial and parallel results", "Measure full CI duration"],
+      "effort": "small"
+    },
+    {
+      "id": "skip-flaky-case",
+      "title": "Skip the known flaky cases",
+      "summary": "Keep CI green by excluding the failing tests until later.",
+      "mechanism": "Mark the observed tests as skipped in CI and track them in a ticket.",
+      "assumptions": ["The cases are not release-critical"],
+      "risks": ["A hard constraint is violated", "Coverage is silently lost"],
+      "validation": ["Run the remaining suite"],
+      "effort": "small"
+    }
+  ]
+}
