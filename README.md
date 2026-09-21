@@ -1,4 +1,16 @@
-# JevRev
+<p align="center">
+  <img src=".github/assets/jevrev-banner.png" alt="JevRev banner" width="100%" />
+</p>
+
+<h1 align="center">JevRev</h1>
+
+<p align="center"><strong>Explore wide. Prove cheap. Commit once.</strong></p>
+
+<p align="center">
+  <a href="https://github.com/Alex314618-create/JevRev/releases"><img alt="Release" src="https://img.shields.io/github/v/release/Alex314618-create/JevRev?style=flat-square" /></a>
+  <a href="package.json"><img alt="Node.js 20 or newer" src="https://img.shields.io/badge/Node.js-%3E%3D20-339933?style=flat-square&amp;logo=nodedotjs&amp;logoColor=white" /></a>
+  <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/License-MIT-F4C430?style=flat-square" /></a>
+</p>
 
 > Explore wide. Prove cheap. Commit once.
 
