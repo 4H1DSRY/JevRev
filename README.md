@@ -1,6 +1,17 @@
-# JevRev
+<p align="center">
+  <img src=".github/assets/jevrev-banner.png" alt="JevRev: a skull illustration beside the JevRev wordmark" width="100%" />
+</p>
 
-> Pick the right path before you build.
+<h1 align="center">JevRev</h1>
+
+<p align="center"><strong>Pick the right path before you build.</strong></p>
+
+<p align="center">
+  <a href="https://github.com/Alex314618-create/JevRev/tags"><img alt="Latest tag" src="https://img.shields.io/github/v/tag/Alex314618-create/JevRev?style=flat-square&amp;label=release&amp;color=111111" /></a>
+  <a href="package.json"><img alt="Node.js 20 or newer" src="https://img.shields.io/badge/Node.js-%3E%3D20-339933?style=flat-square&amp;logo=nodedotjs&amp;logoColor=white" /></a>
+  <a href="package.json"><img alt="TypeScript 5.9" src="https://img.shields.io/badge/TypeScript-5.9-3178C6?style=flat-square&amp;logo=typescript&amp;logoColor=white" /></a>
+  <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/License-MIT-F4C430?style=flat-square" /></a>
+</p>
 
 Cut 3-7 candidate approaches to the one or two worth building before you spend
 two days on the wrong one. Hard-constraint risks are surfaced and gated;
