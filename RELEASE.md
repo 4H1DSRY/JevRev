@@ -1,6 +1,6 @@
 # JevRev 0.1.0 release sheet
 
-Tagline: **Spread wide. Keep what survives.**
+Tagline: **Pick the right path before you build.**
 
 Package: `jevrev@0.1.0`  
 Publish artifact: `jevrev-0.1.0.tgz`  

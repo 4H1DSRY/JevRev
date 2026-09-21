@@ -2,7 +2,7 @@
 
 Release candidate: `0.1.0`  
 Product: JevRev  
-Tagline: **Spread wide. Keep what survives.**
+Tagline: **Pick the right path before you build.**
 
 The checks below are the acceptance record for this package. Commands were run
 from the repository root on Node.js 25.2.1 / Windows PowerShell; the package
