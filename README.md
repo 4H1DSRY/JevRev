@@ -129,13 +129,15 @@ For each scenario, candidate order was rotated until every card had appeared
 first at least once.
 
 The first-choice column is the mean utility of the card a naive workflow would
-try first. `sd` is the sample standard deviation of best-shortlist utility
-across those order rotations
-(`n - 1` denominator). `Shortlist best` is the best utility among the paths
-returned for implementation or review; it is not a claim that every returned
-path is equally good.
+try first. The next column is the sample standard deviation of first-choice
+utility (left) and best-shortlist utility (right) across the same rotations
+(`n - 1` denominator). These are cyclic candidate-order rotations, not repeated
+stochastic model runs. It measures order sensitivity, not general model
+uncertainty. `Shortlist best` is the best utility among the paths returned for
+implementation or review; it is not a claim that every returned path is
+equally good.
 
-| Scenario | Naive first-choice mean (0-1) | Best-shortlist utility sd: naive -> JevRev | Best shortlist utility (0-1) | CLI time (mean +/- sd) | Judge tokens (mean) |
+| Scenario | Naive first-choice mean (0-1) | Order sensitivity (sample sd): first choice -> shortlist best | Best shortlist utility (0-1) | CLI time (mean +/- sd) | Judge tokens (mean) |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | Parser speedup | 0.550 | 0.382 -> 0.000 | 1.000 | 10.234s +/- 0.189 | 27,488 in / 56 out |
 | API boundary hardening | 0.412 | 0.385 -> 0.000 | 1.000 | 8.005s +/- 0.035 | 21,430 in / 45 out |
@@ -144,8 +146,9 @@ path is equally good.
 The useful result is the middle column. In this fixed local run, changing which
 candidate appeared first changed the naive choice a lot, but did not change the
 final JevRev shortlist. Order sensitivity fell from 0.382, 0.385, and 0.448 to
-0.000. Each scenario's recorded shortlist had precision and recall of 1.00; the
-full per-scenario figures are in the acceptance report.
+0.000. Against the predeclared scenario labels, each recorded shortlist had
+precision and recall of 1.00; the full per-scenario figures are in the
+acceptance report.
 
 This is a decision-stability measurement, not a claim that the model is always
 right or that production engineering time will drop by the same amount. The
