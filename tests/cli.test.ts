@@ -19,6 +19,134 @@ function run(args: string[], stdin?: string, env = process.env) {
 }
 
 describe("jevrev CLI", () => {
+  it("emits a probe campaign from the sift command", () => {
+    const result = run([
+      "sift",
+      "--input",
+      request,
+      "--replay",
+      replay,
+    ]);
+
+    expect(result.status).toBe(0);
+    expect(result.stderr).toBe("");
+    expect(JSON.parse(result.stdout)).toMatchObject({
+      kind: "jevrev.campaign",
+      schema_version: "1",
+      sift: { selected: ["allocation-cut", "byte-fast-path"] },
+      work_orders: [
+        { candidate_id: "allocation-cut", required_evidence: expect.any(Array) },
+        { candidate_id: "byte-fast-path", required_evidence: expect.any(Array) },
+      ],
+    });
+  });
+
+  it("runs evidence-backed decide through a replay provider", () => {
+    const sift = run(["sift", "--input", request, "--replay", replay]);
+    expect(sift.status).toBe(0);
+    const campaign = JSON.parse(sift.stdout) as {
+      campaign_id: string;
+      work_orders: Array<{ candidate_id: string; candidate_sha256: string }>;
+    };
+    const campaignPath = resolve(root, "tests", "tmp-campaign.json");
+    const evidencePath = resolve(root, "tests", "tmp-evidence.json");
+    const replayPath = resolve(root, "tests", "tmp-decide-replay.json");
+    const packets = campaign.work_orders.map((workOrder, index) => ({
+      kind: "jevrev.evidence-packet",
+      schema_version: "1",
+      campaign_id: campaign.campaign_id,
+      candidate_id: workOrder.candidate_id,
+      candidate_sha256: workOrder.candidate_sha256,
+      revision: { base_commit: "base", head_commit: `head-${index}` },
+      development: { status: "completed", wall_ms: 30_000 },
+      observations: [{
+        id: "tests",
+        kind: "command",
+        argv: ["npm", "test"],
+        exit_code: 0,
+        duration_ms: 1_000,
+        required: true,
+      }],
+      metrics: [
+        {
+          id: "throughput",
+          kind: "metric",
+          criterion_id: "throughput",
+          unit: "ops/s",
+          direction: "higher",
+          baseline_samples: [100, 101, 99],
+          candidate_samples: index === 0 ? [220, 222, 224] : [160, 161, 159],
+        },
+      ],
+      requirement_results: [
+        { criterion_id: "public-api", kind: "constraint", status: "pass", observation_ids: ["tests"], metric_ids: [] },
+        { criterion_id: "compatibility", kind: "constraint", status: "pass", observation_ids: ["tests"], metric_ids: [] },
+        { criterion_id: "throughput", kind: "success", status: "pass", observation_ids: [], metric_ids: ["throughput"] },
+        { criterion_id: "correctness", kind: "success", status: "pass", observation_ids: ["tests"], metric_ids: [] },
+      ],
+      probe_results: campaign.work_orders[index]!.required_evidence.map((evidence) => ({
+        evidence_id: evidence.id,
+        status: "pass",
+        observation_ids: ["tests"],
+        metric_ids: ["throughput"],
+      })),
+      changed_files: [`src/probe-${index}.ts`],
+      known_failures: [],
+    }));
+    const decideAnswers: Record<string, unknown> = {};
+    campaign.work_orders.forEach((_workOrder, index) => {
+      const strong = index === 0;
+      decideAnswers[`finalist_${index}_evidence_support`] = {
+        type: "score", score: strong ? 3 : 2, confidence: 0.9,
+        legend: { "0": "bad", "1": "weak", "2": "good", "3": "strong" },
+        probabilities: { "0": 0, "1": 0, "2": strong ? 0 : 1, "3": strong ? 1 : 0 },
+      };
+      decideAnswers[`finalist_${index}_reproducibility`] = {
+        type: "score", score: strong ? 3 : 2, confidence: 0.9,
+        legend: { "0": "bad", "1": "weak", "2": "good", "3": "strong" },
+        probabilities: { "0": 0, "1": 0, "2": strong ? 0 : 1, "3": strong ? 1 : 0 },
+      };
+      decideAnswers[`finalist_${index}_residual_risk_acceptance`] = { type: "noul", noul: strong ? 0.95 : 0.7 };
+      decideAnswers[`finalist_${index}_shipping_value`] = { type: "noul", noul: strong ? 0.95 : 0.7 };
+    });
+    decideAnswers.finalist_pair_0_1_complementary = { type: "noul", noul: 0.05 };
+
+    writeFileSync(campaignPath, `${JSON.stringify(campaign)}\n`, "utf8");
+    writeFileSync(evidencePath, `${JSON.stringify({
+      kind: "jevrev.evidence-bundle",
+      schema_version: "1",
+      campaign_id: campaign.campaign_id,
+      packets,
+    })}\n`, "utf8");
+    writeFileSync(replayPath, `${JSON.stringify({
+      model: "jev-decide-demo",
+      candidate_order: campaign.work_orders.map((workOrder) => workOrder.candidate_id),
+      answers: decideAnswers,
+      usage: { input_tokens: 200, output_tokens: 20 },
+    })}\n`, "utf8");
+
+    try {
+      const result = run([
+        "decide",
+        "--campaign", campaignPath,
+        "--evidence", evidencePath,
+        "--replay", replayPath,
+      ]);
+      expect(result.status).toBe(0);
+      expect(result.stderr).toBe("");
+      expect(JSON.parse(result.stdout)).toMatchObject({
+        kind: "jevrev.decide-result",
+        decision: "winner",
+        winner: "allocation-cut",
+        next_action: { type: "integrate_winner" },
+      });
+    } finally {
+      rmSync(campaignPath, { force: true });
+      rmSync(evidencePath, { force: true });
+      rmSync(replayPath, { force: true });
+    }
+  });
+
   it("runs the parser demonstration in JSON mode", () => {
     const result = run([
       "rank",
@@ -131,6 +259,8 @@ describe("jevrev CLI", () => {
 
     expect(result.status).toBe(3);
     expect(result.stderr).toContain("provider error");
+    expect(result.stderr).toContain("JEVREV_JEV_API_KEY");
+    expect(result.stderr).toContain("TYPESAFE_API_KEY");
   });
 
   it("rejects an unknown provider", () => {

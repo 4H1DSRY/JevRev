@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.2.0 — 2026-09-21
+
+- Add `sift` campaigns with bounded probe work orders while preserving the
+  original `run` and `rank` contracts.
+- Add evidence packets with candidate hashes, command results, raw metric
+  samples, requirement references, revision identity, budgets, and failures.
+- Add `decide` with deterministic hard gates followed by a separate Jev
+  evidence review.
+- Support `winner`, `merge`, `probe_more`, `no_winner`, and `human_review`
+  instead of forcing a winner.
+- Add an executed ranking-reversal workflow demo and shared Decide support for
+  Jev, SemIf, legacy local, and replay providers.
+
 ## 0.1.1 — 2026-09-21
 
 - Reject replay fixtures whose `candidate_order` does not match the request;

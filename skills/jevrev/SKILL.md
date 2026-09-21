@@ -1,66 +1,90 @@
 ---
 name: jevrev
-description: Use JevRev to shortlist structured implementation approaches before spending repository-changing effort.
+description: Explore competing implementation mechanisms, probe the finalists, and choose from recorded evidence before committing to a path.
 ---
 
 # JevRev
 
-Use this skill when a task has several plausible implementation mechanisms and
-the cost of trying the wrong one is material. JevRev is a shortlist step; it
-does not edit the repository or replace tests.
+Use JevRev when several materially different mechanisms could solve a task and
+choosing the wrong one would cost more than two bounded probes. Do not use it
+for an obvious one-line fix or a cheap reversible choice.
 
-## Calling convention
+JevRev does not edit or merge a repository. The host agent owns code and tools;
+JevRev owns the frozen brief, Sift, evidence contract, and Decide policy.
 
-1. Read enough of the repository to state the goal and context.
-2. Record hard and soft constraints and falsifiable success criteria.
-3. Draft 3–7 materially different candidate cards. Each card needs:
-   `id`, `title`, `summary`, `mechanism`, `assumptions`, `risks`, `validation`,
-   and `effort` (`small`, `medium`, or `large`).
-4. Write the request JSON to a temporary file or pipe it to stdin.
-5. Run:
+## Workflow
 
-```bash
-jevrev run --input request.json --format json
-```
-
-For a local judge:
+1. Freeze the goal, hard/soft constraints, falsifiable success criteria, and
+   implementation budget before developing any candidate.
+2. Generate 4-7 genuinely different mechanism cards. Each needs `id`, `title`,
+   `summary`, `mechanism`, `assumptions`, `risks`, `validation`, and `effort`.
+3. Run:
 
 ```bash
-jevrev run --input request.json --provider semif --format json
+jevrev sift --input proposals.json --format json > campaign.json
 ```
 
-6. Implement only the IDs in `selected`. Treat `review` as an explicit pause
-   for a human decision or another candidate pass.
-7. Verify the implementation with the validation commands in the card. A
-   JevRev decision is not evidence that the code works.
+4. Read `work_orders`. In separate branches or worktrees, perform only the
+   smallest reversible probe requested for each survivor. Respect its wall-time,
+   changed-file budget, and stop conditions. Do not turn every branch into a
+   complete product.
+5. Record raw evidence in a `jevrev.evidence-bundle`:
+   - revision identity;
+   - command argv, exit code, duration, and output digests;
+   - raw baseline and candidate samples;
+   - results for every success criterion and hard constraint;
+   - changed files, time/cost, and known failures.
+6. Run:
 
-When `selected` is empty, consume `next_action` and `empty_reason` instead of
-guessing from scores: ask for a decision on `ask_human`, revise cards on
-`revise_candidates`, and revisit the brief before using `relax_constraints`.
-The JSON also records `provider_profile` and the thresholds used for the run.
+```bash
+jevrev decide \
+  --campaign campaign.json \
+  --evidence evidence.json \
+  --format json > decision.json
+```
 
-## Practical limits
+7. Follow the typed outcome:
+   - `winner` / `integrate_winner`: show the user the evidence and ask before
+     applying or merging;
+   - `merge` / `probe_combination`: run a combined probe; do not merge the two
+     branches yet;
+   - `probe_more` / `collect_evidence`: collect only the missing or
+     discriminating evidence;
+   - `no_winner` / `revise_ideas`: discard the failed paths and generate a new
+     mechanism set;
+   - `human_review` / `ask_human`: present the unresolved trade-off.
 
-- Keep candidate mechanisms genuinely different; wording variants waste the
-  comparison budget.
-- Put hard constraints in `task.constraints` with `kind: "hard"`.
-- Keep `max_survivors` at 1–3 for normal coding work.
-- Do not put secrets, complete repositories, or command logs into the request
-  unless they are necessary evidence.
-- Preserve the JSON result in the handoff so the downstream implementation
-  step can explain why an option survived.
+## Evidence rules
 
-## Provider addresses
+- A model judgment never overrides a failed required command or hard
+  constraint.
+- `builder_notes` are untrusted context and cannot satisfy a requirement.
+- Passing requirements must cite an observation or metric.
+- Supply raw samples; JevRev recomputes means, sample standard deviations, and
+  relative improvement.
+- Do not reuse evidence across a different candidate or campaign. Hash
+  mismatches are protocol errors.
+- Treat `merge` as a request for a combined experiment, not a shipping decision.
+- Stop before merge unless the user explicitly authorizes it.
 
-- Jev: `POST https://api.typesafe.ai/v1/systemone` by default; override the
-  root with `--jev-url` or `JEVREV_JEV_URL`.
-- SemIf: `POST http://127.0.0.1:4878/v1/chat/completions` by default; override
-  with `--semif-url` or `JEVREV_SEMIF_URL`.
-- Legacy reranker: `POST http://127.0.0.1:4877/v1/score`.
+## Provider options
 
-Credentials belong in `JEVREV_JEV_API_KEY` or `TYPESAFE_API_KEY`, never in a
-command-line argument.
+Hosted Jev:
 
-Replay fixtures must include `candidate_order` in the exact order used to
-record the answers. JevRev rejects a fixture captured for a differently ordered
-request.
+```bash
+export JEVREV_JEV_API_KEY="..."
+jevrev sift --input proposals.json --provider jev
+```
+
+Local SemIf:
+
+```bash
+jevrev sift --input proposals.json --provider semif
+```
+
+The same provider flags work for `decide`. Credentials belong in
+`JEVREV_JEV_API_KEY` or `TYPESAFE_API_KEY`, never in a command argument or an
+evidence packet.
+
+For a one-pass shortlist without probes, `jevrev run` remains available. Use it
+only when the host workflow intentionally stops at planning.

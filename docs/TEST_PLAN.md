@@ -71,3 +71,28 @@ Given the parser fixture with seven candidates and the captured Jev response:
 - Deduplicate the second allocation-focused approach.
 - Keep no more than two candidates.
 - Emit the same selected IDs in human and JSON modes.
+
+## Evidence workflow
+
+- `sift` wraps the unchanged rank result and emits one deterministic work order
+  per strict survivor.
+- Work orders contain candidate hashes, probe instructions, evidence needs,
+  budgets, and stop conditions.
+- Reject evidence for another campaign, a non-finalist, an altered candidate,
+  or a different base revision.
+- Reject duplicate observation, metric, requirement, or candidate IDs.
+- Require a passing requirement to cite a known observation or metric.
+- Accept optional results for soft constraints without making them mandatory.
+- Recompute metric means, sample standard deviations, and relative improvement
+  from raw samples.
+- A failed required command, failed hard requirement, or exceeded budget cannot
+  win regardless of judge answers.
+- Omitted or unknown required evidence returns `probe_more`.
+- Low-confidence semantic evidence returns `human_review`.
+- All rejected finalists return `no_winner`; no policy path forces a winner.
+- Close complementary finalists return `merge` and request a combined probe.
+- A clear evidence-backed leader returns `winner`.
+- Replay supports a single finalist after deterministic hard gates.
+- Jev, SemIf, legacy local, and replay providers can evaluate Decide questions.
+- The ranking-reversal demo rejects the paper favorite after its required
+  differential test fails and selects the verified runner-up.

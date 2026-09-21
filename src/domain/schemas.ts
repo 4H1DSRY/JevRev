@@ -134,7 +134,9 @@ export const judgeResponseSchema = z
  */
 export const replayResponseSchema = judgeResponseSchema
   .extend({
-    candidate_order: z.array(id).min(2).max(12),
+    // Sift starts with at least two candidates, while deterministic evidence
+    // gates may leave a single viable finalist for Decide.
+    candidate_order: z.array(id).min(1).max(12),
   })
   .strict();
 
