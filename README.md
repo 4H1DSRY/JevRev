@@ -137,7 +137,10 @@ uncertainty. `Shortlist best` is the best utility among the paths returned for
 implementation or review; it is not a claim that every returned path is
 equally good.
 
-| Scenario | Naive first-choice mean (0-1) | Order sensitivity (sample sd): first choice -> shortlist best | Best shortlist utility (0-1) | CLI time (mean +/- sd) | Judge tokens (mean) |
+The three scenarios ran 7, 6, and 6 rotations respectively. CLI time is
+process wall time, including Node startup and the provider request.
+
+| Scenario | Naive first-choice mean (0-1) | Order sensitivity (sample sd): first choice -> shortlist best | Best shortlist utility (0-1) | CLI wall time (mean +/- sd) | Judge tokens (mean) |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | Parser speedup | 0.550 | 0.382 -> 0.000 | 1.000 | 10.234s +/- 0.189 | 27,488 in / 56 out |
 | API boundary hardening | 0.412 | 0.385 -> 0.000 | 1.000 | 8.005s +/- 0.035 | 21,430 in / 45 out |
