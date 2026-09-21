@@ -3,7 +3,7 @@
 > Pick the right path before you build.
 
 Cut 3-7 candidate approaches to the one or two worth building before you spend
-two days on the wrong one. Hard constraints enforced, duplicates cut. One
+two days on the wrong one. Hard-constraint risks gated, duplicates cut. One
 command, JSON out, no plugin, never touches your repo. Offline runs need no
 key; local judging has zero API spend and keeps the request on your machine.
 
