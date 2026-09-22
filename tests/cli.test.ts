@@ -41,6 +41,64 @@ describe("jevrev CLI", () => {
     });
   });
 
+  it("records command evidence through the CLI and returns the child exit code", () => {
+    const sift = run(["sift", "--input", request, "--replay", replay]);
+    expect(sift.status).toBe(0);
+    const campaign = JSON.parse(sift.stdout) as {
+      campaign_id: string;
+      work_orders: Array<{
+        candidate_id: string;
+        candidate_sha256: string;
+        required_evidence: Array<{ id: string }>;
+      }>;
+      request: {
+        task: {
+          success: Array<{ id: string }>;
+          constraints: Array<{ id: string; kind: string }>;
+        };
+      };
+    };
+    const workOrder = campaign.work_orders[0]!;
+    const campaignPath = resolve(root, "tests", "tmp-recorder-campaign.json");
+    const evidencePath = resolve(root, "tests", "tmp-recorder-evidence.json");
+    writeFileSync(campaignPath, `${JSON.stringify(campaign)}\n`, "utf8");
+    const template = spawnSync(process.execPath, [
+      resolve(root, "scripts", "create-evidence-template.mjs"),
+      "--campaign", campaignPath,
+      "--output", evidencePath,
+      "--base-commit", "test-base",
+    ], { cwd: root, encoding: "utf8" });
+    expect(template.status).toBe(0);
+
+    try {
+      const result = run([
+        "evidence", "run",
+        "--evidence", evidencePath,
+        "--candidate", workOrder.candidate_id,
+        "--id", "failing-test",
+        "--probe", workOrder.required_evidence[0]!.id,
+        "--requirement", `constraint:${campaign.request.task.constraints.find((item) => item.kind === "hard")!.id}`,
+        "--quiet",
+        "--",
+        process.execPath,
+        "-e",
+        "process.exit(7)",
+      ]);
+      expect(result.status).toBe(7);
+      expect(result.stderr).toContain("recorded failing-test");
+      const evidence = JSON.parse(readFileSync(evidencePath, "utf8"));
+      expect(evidence.packets[0].observations[0]).toMatchObject({
+        id: "failing-test",
+        exit_code: 7,
+        termination: "exited",
+      });
+      expect(evidence.packets[0].probe_results[0].status).toBe("fail");
+    } finally {
+      rmSync(campaignPath, { force: true });
+      rmSync(evidencePath, { force: true });
+    }
+  });
+
   it("runs evidence-backed decide through a replay provider", () => {
     const sift = run(["sift", "--input", request, "--replay", replay]);
     expect(sift.status).toBe(0);

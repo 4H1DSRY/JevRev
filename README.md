@@ -153,6 +153,24 @@ jevrev-evidence-template \
 Every generated status is `unknown` and every packet is `not_started`. If it is
 passed to Decide unchanged, the result is `probe_more`, never a winner.
 
+Record a probe command without hand-copying its result:
+
+```bash
+jevrev evidence run \
+  --evidence evidence.json \
+  --candidate allocation-cut \
+  --id tests \
+  --probe probe-1 \
+  --requirement success:correctness \
+  -- npm test
+```
+
+The recorder does not invoke a shell. It stores workspace-relative cwd, direct
+argv, exit code, termination mode, duration, stdout/stderr SHA-256 and byte
+counts, then atomically updates the bundle. It strips Jev API credentials from
+the child environment. The recorder returns the child exit code after saving
+the evidence, so a failed test remains visible to both the agent and Decide.
+
 ### 3. Decide from evidence
 
 ```bash

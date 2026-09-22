@@ -91,12 +91,21 @@ export const commandObservationSchema = z
   .object({
     id,
     kind: z.literal("command"),
-    argv: z.array(z.string().min(1).max(1_000)).min(1).max(64),
+    cwd: repositoryPath.optional(),
+    argv: z
+      .array(z.string().max(1_000))
+      .min(1)
+      .max(64)
+      .refine((argv) => argv[0] !== undefined && argv[0].length > 0, "executable cannot be empty"),
     exit_code: z.number().int(),
     duration_ms: z.number().int().nonnegative(),
     required: z.boolean(),
     stdout_sha256: sha256.optional(),
     stderr_sha256: sha256.optional(),
+    termination: z.enum(["exited", "timed_out", "spawn_error", "buffer_exceeded"]).optional(),
+    signal: z.string().min(1).max(64).optional(),
+    stdout_bytes: z.number().int().nonnegative().optional(),
+    stderr_bytes: z.number().int().nonnegative().optional(),
   })
   .strict();
 

@@ -69,6 +69,13 @@ creates a schema-valid handoff with `not_started` development and `unknown`
 requirements. It removes envelope boilerplate without fabricating evidence; an
 unchanged template deterministically routes to `probe_more`.
 
+`jevrev evidence run --evidence evidence.json --candidate <id> --id <id> --
+<argv...>` is the first trusted recorder. It executes argv directly without a
+shell, enforces a workspace-relative cwd, strips Jev credentials, hashes output,
+atomically updates the packet, and returns the child exit code after persisting
+the observation. Repeated `--probe` and `--requirement` flags bind the real exit
+status to frozen evidence slots.
+
 `decide` first checks deterministic evidence. Only viable finalists are sent
 to Jev (or a supported local judge) for narrow evidence questions. The result
 is one of:

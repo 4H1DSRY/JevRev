@@ -4,6 +4,7 @@ export * from "./judge.js";
 export * from "./policy.js";
 export * from "./questions.js";
 export * from "./report.js";
+export * from "./evidence/recorder.js";
 export * from "./workflow/campaign.js";
 export * from "./workflow/decide.js";
 export * from "./workflow/decide-questions.js";

@@ -69,6 +69,24 @@ Record:
 If a command fails, record the failure. Do not change `required` to false to
 make a failing observation disappear. Do not invent metric samples.
 
+Use the trusted recorder for commands whenever possible:
+
+```bash
+jevrev evidence run \
+  --evidence evidence.json \
+  --candidate <candidate-id> \
+  --id tests \
+  --probe probe-1 \
+  --requirement success:<criterion-id> \
+  -- npm test
+```
+
+The command is executed as direct argv, not through a shell. Its exit code,
+workspace-relative cwd, duration, output digests, byte counts, and termination
+mode are saved before the recorder exits. A failed child command makes the
+recorder exit nonzero but does not lose the recorded failure. Continue the
+workflow by inspecting the evidence file, not by rerunning blindly.
+
 To avoid hand-writing the envelope, create an explicitly incomplete template:
 
 ```bash
