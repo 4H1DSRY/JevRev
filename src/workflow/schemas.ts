@@ -52,6 +52,7 @@ export const campaignSchema = z
     request: rankRequestSchema,
     sift: rankResultSchema,
     work_orders: z.array(workOrderSchema).max(5),
+    review_work_orders: z.array(workOrderSchema).max(5).default([]),
   })
   .strict()
   .superRefine((campaign, context) => {
@@ -59,12 +60,19 @@ export const campaignSchema = z
       campaign.request.candidates.map((candidate) => [candidate.id, candidate]),
     );
     const workOrderIds = campaign.work_orders.map((workOrder) => workOrder.candidate_id);
+    const reviewWorkOrderIds = campaign.review_work_orders.map((workOrder) => workOrder.candidate_id);
     if (new Set(workOrderIds).size !== workOrderIds.length) {
       context.addIssue({
         code: "custom",
         path: ["work_orders"],
         message: "work-order candidate IDs must be unique",
       });
+    }
+    if (new Set(reviewWorkOrderIds).size !== reviewWorkOrderIds.length || reviewWorkOrderIds.some((id) => workOrderIds.includes(id))) {
+      context.addIssue({ code: "custom", path: ["review_work_orders"], message: "review work-order candidate IDs must be unique and separate from strict work orders" });
+    }
+    if (workOrderIds.length + reviewWorkOrderIds.length > 5) {
+      context.addIssue({ code: "custom", path: ["review_work_orders"], message: "combined probe work orders cannot exceed five" });
     }
     if (
       campaign.sift.selected.length !== workOrderIds.length ||
@@ -83,6 +91,15 @@ export const campaignSchema = z
           path: ["work_orders", index, "candidate_id"],
           message: "must reference a request candidate",
         });
+      }
+    }
+    for (const [index, workOrder] of campaign.review_work_orders.entries()) {
+      const candidate = candidates.get(workOrder.candidate_id);
+      const siftDecision = campaign.sift.decisions.find((decision) => decision.candidate_id === workOrder.candidate_id);
+      if (candidate === undefined) {
+        context.addIssue({ code: "custom", path: ["review_work_orders", index, "candidate_id"], message: "must reference a request candidate" });
+      } else if (siftDecision?.status !== "review") {
+        context.addIssue({ code: "custom", path: ["review_work_orders", index, "candidate_id"], message: "must reference a Sift review candidate" });
       }
     }
   });

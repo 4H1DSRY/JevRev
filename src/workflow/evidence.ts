@@ -83,7 +83,8 @@ export function prepareDecision(
 
   const candidates = new Map(campaign.request.candidates.map((candidate) => [candidate.id, candidate]));
   const packets = new Map(bundle.packets.map((packet) => [packet.candidate_id, packet]));
-  const expectedIds = new Set(campaign.work_orders.map((workOrder) => workOrder.candidate_id));
+  const allWorkOrders = [...campaign.work_orders, ...campaign.review_work_orders];
+  const expectedIds = new Set(allWorkOrders.map((workOrder) => workOrder.candidate_id));
   for (const packet of bundle.packets) {
     if (!expectedIds.has(packet.candidate_id)) {
       throw new ProtocolError(`Evidence references non-finalist candidate: ${packet.candidate_id}`);
@@ -106,7 +107,7 @@ export function prepareDecision(
     ...campaign.request.task.constraints.map((constraint) => `constraint:${constraint.id}`),
   ]);
 
-  const evaluations = campaign.work_orders.map((workOrder): PreparedEvaluation => {
+  const evaluations = allWorkOrders.map((workOrder): PreparedEvaluation => {
     const candidate = candidates.get(workOrder.candidate_id);
     if (candidate === undefined) {
       throw new ProtocolError(`Campaign work order references unknown candidate: ${workOrder.candidate_id}`);

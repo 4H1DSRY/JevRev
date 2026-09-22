@@ -1,6 +1,6 @@
 ---
 name: jevrev
-description: Use JevSift to narrow competing mechanisms, run bounded probes, and use recorded evidence to decide what to integrate.
+description: Use JevSift to narrow competing mechanisms, run bounded probes, decide from recorded evidence, and run JevLoop as a bounded audit checkpoint for one evolving result.
 ---
 
 # JevRev / JevSift
@@ -11,8 +11,10 @@ JevRev is the umbrella CLI. The currently implemented layers are:
   filters proposal cards and writes probe work orders. It does not prove code.
 - **Probe/Decide**: `jevrev decide`. It checks evidence and asks Jev about
   evidence sufficiency and residual risk.
-- **JevLoop** and **JevLong** are not implemented yet. Do not invent commands
-  or imply that a normal Sift run is a long-running audit loop.
+- **JevLoop** is implemented as an explicit human-controlled round protocol.
+  Use `jevrev loop create`, `loop next`, `loop audit`, and `loop status` when
+  one artifact should improve over multiple agent rounds. It never launches or
+  drives the agent. **JevLong** is not implemented; do not invent its commands.
 
 ## When to use it
 
@@ -25,6 +27,14 @@ Use JevSift when:
 
 Skip it for an obvious one-line fix, a cheap reversible change, or a task whose
 success criteria cannot be observed. Do not generate seven wording variants.
+
+Use JevLoop when one implementation should improve over several bounded rounds
+and each round can return fresh command, metric, or artifact evidence. Freeze the
+contract first, let the host agent execute the work order, and submit the
+resulting `jevrev.round-evidence`. Start with `jevrev loop evidence-template`
+when creating the envelope. For judged criteria use `--provider jev`,
+`--provider local`, `--provider semif`, or `--replay`; hard-only loops need no
+provider.
 
 ## Host-agent contract
 
@@ -43,10 +53,12 @@ Jev unless required by the task.
 3. Write the request to a temporary file and run:
 
 ```bash
-jevrev sift --input proposals.json --format json > campaign.json
+jevrev sift --input proposals.json --format json --output campaign.json
 ```
 
 4. Read `sift.selected` and `work_orders`. Do not implement rejected cards.
+   If a strong borderline idea is `review`, use `jevrev reconsider` once for
+   that candidate instead of silently treating review as approval.
    A `review` card is not approved; ask a human or revise the ideas.
 
 ### Phase B — Execute work orders
@@ -61,10 +73,12 @@ Record:
 - every command as direct argv, exit code, duration, and stdout/stderr digest;
 - raw baseline and candidate metric samples (at least two samples each);
 - a pass/fail/unknown result for every hard constraint and success criterion;
-- a pass/fail/unknown result for every `required_evidence` ID in the work order;
+- a pass/fail/unknown result for every intended criterion and protected surface;
 - changed repository-relative files, wall time, optional token/cost usage;
 - artifacts such as a diff, screenshot, or demo output by content hash;
-- known failures. Builder notes are context, never proof.
+- known failures. Builder notes are context, never proof. Work-order
+  `required_evidence` entries are prompts; criterion/protected-surface claims
+  and their cited observations are the authoritative completion proof.
 
 If a command fails, record the failure. Do not change `required` to false to
 make a failing observation disappear. Do not invent metric samples.
@@ -132,7 +146,7 @@ must be filled with actual observations before Decide.
 jevrev decide \
   --campaign campaign.json \
   --evidence evidence.json \
-  --format json > decision.json
+  --format json --output decision.json
 ```
 
 Facts are applied before Jev:

@@ -162,6 +162,14 @@ the wrong candidate.
 `work_orders` contains one entry for each strict survivor. Candidate SHA-256
 digests bind later evidence to the exact proposal.
 
+`jevrev reconsider` accepts a campaign and exactly one candidate whose Sift
+decision is `review`. It emits a `jevrev.reconsider-result`. The second pass is
+still bounded and typed: it can `promote_to_probe`, `keep_review`, or `reject`.
+A promotion includes a new campaign envelope with the review work order
+explicitly recorded; that envelope is the one to use for evidence collection
+and Decide.
+Promotion is permission to collect one probe, not permission to integrate.
+
 `jevrev decide` accepts two files:
 
 ```bash
@@ -197,6 +205,30 @@ artifact excerpts and evaluation summaries, never arbitrary repository access.
 These are normal results and exit with code `0`. Nonzero exit codes remain
 reserved for usage/input, provider, protocol, and unexpected failures. The
 complete trust model and acceptance criteria are in [`WORKFLOW.md`](WORKFLOW.md).
+
+## JevLoop wire format
+
+`jevrev loop` uses four JSON documents. A `jevrev.loop-spec` freezes the goal,
+criteria, budgets, and protected surfaces. `jevrev.round-work-order` is the
+single bounded assignment issued to the host agent. The host fills a
+`jevrev.round-evidence` envelope with recorded command observations, raw metric
+samples, and typed claims. Every claim cites evidence IDs and the envelope is
+bound to the loop, spec, work order, base revision, and current head. A
+`jevrev.round-audit-result` is the deterministic gate plus one batched Jev
+judgement for subjective criteria.
+
+Metric criteria use an absolute `target` by default. A spec may also freeze a
+numeric `baseline`; then `target` is a multiplier of that baseline (for
+example, `baseline: 100`, `target: 2` means at least `200` for a higher-is-better
+metric). This keeps relative claims explicit instead of hiding a baseline in
+free-form prose.
+
+Imported Loop artifacts must include a human-readable `summary`; they may also
+include a workspace-relative `path` and bounded `content` excerpt. The digest
+still binds the material to the artifact, while the summary/excerpt gives Jev
+something concrete to judge. Existing Sift artifact bundles are not silently
+treated as Loop evidence: copy their verified facts into the bound Loop
+envelope.
 
 ## Provider addresses
 

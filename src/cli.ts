@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 
 import { performance } from "node:perf_hooks";
-import { readFile, writeFile } from "node:fs/promises";
+import { access, stat, writeFile } from "node:fs/promises";
 import { env, stdin as input, stderr, stdout } from "node:process";
 import { pathToFileURL } from "node:url";
+import { dirname, resolve as resolvePath } from "node:path";
 import { Command, CommanderError, InvalidArgumentError } from "commander";
 import { ZodError } from "zod";
 import { InputError, ProtocolError, ProviderError } from "./domain/errors.js";
@@ -21,13 +22,22 @@ import { renderHuman, renderJson } from "./report.js";
 import { recordCommand } from "./evidence/recorder.js";
 import { recordMetric, type EvidenceResultStatus } from "./evidence/metric.js";
 import { recordArtifact } from "./evidence/artifact.js";
-import { evidenceStatus, renderEvidenceStatus } from "./evidence/status.js";
+import { evidenceNext, evidenceStatus, renderEvidenceNext, renderEvidenceStatus } from "./evidence/status.js";
 import { buildCampaign } from "./workflow/campaign.js";
 import { decideCampaign } from "./workflow/decide.js";
 import { buildDecidePlan } from "./workflow/decide-questions.js";
 import { prepareDecision } from "./workflow/evidence.js";
 import { campaignSchema, evidenceBundleSchema, metricObservationSchema } from "./workflow/schemas.js";
 import { renderCampaignHuman, renderDecideHuman, renderWorkflowJson } from "./workflow/report.js";
+import {
+  approveLoopSpecCommand, auditLoopCommand, abortLoopCommand, createLoopCommand,
+  nextLoopCommand, readLoopSpec, readRoundEvidence, readRoundPlan, renderLoopHuman,
+  resumeLoopCommand, loopStatusData, loopEvidenceTemplate, buildLoopJudge,
+} from "./loop/commands.js";
+import { loadLoop } from "./loop/store.js";
+import { parseJsonBytes, readJsonFile } from "./io/json.js";
+import { formatZodError } from "./io/validation.js";
+import { reconsiderCandidate, renderReconsiderHuman } from "./reconsider.js";
 
 type Provider = "jev" | "typesafe" | "local" | "semif";
 type OutputFormat = "human" | "json";
@@ -124,6 +134,28 @@ interface EvidenceStatusOptions {
   evidence: string;
   format: OutputFormat;
   output?: string;
+  next: boolean;
+}
+
+interface LoopFormatOptions { format: OutputFormat; output?: string }
+interface LoopCreateOptions extends LoopFormatOptions { directory: string; spec: string; baseRevision: string }
+interface LoopNextOptions extends LoopFormatOptions { directory: string; plan?: string }
+interface LoopEvidenceTemplateOptions { directory: string; headRevision: string; output?: string }
+interface LoopAuditOptions extends LoopFormatOptions { directory: string; evidence: string; replay?: string; provider: string; jevUrl?: string; localUrl?: string; semifUrl?: string; semifModel?: string; model: string }
+interface LoopDirectoryOptions extends LoopFormatOptions { directory: string }
+interface LoopApproveOptions extends LoopFormatOptions { directory: string; spec: string; approvedBy: string; reason: string; yes: boolean }
+interface LoopResumeOptions extends LoopDirectoryOptions { approvedBy: string; reason: string; yes: boolean }
+interface ReconsiderOptions extends LoopFormatOptions {
+  campaign: string;
+  candidate: string;
+  replay?: string;
+  provider: string;
+  jevUrl?: string;
+  localUrl?: string;
+  semifUrl?: string;
+  semifModel?: string;
+  model: string;
+  promotedCampaignOutput?: string;
 }
 
 function envValue(...names: string[]): string | undefined {
@@ -134,25 +166,16 @@ function envValue(...names: string[]): string | undefined {
   return undefined;
 }
 
-async function readStdin(): Promise<string> {
-  input.setEncoding("utf8");
-  let content = "";
-  for await (const chunk of input) content += chunk;
-  return content;
+async function readStdinBytes(): Promise<Buffer> {
+  const chunks: Buffer[] = [];
+  for await (const chunk of input) {
+    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+  }
+  return Buffer.concat(chunks);
 }
 
 async function readJson(path: string): Promise<unknown> {
-  let content: string;
-  try {
-    content = path === "-" ? await readStdin() : await readFile(path, "utf8");
-  } catch (error) {
-    throw new InputError(`Could not read ${path}`, { cause: error });
-  }
-  try {
-    return JSON.parse(content) as unknown;
-  } catch (error) {
-    throw new InputError(`Could not parse JSON from ${path}`, { cause: error });
-  }
+  return path === "-" ? parseJsonBytes(await readStdinBytes(), "stdin") : readJsonFile(path);
 }
 
 function parsePositiveInteger(value: string): number {
@@ -240,7 +263,7 @@ async function evaluateRank(options: RankOptions) {
     }
   } catch (error) {
     if (error instanceof ZodError) {
-      throw new InputError(`Invalid rank request: ${error.message}`, { cause: error });
+      throw new InputError(`Invalid rank request: ${formatZodError(error)}. See examples/parser-speedup.json.`, { cause: error });
     }
     throw error;
   }
@@ -291,6 +314,39 @@ async function runSift(options: RankOptions): Promise<void> {
   );
 }
 
+async function runReconsider(options: ReconsiderOptions): Promise<void> {
+  validateFormat(options.format);
+  await validateOutputTarget(options.output);
+  await validateOutputTarget(options.promotedCampaignOutput);
+  let campaign;
+  try {
+    campaign = campaignSchema.parse(await readJson(options.campaign));
+  } catch (error) {
+    if (error instanceof ZodError) throw new InputError(`Invalid reconsider campaign: ${formatZodError(error)}.`, { cause: error });
+    throw error;
+  }
+  const replay = options.replay === undefined ? undefined : await readJson(options.replay);
+  const provider = loopProvider(options.provider);
+  const judge = buildLoopJudge({
+    provider,
+    ...(replay === undefined ? {} : { replay }),
+    ...(options.jevUrl === undefined ? {} : { jevUrl: options.jevUrl }),
+    ...(options.localUrl === undefined ? {} : { localUrl: options.localUrl }),
+    ...(options.semifUrl === undefined ? {} : { semifUrl: options.semifUrl }),
+    ...(options.semifModel === undefined ? {} : { semifModel: options.semifModel }),
+    model: options.model,
+    ...(envValue("JEVREV_JEV_API_KEY", "TYPESAFE_API_KEY") === undefined ? {} : { apiKey: envValue("JEVREV_JEV_API_KEY", "TYPESAFE_API_KEY")! }),
+  });
+  if (judge === undefined) throw new ProviderError("A judge provider is required for reconsider");
+  const result = await reconsiderCandidate(campaign, options.candidate, judge, {
+    providerProfile: replay === undefined ? `${provider}/${options.model}` : "replay",
+  });
+  if (options.promotedCampaignOutput !== undefined && result.promoted_campaign !== null) {
+    await emit(`${JSON.stringify(result.promoted_campaign, null, 2)}\n`, options.promotedCampaignOutput);
+  }
+  await emit(options.format === "json" ? `${JSON.stringify(result, null, 2)}\n` : renderReconsiderHuman(result), options.output);
+}
+
 async function runDecide(options: DecideOptions): Promise<void> {
   const rawCampaign = await readJson(options.campaign);
   const rawEvidence = await readJson(options.evidence);
@@ -301,7 +357,7 @@ async function runDecide(options: DecideOptions): Promise<void> {
     bundle = evidenceBundleSchema.parse(rawEvidence);
   } catch (error) {
     if (error instanceof ZodError) {
-      throw new InputError(`Invalid decide input: ${error.message}`, { cause: error });
+      throw new InputError(`Invalid decide input: ${formatZodError(error)}.`, { cause: error });
     }
     throw error;
   }
@@ -482,6 +538,191 @@ function addRankCommand(program: Command, name: "run" | "rank" | "sift"): void {
     });
 }
 
+async function validateOutputTarget(outputPath: string | undefined): Promise<void> {
+  if (outputPath === undefined) return;
+  const target = resolvePath(outputPath);
+  try {
+    const metadata = await stat(target);
+    if (metadata.isDirectory()) throw new InputError(`Output path is a directory: ${outputPath}`);
+    try {
+      await access(target, 2);
+    } catch (error) {
+      throw new InputError(`Output path is not writable: ${outputPath}`, { cause: error });
+    }
+  } catch (error) {
+    if (error instanceof InputError) throw error;
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+      throw new InputError(`Output path is not accessible: ${outputPath}`, { cause: error });
+    }
+    try {
+      await access(dirname(target), 3);
+    } catch (parentError) {
+      throw new InputError(`Output path is not writable: ${outputPath}`, { cause: parentError });
+    }
+  }
+}
+
+async function emitLoopStatus(loop: Awaited<ReturnType<typeof loadLoop>>, options: LoopFormatOptions): Promise<void> {
+  validateFormat(options.format);
+  await emit(options.format === "json" ? `${JSON.stringify(loopStatusData(loop), null, 2)}\n` : renderLoopHuman(loop), options.output);
+}
+
+function loopProvider(value: string): "jev" | "local" | "semif" {
+  const provider = normalizedProvider(parseProvider(value));
+  return provider;
+}
+
+async function runLoopCreate(options: LoopCreateOptions): Promise<void> {
+  validateFormat(options.format);
+  await validateOutputTarget(options.output);
+  const spec = await readLoopSpec(options.spec);
+  const loop = await createLoopCommand(options.directory, spec, options.baseRevision);
+  await emitLoopStatus(loop, options);
+}
+
+async function runLoopNext(options: LoopNextOptions): Promise<void> {
+  validateFormat(options.format);
+  await validateOutputTarget(options.output);
+  const plan = options.plan === undefined ? undefined : await readRoundPlan(options.plan);
+  const issued = await nextLoopCommand(options.directory, plan);
+  validateFormat(options.format);
+  const rendered = options.format === "json" ? `${JSON.stringify(issued.order, null, 2)}\n` : [
+    `round ${issued.order.round_number}  ${issued.order.mode}`,
+    `goal: ${issued.order.round_goal}`,
+    `base: ${issued.order.base_revision}`,
+    `focus: ${issued.order.focus_criteria.join(", ")}`,
+    `evidence slots: ${issued.order.required_evidence.length}`,
+    issued.issued ? "issued: yes" : "issued: already active",
+    "The agent owns execution; submit a round-evidence JSON to `jevrev loop audit`.",
+    "",
+  ].join("\n");
+  await emit(rendered, options.output);
+}
+
+async function runLoopEvidenceTemplate(options: LoopEvidenceTemplateOptions): Promise<void> {
+  await validateOutputTarget(options.output);
+  const loop = await loadLoop(options.directory);
+  const template = loopEvidenceTemplate(loop, options.headRevision);
+  await emit(`${JSON.stringify(template, null, 2)}\n`, options.output);
+}
+
+async function runLoopAudit(options: LoopAuditOptions): Promise<void> {
+  validateFormat(options.format);
+  await validateOutputTarget(options.output);
+  const evidence = await readRoundEvidence(options.evidence);
+  const replay = options.replay === undefined ? undefined : await readJson(options.replay);
+  const result = await auditLoopCommand(options.directory, evidence, {
+    provider: loopProvider(options.provider),
+    ...(replay === undefined ? {} : { replay }),
+    ...(options.jevUrl === undefined ? {} : { jevUrl: options.jevUrl }),
+    ...(options.localUrl === undefined ? {} : { localUrl: options.localUrl }),
+    ...(options.semifUrl === undefined ? {} : { semifUrl: options.semifUrl }),
+    ...(options.semifModel === undefined ? {} : { semifModel: options.semifModel }),
+    model: options.model,
+    ...(envValue("JEVREV_JEV_API_KEY", "TYPESAFE_API_KEY") === undefined ? {} : { apiKey: envValue("JEVREV_JEV_API_KEY", "TYPESAFE_API_KEY")! }),
+  });
+  const rendered = options.format === "json" ? `${JSON.stringify(result.result, null, 2)}\n` : [
+    `round ${result.result.round_number}  ${result.result.outcome}`,
+    `progress: ${result.result.material_progress ? "material" : "stalled"}`,
+    `blocking: ${result.result.blocking_criteria.join(", ") || "none"}`,
+    `next: ${result.result.next_action.type}${result.result.next_action.focus_criteria.length ? ` (${result.result.next_action.focus_criteria.join(", ")})` : ""}`,
+    result.result.next_action.reason,
+    "",
+  ].join("\n");
+  await emit(rendered, options.output);
+}
+
+async function runLoopMutation(options: LoopDirectoryOptions, mutation: (directory: string) => Promise<Awaited<ReturnType<typeof loadLoop>>>): Promise<void> {
+  validateFormat(options.format);
+  await validateOutputTarget(options.output);
+  await emitLoopStatus(await mutation(options.directory), options);
+}
+
+async function runLoopApprove(options: LoopApproveOptions): Promise<void> {
+  validateFormat(options.format);
+  await validateOutputTarget(options.output);
+  if (!options.yes) throw new InputError("Spec approval changes the frozen contract; pass --yes to confirm the human decision");
+  const spec = await readLoopSpec(options.spec);
+  await emitLoopStatus(await approveLoopSpecCommand(options.directory, spec, options.approvedBy, options.reason), options);
+}
+
+async function runLoopResume(options: LoopResumeOptions): Promise<void> {
+  validateFormat(options.format);
+  await validateOutputTarget(options.output);
+  if (!options.yes) throw new InputError("Resuming a paused loop changes its human boundary; pass --yes to confirm the human decision");
+  await emitLoopStatus(await resumeLoopCommand(options.directory, options.approvedBy, options.reason), options);
+}
+
+function addLoopCommand(program: Command): void {
+  const loop = program.command("loop").description("Human-controlled JevLoop round protocol");
+  loop.command("create")
+    .description("Create a frozen single-artifact loop")
+    .requiredOption("--directory <path>", "new loop directory")
+    .requiredOption("--spec <path>", "Loop spec JSON")
+    .requiredOption("--base-revision <revision>", "starting workspace revision")
+    .option("--format <format>", "human or json", "human")
+    .option("-o, --output <path>", "write result to a file")
+    .action(async (raw: LoopCreateOptions) => runLoopCreate(raw));
+  loop.command("next")
+    .description("Issue one agent work order; this command never runs the agent")
+    .requiredOption("--directory <path>", "loop directory")
+    .option("--plan <path>", "progress round plan JSON; completion rounds derive their plan")
+    .option("--format <format>", "human or json", "human")
+    .option("-o, --output <path>", "write result to a file")
+    .action(async (raw: LoopNextOptions) => runLoopNext(raw));
+  loop.command("evidence-template")
+    .description("Create an incomplete round-evidence envelope for the active work order")
+    .requiredOption("--directory <path>", "loop directory")
+    .requiredOption("--head-revision <revision>", "current artifact revision")
+    .option("-o, --output <path>", "write evidence JSON to a file")
+    .action(async (raw: LoopEvidenceTemplateOptions) => runLoopEvidenceTemplate(raw));
+  loop.command("audit")
+    .description("Audit submitted round evidence and append one decision")
+    .requiredOption("--directory <path>", "loop directory")
+    .requiredOption("--evidence <path>", "round-evidence JSON")
+    .option("--provider <provider>", "jev, semif, or local", envValue("JEVREV_PROVIDER", "SPECJEV_PROVIDER") ?? "jev")
+    .option("--replay <path>", "captured Jev response JSON")
+    .option("--jev-url <url>", "Jev API root", envValue("JEVREV_JEV_URL", "TYPESAFE_BASE_URL"))
+    .option("--local-url <url>", "local scorer base URL", envValue("JEVREV_LOCAL_URL", "SPECJEV_LOCAL_URL"))
+    .option("--semif-url <url>", "SemIf base URL", envValue("JEVREV_SEMIF_URL", "SPECJEV_SEMIF_URL"))
+    .option("--semif-model <model>", "SemIf model", envValue("JEVREV_SEMIF_MODEL", "SPECJEV_SEMIF_MODEL"))
+    .option("--model <model>", "Jev model", envValue("JEVREV_JEV_MODEL", "TYPESAFE_DEFAULT_MODEL") ?? "jev-latest")
+    .option("--format <format>", "human or json", "human")
+    .option("-o, --output <path>", "write result to a file")
+    .action(async (raw: LoopAuditOptions) => runLoopAudit(raw));
+  loop.command("status")
+    .description("Show the reconstructed loop state")
+    .requiredOption("--directory <path>", "loop directory")
+    .option("--format <format>", "human or json", "human")
+    .option("-o, --output <path>", "write result to a file")
+    .action(async (raw: LoopDirectoryOptions) => runLoopMutation(raw, loadLoop));
+  loop.command("resume")
+    .description("Human-confirm resumption after a human or budget pause")
+    .requiredOption("--directory <path>", "loop directory")
+    .requiredOption("--approved-by <name>", "human approver attestation")
+    .requiredOption("--reason <text>", "why the loop resumes")
+    .option("--yes", "confirm this human decision", false)
+    .option("--format <format>", "human or json", "human")
+    .option("-o, --output <path>", "write result to a file")
+    .action(async (raw: LoopResumeOptions) => runLoopResume(raw));
+  loop.command("abort")
+    .description("End a loop without claiming success")
+    .requiredOption("--directory <path>", "loop directory")
+    .option("--format <format>", "human or json", "human")
+    .option("-o, --output <path>", "write result to a file")
+    .action(async (raw: LoopDirectoryOptions) => runLoopMutation(raw, abortLoopCommand));
+  loop.command("approve")
+    .description("Human-approve a new frozen spec revision")
+    .requiredOption("--directory <path>", "loop directory")
+    .requiredOption("--spec <path>", "new spec JSON")
+    .requiredOption("--approved-by <name>", "human approver attestation")
+    .requiredOption("--reason <text>", "why the frozen contract changes")
+    .option("--yes", "confirm this human decision", false)
+    .option("--format <format>", "human or json", "human")
+    .option("-o, --output <path>", "write result to a file")
+    .action(async (raw: LoopApproveOptions) => runLoopApprove(raw));
+}
+
 function createProgram(): Command {
   const program = new Command()
     .name("jevrev")
@@ -493,6 +734,23 @@ function createProgram(): Command {
   addRankCommand(program, "run");
   addRankCommand(program, "rank");
   addRankCommand(program, "sift");
+  program
+    .command("reconsider")
+    .description("Re-evaluate one Sift review candidate for a single bounded probe")
+    .requiredOption("--campaign <path>", "campaign JSON")
+    .requiredOption("--candidate <id>", "review candidate ID")
+    .option("--replay <path>", "use a captured reconsider response")
+    .option("--format <format>", "human or json", "human")
+    .option("--provider <provider>", "jev, semif, or local", envValue("JEVREV_PROVIDER", "SPECJEV_PROVIDER") ?? "jev")
+    .option("--jev-url <url>", "Jev API root", envValue("JEVREV_JEV_URL", "TYPESAFE_BASE_URL"))
+    .option("--local-url <url>", "legacy local scorer base URL", envValue("JEVREV_LOCAL_URL", "SPECJEV_LOCAL_URL"))
+    .option("--semif-url <url>", "SemIf base URL", envValue("JEVREV_SEMIF_URL", "SPECJEV_SEMIF_URL"))
+    .option("--semif-model <model>", "SemIf model", envValue("JEVREV_SEMIF_MODEL", "SPECJEV_SEMIF_MODEL"))
+    .option("--model <model>", "Jev model", envValue("JEVREV_JEV_MODEL", "TYPESAFE_DEFAULT_MODEL") ?? "jev-latest")
+    .option("--promoted-campaign-output <path>", "write the promoted campaign envelope when reconsider succeeds")
+    .option("-o, --output <path>", "write the rendered result to a file")
+    .action(async (raw: ReconsiderOptions) => runReconsider(raw));
+  addLoopCommand(program);
 
   program
     .command("decide")
@@ -674,14 +932,16 @@ function createProgram(): Command {
     .requiredOption("--campaign <path>", "campaign JSON")
     .requiredOption("--evidence <path>", "evidence bundle JSON")
     .option("--format <format>", "human or json", "human")
+    .option("--next", "show the first missing evidence item for resuming", false)
     .option("-o, --output <path>", "write status to a file")
     .action(async (rawOptions: EvidenceStatusOptions) => {
       validateFormat(rawOptions.format);
       const result = await evidenceStatus(rawOptions.campaign, rawOptions.evidence);
+      const next = rawOptions.next ? evidenceNext(result) : undefined;
       await emit(
         rawOptions.format === "json"
-          ? `${JSON.stringify(result, null, 2)}\n`
-          : `${renderEvidenceStatus(result)}\n`,
+          ? `${JSON.stringify(next ?? result, null, 2)}\n`
+          : rawOptions.next ? renderEvidenceNext(next!) : `${renderEvidenceStatus(result)}\n`,
         rawOptions.output,
       );
     });

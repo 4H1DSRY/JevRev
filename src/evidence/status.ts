@@ -1,9 +1,10 @@
-import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { InputError } from "../domain/errors.js";
 import { prepareDecision } from "../workflow/evidence.js";
 import { campaignSchema, type Campaign } from "../workflow/schemas.js";
 import { readEvidenceBundle } from "./store.js";
+import { readJsonFile } from "../io/json.js";
+import { formatZodError } from "../io/validation.js";
 
 export interface EvidenceStatusResult {
   kind: "jevrev.evidence-status";
@@ -34,11 +35,20 @@ export interface EvidenceStatusResult {
   }>;
 }
 
+export interface EvidenceNextResult {
+  kind: "jevrev.evidence-next";
+  schema_version: "1";
+  campaign_id: string;
+  candidate_id: string | null;
+  action: "collect_evidence" | "ready_for_decide" | "revise_or_stop";
+  item: { kind: "requirement" | "probe"; id: string; description: string } | null;
+}
+
 async function readCampaign(pathInput: string): Promise<Campaign> {
   const path = resolve(pathInput);
   try {
-    const parsed = campaignSchema.safeParse(JSON.parse(await readFile(path, "utf8")));
-    if (!parsed.success) throw new InputError(`Invalid campaign: ${parsed.error.message}`);
+    const parsed = campaignSchema.safeParse(await readJsonFile(path));
+    if (!parsed.success) throw new InputError(`Invalid campaign: ${formatZodError(parsed.error)}`);
     return parsed.data;
   } catch (error) {
     if (error instanceof InputError) throw error;
@@ -55,7 +65,7 @@ export async function evidenceStatus(
     readEvidenceBundle(evidencePath),
   ]);
   const prepared = prepareDecision(campaign, evidence.bundle);
-  const candidates = campaign.work_orders.map((workOrder) => {
+  const candidates = [...campaign.work_orders, ...campaign.review_work_orders].map((workOrder) => {
     const evaluation = prepared.evaluations.find(
       (item) => item.candidate_id === workOrder.candidate_id,
     )!;
@@ -150,4 +160,44 @@ export function renderEvidenceStatus(result: EvidenceStatusResult): string {
     lines.push(`  next: ${candidate.next_action}`, "");
   }
   return lines.join("\n");
+}
+
+export function evidenceNext(result: EvidenceStatusResult): EvidenceNextResult {
+  const candidate = result.candidates.find((item) => item.state === "incomplete")
+    ?? result.candidates.find((item) => item.state === "ready")
+    ?? result.candidates[0];
+  if (candidate === undefined) {
+    return { kind: "jevrev.evidence-next", schema_version: "1", campaign_id: result.campaign_id, candidate_id: null, action: "ready_for_decide", item: null };
+  }
+  if (candidate.state === "ready") {
+    return { kind: "jevrev.evidence-next", schema_version: "1", campaign_id: result.campaign_id, candidate_id: candidate.candidate_id, action: "ready_for_decide", item: null };
+  }
+  if (candidate.state === "rejected") {
+    return { kind: "jevrev.evidence-next", schema_version: "1", campaign_id: result.campaign_id, candidate_id: candidate.candidate_id, action: "revise_or_stop", item: null };
+  }
+  const missingRequirement = candidate.requirements.find((item) => item.status === "unknown");
+  if (missingRequirement !== undefined) {
+    return {
+      kind: "jevrev.evidence-next", schema_version: "1", campaign_id: result.campaign_id,
+      candidate_id: candidate.candidate_id, action: "collect_evidence",
+      item: { kind: "requirement", id: `${missingRequirement.kind}:${missingRequirement.id}`, description: `Record evidence for ${missingRequirement.kind}:${missingRequirement.id}` },
+    };
+  }
+  const missingProbe = candidate.probes.find((item) => item.status === "unknown");
+  return missingProbe === undefined
+    ? { kind: "jevrev.evidence-next", schema_version: "1", campaign_id: result.campaign_id, candidate_id: candidate.candidate_id, action: "collect_evidence", item: null }
+    : {
+        kind: "jevrev.evidence-next", schema_version: "1", campaign_id: result.campaign_id,
+        candidate_id: candidate.candidate_id, action: "collect_evidence",
+        item: { kind: "probe", id: missingProbe.id, description: missingProbe.description },
+      };
+}
+
+export function renderEvidenceNext(result: EvidenceNextResult): string {
+  if (result.item === null) {
+    return result.candidate_id === null
+      ? `JevRev evidence ${result.campaign_id}\nNo finalist requires more evidence.\nNext: ${result.action}\n`
+      : `JevRev evidence ${result.campaign_id}\nCandidate ${result.candidate_id}\nNext: ${result.action}\n`;
+  }
+  return `JevRev evidence ${result.campaign_id}\nCandidate ${result.candidate_id}\nNext ${result.item.kind}: ${result.item.id}\n${result.item.description}\n`;
 }

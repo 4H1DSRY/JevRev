@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+- Accept UTF-8 BOM and UTF-16 JSON files, including PowerShell 5.1 output, and
+  replace raw validation dumps with path-based CLI errors.
+- Add `jevrev reconsider` for an explicit second pass on one Sift review
+  candidate; promotion creates only a bounded probe work order.
+- Add `jevrev evidence status --next` as a read-only resume hint for interrupted
+  evidence collection.
+
 ## 0.2.0 — 2026-09-21
 
 - Add `sift` campaigns with bounded probe work orders while preserving the
@@ -18,6 +27,9 @@
   captures argv, cwd, exit status, duration and output digests into evidence.
 - Add evidence metric/artifact recorders and a status command so an agent can
   reach Decide without manually editing the evidence envelope.
+- Add JevLoop: frozen single-artifact specs, bounded work orders, hash-chained
+  event storage, evidence audits, scope/budget gates, resume/abort/approval,
+  replay/local providers, and the `loop evidence-template` CLI command.
 
 ## 0.1.1 — 2026-09-21
 
