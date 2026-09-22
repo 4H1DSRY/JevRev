@@ -6,4 +6,6 @@ coverage/
 *.tgz
 benchmarks/results/
 pack-smoke-final/
+/output/
+/.playwright-cli/
 .tmp-cli-audit-*/

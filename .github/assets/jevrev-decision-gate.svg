@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="490" viewBox="0 0 680 490" role="img" aria-labelledby="title desc">
+  <title id="title">Correctness reverses the delimiter-counter proposal ranking</title>
+  <desc id="desc">A CSV scanner needs more throughput without changing quoted fields. Sift ranks regex-shortcut at 0.9593 and indexed-state-machine at 0.8773, selecting paths to test rather than proving them. Both receive five correctness cases and seven baseline and candidate benchmark samples. Each has two command records, one metric group, and one implementation artifact. The regex is faster locally but passes only two of five cases and is rejected. The state machine passes all five, becomes ready, and wins at Decide with score 0.928. The final route is winner to integrate_winner. Local throughput varies by machine; correctness controls this reversal.</desc>
+  <style>
+    svg { color-scheme: light dark; }
+    .paper { fill: #f4f1e9; }
+    .ink { fill: #232620; }
+    .muted { fill: #55594f; }
+    .rule { fill: none; stroke: #929486; stroke-width: 1.5; }
+    .route { fill: none; stroke: #232620; stroke-width: 2; }
+    .fail { fill: #923725; }
+    .winner { fill: #232620; }
+    .reverse { fill: #f4f1e9; }
+    text { font-family: Arial, Helvetica, sans-serif; font-size: 24px; }
+    .mono { font-family: Consolas, 'Courier New', monospace; }
+    .label { font-size: 21px; font-weight: 700; letter-spacing: 1px; }
+    .name { font-size: 25px; font-weight: 700; }
+    @media (prefers-color-scheme: dark) {
+      .paper { fill: #1b1e1a; }
+      .ink { fill: #eee9dc; }
+      .muted { fill: #c0bdae; }
+      .rule { stroke: #797e70; }
+      .route { stroke: #eee9dc; }
+      .fail { fill: #ef9a83; }
+      .winner { fill: #eee9dc; }
+      .reverse { fill: #1b1e1a; }
+    }
+  </style>
+  <rect class="paper" width="680" height="490"/>
+  <g class="ink">
+    <text x="28" y="35">CSV scanner: faster, same quoted fields.</text>
+    <path class="route" d="M340 47v12H180v14m160-14h160v14"/>
+    <path class="route" d="m174 67 6 6 6-6m308 0 6 6 6-6"/>
+    <text x="28" y="101" class="label">SIFT FAVORITE</text>
+    <text x="364" y="101" class="label">SECOND PROPOSAL</text>
+    <text x="28" y="136" class="name mono">regex-shortcut</text>
+    <text x="364" y="130" class="name mono">indexed-</text>
+    <text x="364" y="158" class="name mono">state-machine</text>
+    <text x="28" y="190" class="muted mono">Sift 0.9593</text>
+    <text x="364" y="190" class="muted mono">Sift 0.8773</text>
+    <path class="rule" d="M28 207h624M340 88v104"/>
+    <text x="340" y="236" class="label" text-anchor="middle">SAME PROBE CONTRACT</text>
+    <text x="340" y="266" text-anchor="middle">5 correctness cases + 7 benchmark samples</text>
+    <text x="340" y="296" class="muted" text-anchor="middle">Sift chooses what to test, not what is proven.</text>
+    <path class="rule" d="M28 310h624"/>
+    <path class="route" d="M180 310v15m-5-5 5 5 5-5m315-10v15m-5-5 5 5 5-5"/>
+    <text x="28" y="352">Faster locally</text>
+    <text x="364" y="352">Faster locally</text>
+    <text x="28" y="382" class="fail">2 / 5 passed; 3 failed</text>
+    <text x="364" y="382">5 / 5 passed</text>
+    <path class="rule" d="M340 337v77"/>
+    <text x="28" y="412" class="label fail">REJECTED</text>
+    <text x="364" y="412" class="label">READY → WINNER</text>
+    <path class="route" d="M500 419v14m-5-5 5 5 5-5"/>
+  </g>
+  <rect x="28" y="438" width="624" height="36" class="winner"/>
+  <text x="48" y="464" class="reverse mono" font-weight="700">Decide: winner → integrate_winner</text>
+</svg>

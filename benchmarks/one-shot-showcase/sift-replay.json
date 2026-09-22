@@ -1,0 +1,45 @@
+{
+  "model": "jev-showcase-deterministic-replay",
+  "candidate_order": [
+    "black-violet-interface-grid",
+    "painterly-evidence-dossier",
+    "terminal-proof-stack",
+    "minimal-docs-masthead"
+  ],
+  "answers": {
+    "candidate_0_goal_fit": { "type": "score", "score": 2.3, "confidence": 0.84, "legend": { "0": "none", "1": "small", "2": "material", "3": "likely" }, "probabilities": { "0": 0.02, "1": 0.08, "2": 0.48, "3": 0.42 } },
+    "candidate_0_constraint_fit": { "type": "noul", "noul": 0.96 },
+    "candidate_0_feasibility": { "type": "score", "score": 2.9, "confidence": 0.93, "legend": { "0": "flawed", "1": "unknown", "2": "plausible", "3": "ready" }, "probabilities": { "0": 0.01, "1": 0.01, "2": 0.08, "3": 0.9 } },
+    "candidate_0_validation_quality": { "type": "score", "score": 2.2, "confidence": 0.82, "legend": { "0": "none", "1": "weak", "2": "useful", "3": "falsifiable" }, "probabilities": { "0": 0.02, "1": 0.1, "2": 0.56, "3": 0.32 } },
+    "candidate_0_execution_value": { "type": "noul", "noul": 0.62 },
+
+    "candidate_1_goal_fit": { "type": "score", "score": 3.0, "confidence": 0.96, "legend": { "0": "none", "1": "small", "2": "material", "3": "likely" }, "probabilities": { "0": 0, "1": 0.01, "2": 0.03, "3": 0.96 } },
+    "candidate_1_constraint_fit": { "type": "noul", "noul": 0.98 },
+    "candidate_1_feasibility": { "type": "score", "score": 2.8, "confidence": 0.91, "legend": { "0": "flawed", "1": "unknown", "2": "plausible", "3": "ready" }, "probabilities": { "0": 0, "1": 0.02, "2": 0.16, "3": 0.82 } },
+    "candidate_1_validation_quality": { "type": "score", "score": 2.9, "confidence": 0.94, "legend": { "0": "none", "1": "weak", "2": "useful", "3": "falsifiable" }, "probabilities": { "0": 0, "1": 0.01, "2": 0.08, "3": 0.91 } },
+    "candidate_1_execution_value": { "type": "noul", "noul": 0.97 },
+
+    "candidate_2_goal_fit": { "type": "score", "score": 2.4, "confidence": 0.8, "legend": { "0": "none", "1": "small", "2": "material", "3": "likely" }, "probabilities": { "0": 0.02, "1": 0.08, "2": 0.4, "3": 0.5 } },
+    "candidate_2_constraint_fit": { "type": "noul", "noul": 0.7 },
+    "candidate_2_feasibility": { "type": "score", "score": 1.8, "confidence": 0.78, "legend": { "0": "flawed", "1": "unknown", "2": "plausible", "3": "ready" }, "probabilities": { "0": 0.08, "1": 0.27, "2": 0.5, "3": 0.15 } },
+    "candidate_2_validation_quality": { "type": "score", "score": 2.3, "confidence": 0.8, "legend": { "0": "none", "1": "weak", "2": "useful", "3": "falsifiable" }, "probabilities": { "0": 0.03, "1": 0.09, "2": 0.46, "3": 0.42 } },
+    "candidate_2_execution_value": { "type": "noul", "noul": 0.48 },
+
+    "candidate_3_goal_fit": { "type": "score", "score": 2.0, "confidence": 0.82, "legend": { "0": "none", "1": "small", "2": "material", "3": "likely" }, "probabilities": { "0": 0.03, "1": 0.16, "2": 0.59, "3": 0.22 } },
+    "candidate_3_constraint_fit": { "type": "noul", "noul": 0.98 },
+    "candidate_3_feasibility": { "type": "score", "score": 2.9, "confidence": 0.94, "legend": { "0": "flawed", "1": "unknown", "2": "plausible", "3": "ready" }, "probabilities": { "0": 0, "1": 0.01, "2": 0.08, "3": 0.91 } },
+    "candidate_3_validation_quality": { "type": "score", "score": 2.3, "confidence": 0.84, "legend": { "0": "none", "1": "weak", "2": "useful", "3": "falsifiable" }, "probabilities": { "0": 0.02, "1": 0.08, "2": 0.49, "3": 0.41 } },
+    "candidate_3_execution_value": { "type": "noul", "noul": 0.55 },
+
+    "pair_0_1_duplicate": { "type": "noul", "noul": 0.08 },
+    "pair_0_2_duplicate": { "type": "noul", "noul": 0.06 },
+    "pair_0_3_duplicate": { "type": "noul", "noul": 0.09 },
+    "pair_1_2_duplicate": { "type": "noul", "noul": 0.05 },
+    "pair_1_3_duplicate": { "type": "noul", "noul": 0.04 },
+    "pair_2_3_duplicate": { "type": "noul", "noul": 0.07 }
+  },
+  "usage": {
+    "input_tokens": 0,
+    "output_tokens": 0
+  }
+}

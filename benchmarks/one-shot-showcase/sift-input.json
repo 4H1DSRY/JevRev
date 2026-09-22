@@ -1,0 +1,64 @@
+{
+  "version": "1",
+  "task": {
+    "goal": "Choose one design direction whose architecture makes JevRev's evidence-led routing useful, inspectable, and visually specific.",
+    "context": "The page targets developers using coding agents. It must preserve the frozen copy and behaviors in benchmarks/one-shot-showcase/input.json. The existing hand-drawn skull is a strong anchor. The page is a public landing page, not an application dashboard.",
+    "constraints": [
+      { "id": "copy", "text": "Preserve the frozen copy and add no performance, cost, customer, or production claims", "kind": "hard" },
+      { "id": "dependencies", "text": "Use local HTML, CSS, JavaScript, system fonts, and the existing banner only", "kind": "hard" },
+      { "id": "access", "text": "Support keyboard focus, responsive layouts, light and dark modes, and reduced-motion preferences", "kind": "hard" },
+      { "id": "function", "text": "Every interaction must clarify a real decision or evidence relationship", "kind": "hard" },
+      { "id": "scope", "text": "Fit within a static MVP and remain easy to inspect locally", "kind": "soft" }
+    ],
+    "success": [
+      { "id": "clarity", "text": "A first-time reader can explain Sift, Probe, and Decide from the page" },
+      { "id": "causality", "text": "The proposal ranking and evidence reversal are visibly connected" },
+      { "id": "identity", "text": "The composition feels native to JevRev and preserves the skull anchor" },
+      { "id": "density", "text": "Text and interaction carry useful information without decorative clutter" },
+      { "id": "inspect", "text": "Desktop, mobile, keyboard, theme, and reduced-motion states can be checked without external services" }
+    ]
+  },
+  "budget": { "max_survivors": 1 },
+  "candidates": [
+    {
+      "id": "black-violet-interface-grid",
+      "title": "Black violet interface grid",
+      "summary": "Use heavy sans typography, black-violet gradients, repeated rectangular frames, and a familiar feature grid.",
+      "mechanism": "Center the value proposition inside nested sharp frames, repeat equal bordered modules for the workflow and proof, and use a violet gradient for primary actions.",
+      "assumptions": ["Familiar AI tool conventions reduce scanning effort", "Repeated frames create enough visual structure without imagery"],
+      "risks": ["The page may remain interchangeable with generic generated landing pages", "Equal modules can obscure the evidence reversal"],
+      "validation": ["Check copy and behavior contract", "Capture desktop and mobile presentations", "Verify anchors, focus, theme, and command copy"],
+      "effort": "small"
+    },
+    {
+      "id": "painterly-evidence-dossier",
+      "title": "Painterly evidence dossier",
+      "summary": "Build a literary noir case file where the skull, decision stages, and ranking reversal share one functional visual language.",
+      "mechanism": "Use the hand-drawn skull as a cropped hero anchor, a restrained paper and rust palette, serif case headings, sharp dossier borders, a keyboard-accessible Sift-Probe-Decide rail, and a proposal-versus-evidence lens that changes the candidate route in place.",
+      "assumptions": ["The existing illustration can support a painterly case-file language", "Developers benefit when interaction exposes the causal transition from proposal to evidence"],
+      "risks": ["Expressive material treatment can reduce legibility if contrast or texture is not controlled", "High information density must collapse carefully on mobile"],
+      "validation": ["Test all decision and evidence states with mouse and keyboard", "Inspect hero, workflow, proof, and install hierarchy at 1440px and 390px", "Verify theme parity, reduced motion, console, focus, and overflow"],
+      "effort": "medium"
+    },
+    {
+      "id": "terminal-proof-stack",
+      "title": "Terminal proof stack",
+      "summary": "Lead with executable commands and arrange the case as a dense monochrome terminal transcript.",
+      "mechanism": "Use a documentation shell, monospace typography, command-first onboarding, collapsible probe logs, and a compact final decision block.",
+      "assumptions": ["Developer audiences will privilege inspectability over brand expression", "Command density can make evidence feel concrete"],
+      "risks": ["A terminal motif can simulate product output instead of explaining it", "The skull and broader brand voice become incidental"],
+      "validation": ["Check that every displayed command maps to the committed workflow", "Inspect reading order and mobile wrapping", "Verify no simulated result is mistaken for live output"],
+      "effort": "small"
+    },
+    {
+      "id": "minimal-docs-masthead",
+      "title": "Minimal documentation masthead",
+      "summary": "Use a quiet documentation layout with the install command first and a compact proof below.",
+      "mechanism": "Lead with short technical copy and installation, present workflow as restrained text sections, then place the existing banner beside a concise ranking reversal.",
+      "assumptions": ["Immediate setup is the primary reader need", "Minimal styling will keep attention on the product boundary"],
+      "risks": ["The decision model can read as undifferentiated documentation", "The page may not make the route reversal memorable"],
+      "validation": ["Time access to installation", "Check content and anchor completeness", "Inspect desktop and mobile hierarchy"],
+      "effort": "small"
+    }
+  ]
+}

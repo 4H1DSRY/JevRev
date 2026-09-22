@@ -154,9 +154,11 @@ and is not stored in this repository.
 - `review` candidates remain unresolved; `shortlist` makes them visible to the
   host agent without silently approving them.
 - Sift evidence is recorded through the trusted command/metric/artifact tools;
-  JevLoop uses a separate bound round-evidence envelope. The
+  campaign/candidate hashes and reference checks prevent accidental
+  misattachment. JevLoop uses a separate bound round-evidence envelope. The
   `loop evidence-template` command creates it, while the host agent fills in
-  recorder facts and preserves its round/head hashes.
+  recorder facts and preserves its round/head hashes. Neither path creates
+  worktrees, chooses probes, or orchestrates arbitrary execution.
 - JevRev does not create worktrees, run arbitrary commands, or merge code. The
   host agent executes work orders and stops before merge.
 - `merge` requests a combined probe; it is not permission to integrate two

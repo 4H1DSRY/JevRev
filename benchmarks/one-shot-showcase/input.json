@@ -1,0 +1,45 @@
+{
+  "version": 2,
+  "brief": {
+    "task": "Build a responsive public landing page for JevRev from one frozen content and behavior contract.",
+    "audience": "Developers who use coding agents and need to choose between plausible implementation paths.",
+    "required_sections": ["navigation", "hero", "three-step workflow", "ranking-reversal proof", "installation"],
+    "required_behavior": ["working anchor navigation", "copyable npm command", "keyboard focus states", "desktop and mobile layouts", "system light and dark modes", "reduced-motion fallback"],
+    "constraints": [
+      "Use the shared copy deck without adding performance, cost, customer, or production claims.",
+      "Use no external fonts, scripts, images, or CSS.",
+      "The existing JevRev banner and its transparent line-art derivative are the only available image assets, but a direction may omit them.",
+      "Keep every interaction functional with keyboard input and without motion.",
+      "Do not use em dashes or en dashes in visible copy."
+    ]
+  },
+  "shared_copy": {
+    "brand": "JevRev",
+    "tagline": "Explore wide. Prove cheap. Commit once.",
+    "headline": "Choose the better path before code hardens.",
+    "summary": "JevRev helps coding agents sift options, run bounded probes, and decide from recorded evidence.",
+    "primary_cta": "Install JevRev",
+    "secondary_cta": "See the proof",
+    "workflow_title": "One brief. Three controlled moves.",
+    "step_one_title": "Explore wide",
+    "step_one_body": "Generate materially different paths around one frozen brief.",
+    "step_two_title": "Probe what matters",
+    "step_two_body": "Give the strongest candidates the same bounded checks.",
+    "step_three_title": "Commit once",
+    "step_three_body": "Integrate the route that survives recorded evidence.",
+    "proof_title": "The faster shortcut lost.",
+    "proof_body": "A regex scanner ranked first on paper and ran faster locally. It failed quoted-field correctness. The state machine passed and won.",
+    "proof_line": "Faster is not the same as right.",
+    "install_title": "Add the decision layer.",
+    "install_command": "npm install -g jevrev",
+    "closing": "Your coding agent still writes the code. JevRev makes the route explicit.",
+    "copy_button": "Copy command"
+  },
+  "source_asset": "../../../.github/assets/jevrev-banner.png",
+  "available_asset": "../../../.github/assets/jevrev-skull-negative.png",
+  "conditions": {
+    "direct": "Keep the first conventional rounded SaaS direction without direction selection, omit imagery, and limit the visual change to a restrained purple-black ambient light source.",
+    "routed": "Generate materially different directions, run the committed JevRev Sift fixture, then let the selected direction determine architecture, evidence interaction, typography, color, and motion."
+  },
+  "evolution_rule": "The routed output keeps its selected deliberate evolution. The direct output preserves the approved first-direction grammar. Later edits to either condition are limited to acceptance defects while the brief, copy, sections, behavior contract, and dependency budget remain frozen."
+}
