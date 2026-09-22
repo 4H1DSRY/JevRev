@@ -6,3 +6,5 @@ coverage/
 *.tgz
 benchmarks/results/
 pack-smoke-final/
+/output/
+/.playwright-cli/

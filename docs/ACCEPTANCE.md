@@ -150,7 +150,9 @@ and is not stored in this repository.
 - `review` candidates remain unresolved; `shortlist` makes them visible to the
   host agent without silently approving them.
 - Evidence is imported in v0.2.0. Candidate/campaign hashes and reference checks
-  prevent accidental misattachment, but a trusted command recorder is deferred.
+  prevent accidental misattachment. The trusted `jevrev evidence run` recorder
+  captures explicitly requested commands without a shell; it does not create
+  worktrees, choose probes, or orchestrate arbitrary execution.
 - JevRev does not create worktrees, run arbitrary commands, or merge code. The
   host agent executes work orders and stops before merge.
 - `merge` requests a combined probe; it is not permission to integrate two

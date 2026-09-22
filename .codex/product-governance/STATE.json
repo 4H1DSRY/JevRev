@@ -1,0 +1,427 @@
+{
+  "schema_version": 1,
+  "product": {
+    "name": "JevRev",
+    "status": "active"
+  },
+  "current_phase": {
+    "id": "P5",
+    "name": "Flagship Visual Proof Integration",
+    "objective": "Integrate the fact-locked ranking reversal and a controlled, causally explained one-shot landing-page comparison without changing the verified product boundary or Tier 1 reading path.",
+    "exit_criteria": [
+      "The SVG passes accessibility, dependency, light and dark, desktop, and narrow-width checks.",
+      "The one-shot comparison is reproducible from a shared content and behavior contract, records direction-level asset choices, and both pages pass desktop and mobile browser checks.",
+      "README integration replaces only the temporary proof block and preserves all adjacent facts and compatibility anchors.",
+      "The comparison remains compact and additive, setup stays near the top, post-integration verification passes, and no user-visible claim exceeds recorded evidence."
+    ],
+    "evidence": [
+      "P4 completed on 2026-09-22: README.md now leads from tiered architecture to verified proof and hosted or local onboarding.",
+      "Post-correction verification passed: check, 13 test files with 106 tests, build, demo:all, demo:workflow, demo:oneshot, and npm pack dry run with 130 files at approximately 144.3 KB.",
+      "scripts/run-workflow-demo.mjs executed the delimiter-counter fixture with regex-shortcut rejected and indexed-state-machine selected; latest local throughput was approximately 16.34x and 4.75x baseline respectively.",
+      "The evolved one-shot showcase now preserves the direct condition's rounded light SaaS grammar, keeps painterly-evidence-dossier selected by deterministic replay at 0.9149, provides functional routed evidence interactions, retains seven committed browser captures, and uses five public captures plus an interaction contract in the compact README comparison.",
+      "The post-correction browser matrix passed at 1440 x 1000 and 390 x 844 in light, dark, and reduced-motion modes with zero overflow, working anchors, keyboard tabs, evidence lens, evidence links, copy controls, direct control contrast of 5.26:1 and 7.85:1, and zero console warnings or errors.",
+      "The routed skull keeps only a faint rust ambient source behind its upper-right field; desktop and mobile inspection in both themes found no paint, scribble, outline glow, or mismatched image box.",
+      ".codex/product-governance/ASTRA_HANDOFF.md freezes the narrative, evidence boundaries, visual criteria, README rendering audit, integration point, and return condition.",
+      "2026-09-22 final handoff: decision-gate SVG integrated, semantic stage transitions and DOM-order evidence reversal verified, and real Probe workflow capture added. P5 visual-integration exit criteria passed; no commit or push.",
+      "Final browser matrix: 24 combinations across both pages, 1440/390/360 widths, light/dark and normal/reduced motion, with keyboard, copy, links, focus, order, and zero page-console errors or warnings. Follow-up contrast checks passed after the final CSS correction.",
+      "README local GitHub-like audit: 1280 x 900 and 360 x 900, both themes, closed and expanded; two narrow-table defects corrected, equal hero image proportions preserved, and all relative images loaded. SVG XML and 680 x 490 original renders passed.",
+      "Final verification details, exact README line ranges, local evidence locations, and the supplemental Lighthouse limitation are in .codex/product-governance/FINAL_VERIFICATION.md.",
+      "Final product-governance audit returned Valid=true, zero errors, zero warnings. Final npm pack dry run passed with 130 files, approximately 144.5 kB; final git diff --check passed and the index remains empty.",
+      "2026-09-22 follow-up narrative pass: README now derives four visual-route tradeoffs from the committed Sift input and interleaves three existing captures with their causal decisions. GitHub-like rendering at 900 and 328 CSS pixels in light and dark had zero overflow, all images loaded, and the narrow single-column sequence remained readable. Check, 106 tests, build, demos, one-shot validation, a 130-file npm pack dry run at approximately 145.0 kB, local-link and public-copy scans, git diff check, and the product-governance audit passed. Publishing is deferred until the planned upstream main update."
+    ]
+  },
+  "active_work": {
+    "system_ids": [
+      "documentation",
+      "experiments",
+      "flagship-visual"
+    ],
+    "objective": "Refine the one-shot README case into an inspectable decision narrative: explain the four recorded visual directions, show why the selected dossier fit the frozen criteria, and interleave three real page states with the decisions that caused them without redesigning either fixture.",
+    "acceptance": [
+      "README names all four committed direction candidates and derives every tradeoff from sift-input.json rather than invented design claims.",
+      "The negative skull, direct structure, routed stage path, and evidence reversal appear as functional examples of decisions reaching the pixels.",
+      "The expanded case uses a regular but alternating image and text rhythm, remains compact when collapsed, and fits GitHub-like desktop and 360-pixel light and dark rendering.",
+      "The direct page, routed page, frozen copy, deterministic selection, engineering ranking-reversal proof, setup order, and interpretation boundary do not drift.",
+      "Public copy contains no unsupported superiority claim, em dash, en dash, or internal production language.",
+      "Relevant validation, link, rendering, and governance checks pass after the documentation change."
+    ],
+    "status": "completed"
+  },
+  "balance_policy": {
+    "maximum_must_have_spread": 2,
+    "allowed_exceptions": []
+  },
+  "systems": [
+    {
+      "id": "candidate-funnel",
+      "name": "Candidate Funnel",
+      "purpose": "Turn one frozen brief and materially different proposals into bounded probe work orders.",
+      "priority": "must",
+      "status": "stable",
+      "maturity": 4,
+      "target_maturity": 5,
+      "dependencies": [
+        "providers-protocol"
+      ],
+      "acceptance": [
+        "Sift remains schema-valid, policy-gated, deterministic under replay, and backward compatible with run and rank."
+      ],
+      "evidence": [
+        "tests/policy.test.ts",
+        "tests/workflow-schemas.test.ts",
+        "docs/ACCEPTANCE.md"
+      ],
+      "next_gate": "Re-run full release verification after flagship integration."
+    },
+    {
+      "id": "evidence-capture",
+      "name": "Evidence Capture",
+      "purpose": "Record command, metric, revision, artifact, and requirement evidence without trusting builder narration.",
+      "priority": "must",
+      "status": "stable",
+      "maturity": 3,
+      "target_maturity": 4,
+      "dependencies": [
+        "candidate-funnel",
+        "providers-protocol"
+      ],
+      "acceptance": [
+        "Evidence is candidate-bound, revision-aware, reference-valid, and incomplete templates cannot produce a winner."
+      ],
+      "evidence": [
+        "src/evidence/recorder.ts",
+        "tests/evidence-recorder.test.ts",
+        "tests/evidence-template.test.ts"
+      ],
+      "next_gate": "Keep the shipped recorder boundary consistent through final release review."
+    },
+    {
+      "id": "decision-engine",
+      "name": "Decision Engine",
+      "purpose": "Apply deterministic evidence gates before narrow semantic review and return an explicit next action.",
+      "priority": "must",
+      "status": "stable",
+      "maturity": 3,
+      "target_maturity": 4,
+      "dependencies": [
+        "evidence-capture",
+        "providers-protocol"
+      ],
+      "acceptance": [
+        "Failed required commands and hard constraints cannot win, and all five normal outcomes remain covered."
+      ],
+      "evidence": [
+        "tests/workflow-decide.test.ts",
+        "docs/WORKFLOW.md"
+      ],
+      "next_gate": "Verify the flagship case exercises a real winner decision from recorded evidence."
+    },
+    {
+      "id": "providers-protocol",
+      "name": "Providers And Protocol",
+      "purpose": "Expose stable CLI and typed provider contracts for Jev, SemIf, legacy local, and replay modes.",
+      "priority": "must",
+      "status": "stable",
+      "maturity": 4,
+      "target_maturity": 5,
+      "dependencies": [],
+      "acceptance": [
+        "JSON stdout, diagnostics, replay ordering, provider profiles, and public command contracts stay compatible."
+      ],
+      "evidence": [
+        "tests/cli.test.ts",
+        "docs/PROTOCOL.md",
+        "docs/ACCEPTANCE.md"
+      ],
+      "next_gate": "Run packaging and release checks against the final branch."
+    },
+    {
+      "id": "agent-integration",
+      "name": "Agent Integration",
+      "purpose": "Teach host coding agents when and how to use the workflow without exposing schema plumbing to users.",
+      "priority": "should",
+      "status": "stable",
+      "maturity": 3,
+      "target_maturity": 4,
+      "dependencies": [
+        "candidate-funnel",
+        "evidence-capture",
+        "decision-engine"
+      ],
+      "acceptance": [
+        "The installed skill preserves phase boundaries, evidence requirements, and stop conditions."
+      ],
+      "evidence": [
+        "skills/jevrev/SKILL.md",
+        "tests/skill-install.test.ts"
+      ],
+      "next_gate": "Confirm README onboarding does not conflict with the bundled skill."
+    },
+    {
+      "id": "experiments",
+      "name": "Executed Experiments",
+      "purpose": "Provide inspectable small projects that demonstrate how evidence changes routing decisions.",
+      "priority": "must",
+      "status": "stable",
+      "maturity": 4,
+      "target_maturity": 4,
+      "dependencies": [
+        "candidate-funnel",
+        "evidence-capture",
+        "decision-engine"
+      ],
+      "acceptance": [
+        "At least one deterministic mini-project executes correctness and repeated metric probes before Decide."
+      ],
+      "evidence": [
+        "scripts/run-workflow-demo.mjs",
+        "benchmarks/workflow-fixture",
+        "benchmarks/one-shot-showcase/VALIDATION.md",
+        ".github/assets/one-shot-showcase/direct-hero.png",
+        ".github/assets/one-shot-showcase/direct-mobile.png",
+        ".github/assets/one-shot-showcase/routed-hero.png",
+        ".github/assets/one-shot-showcase/routed-decision.png"
+      ],
+      "next_gate": "Keep machine-specific throughput and controlled-showcase interpretation boundaries intact through final visual and release review."
+    },
+    {
+      "id": "documentation",
+      "name": "Documentation And Onboarding",
+      "purpose": "Explain the product boundary, primary workflow, evidence hierarchy, and reproducible entry point.",
+      "priority": "must",
+      "status": "stable",
+      "maturity": 4,
+      "target_maturity": 4,
+      "dependencies": [
+        "candidate-funnel",
+        "evidence-capture",
+        "decision-engine",
+        "experiments"
+      ],
+      "acceptance": [
+        "A first-time reader can distinguish proposal selection from empirical decision and find the supporting method."
+      ],
+      "evidence": [
+        "README.md",
+        "docs/WORKFLOW.md",
+        "docs/PROTOCOL.md",
+        ".codex/product-governance/ASTRA_HANDOFF.md",
+        ".codex/product-governance/FINAL_VERIFICATION.md"
+      ],
+      "next_gate": "User review of the preserved reading path and final uncommitted diff."
+    },
+    {
+      "id": "packaging-release",
+      "name": "Packaging And Release",
+      "purpose": "Ship a tested npm package with the intended source, documentation, examples, and scripts.",
+      "priority": "must",
+      "status": "stable",
+      "maturity": 4,
+      "target_maturity": 5,
+      "dependencies": [
+        "providers-protocol",
+        "documentation"
+      ],
+      "acceptance": [
+        "Check, tests, build, demonstrations, and package dry run pass with no generated results included."
+      ],
+      "evidence": [
+        "package.json",
+        "docs/ACCEPTANCE.md",
+        "RELEASE.md",
+        "2026-09-22 final check, 106 tests, build, demos and npm pack dry run passed."
+      ],
+      "next_gate": "Release authorization and remaining product-level gates; no commit or push requested."
+    },
+    {
+      "id": "flagship-visual",
+      "name": "Flagship Visual",
+      "purpose": "Make the verified case understandable before the reader reaches detailed benchmark material.",
+      "priority": "should",
+      "status": "stable",
+      "maturity": 4,
+      "target_maturity": 4,
+      "dependencies": [
+        "experiments",
+        "documentation"
+      ],
+      "acceptance": [
+        "The dependency-free SVG is accessible, responsive, GitHub-compatible, and encodes only verified facts."
+      ],
+      "evidence": [
+        ".github/assets/one-shot-showcase/direct-hero.png",
+        ".github/assets/one-shot-showcase/direct-structure.png",
+        ".github/assets/one-shot-showcase/direct-mobile.png",
+        ".github/assets/one-shot-showcase/routed-hero.png",
+        ".github/assets/one-shot-showcase/routed-decision.png",
+        ".github/assets/one-shot-showcase/routed-mobile.png",
+        "benchmarks/one-shot-showcase/VALIDATION.md",
+        ".codex/product-governance/ASTRA_HANDOFF.md",
+        ".github/assets/jevrev-decision-gate.svg",
+        ".github/assets/one-shot-showcase/routed-workflow.png",
+        ".codex/product-governance/FINAL_VERIFICATION.md"
+      ],
+      "next_gate": "User factual review of the uncommitted visual integration; publishing remains outside this task."
+    }
+  ],
+  "requirements": [
+    {
+      "id": "req-flagship-current-boundary",
+      "text": "The flagship case must explain the current Sift, Probe, Evidence, and Decide boundary.",
+      "priority": "must",
+      "status": "verified",
+      "system_ids": [
+        "documentation",
+        "experiments",
+        "flagship-visual"
+      ],
+      "acceptance": [
+        "Visible copy and the final asset include both selection and evidence-led decision without implying automatic implementation."
+      ],
+      "evidence": [
+        ".codex/product-governance/FINAL_VERIFICATION.md documents final behavior, accessibility, factual review, rendering contexts, and acceptance evidence.",
+        "benchmarks/one-shot-showcase/VALIDATION.md; README.md; .github/assets/jevrev-decision-gate.svg; .github/assets/one-shot-showcase/routed-workflow.png"
+      ]
+    },
+    {
+      "id": "req-reproducible-project",
+      "text": "At least one small project must complete the workflow with executable correctness and metric evidence.",
+      "priority": "must",
+      "status": "verified",
+      "system_ids": [
+        "experiments",
+        "decision-engine"
+      ],
+      "acceptance": [
+        "The current workspace produces campaign, evidence, and final decision artifacts from a documented command."
+      ],
+      "evidence": [
+        "npm run demo:workflow passed on 2026-09-22; generated campaign.json, evidence.json, and decision.json were inspected under benchmarks/results/workflow-demo."
+      ]
+    },
+    {
+      "id": "req-no-fabricated-claims",
+      "text": "No factual or quantitative claim may exceed the evidence available in fixtures, release records, or current command output.",
+      "priority": "must",
+      "status": "verified",
+      "system_ids": [
+        "experiments",
+        "documentation",
+        "flagship-visual"
+      ],
+      "acceptance": [
+        "Copy review finds no invented impact, savings, correctness, or production outcome."
+      ],
+      "evidence": [
+        ".codex/product-governance/FINAL_VERIFICATION.md documents final behavior, accessibility, factual review, rendering contexts, and acceptance evidence.",
+        "benchmarks/one-shot-showcase/VALIDATION.md; README.md; .github/assets/jevrev-decision-gate.svg; .github/assets/one-shot-showcase/routed-workflow.png"
+      ]
+    },
+    {
+      "id": "req-private-process",
+      "text": "User-visible materials must omit internal prompt, governance, model handoff, and design-process language.",
+      "priority": "must",
+      "status": "verified",
+      "system_ids": [
+        "documentation",
+        "flagship-visual"
+      ],
+      "acceptance": [
+        "README and asset text read as product documentation and contain no internal process terminology."
+      ],
+      "evidence": [
+        ".codex/product-governance/FINAL_VERIFICATION.md documents final behavior, accessibility, factual review, rendering contexts, and acceptance evidence.",
+        "benchmarks/one-shot-showcase/VALIDATION.md; README.md; .github/assets/jevrev-decision-gate.svg; .github/assets/one-shot-showcase/routed-workflow.png"
+      ]
+    },
+    {
+      "id": "req-tier1-reading-path",
+      "text": "The README must lead from a concise tiered product explanation to verified proof and then to low-friction agent, hosted, and local setup without drifting the current product boundary.",
+      "priority": "must",
+      "status": "verified",
+      "system_ids": [
+        "documentation",
+        "agent-integration",
+        "experiments"
+      ],
+      "acceptance": [
+        "The banner and key sections remain, repeated protocol detail is compressed, the ranking reversal precedes onboarding, and roadmap layers are clearly labeled."
+      ],
+      "evidence": [
+        "README.md updated on 2026-09-22; preserved brand header, flagship case, CLI, product layers, providers, boundaries, development, license, and compatibility anchors while shortening the file."
+      ]
+    },
+    {
+      "id": "req-one-shot-showcase",
+      "text": "Tier 1 requires a compact, high-impact one-shot webpage comparison that demonstrates the visible value of routing design direction through JevRev without replacing other README content.",
+      "priority": "must",
+      "status": "verified",
+      "system_ids": [
+        "experiments",
+        "documentation",
+        "flagship-visual"
+      ],
+      "acceptance": [
+        "Two real pages share the frozen content and behavior contract, direction-level asset choices are recorded, functional interactions and browser evidence are captured at desktop and mobile sizes, the README slot is additive, and claims are limited to the controlled fixture."
+      ],
+      "evidence": [
+        "benchmarks/one-shot-showcase/input.json freezes shared inputs; deterministic Sift selected painterly-evidence-dossier at 0.9149; npm run demo:oneshot passed; VALIDATION.md records desktop, mobile, light, dark, interaction, anchor, focus, copy, overflow, and console checks; README.md contains a paired overview, four recorded candidate-direction tradeoffs, three collapsible decision examples using real captures, the interaction contract, source links, and limitation statement; mobile captures remain committed but are no longer displayed publicly."
+      ]
+    },
+    {
+      "id": "req-routed-interaction-polish",
+      "text": "The JevRev-routed page must use a few advanced, evidence-bearing effects and visual anchors to improve information density and interaction comprehension, and the README must show the resulting workflow state without paired mobile screenshots.",
+      "priority": "must",
+      "status": "verified",
+      "system_ids": [
+        "experiments",
+        "documentation",
+        "flagship-visual"
+      ],
+      "acceptance": [
+        "Stage and evidence transitions communicate real state changes, remain keyboard accessible, preserve reduced-motion behavior, and introduce no decorative or unsupported data.",
+        "The public README replaces paired mobile screenshots with a compact interaction contract and one full-width routed workflow screenshot while mobile browser validation remains recorded."
+      ],
+      "evidence": [
+        ".codex/product-governance/FINAL_VERIFICATION.md documents final behavior, accessibility, factual review, rendering contexts, and acceptance evidence.",
+        "benchmarks/one-shot-showcase/VALIDATION.md; README.md; .github/assets/jevrev-decision-gate.svg; .github/assets/one-shot-showcase/routed-workflow.png"
+      ]
+    }
+  ],
+  "debt": [
+    {
+      "id": "debt-doc-recorder-boundary",
+      "severity": "medium",
+      "status": "closed",
+      "text": "docs/ACCEPTANCE.md now defines the trusted recorder boundary and docs/WORKFLOW.md no longer lists the shipped recorder as deferred."
+    }
+  ],
+  "risks": [
+    {
+      "id": "risk-upstream-drift",
+      "severity": "high",
+      "status": "closed",
+      "text": "The branch was rebased onto a7036b4 on 2026-09-22, the new evidence toolchain was exercised, and README copy now reflects metric, artifact, and status commands."
+    },
+    {
+      "id": "risk-case-overclaim",
+      "severity": "high",
+      "status": "closed",
+      "text": "Final README, SVG, and routed-page audit preserved correctness-driven reversal, machine-dependent throughput boundaries, and controlled-showcase limitations; no unsupported production or savings claims were added."
+    },
+    {
+      "id": "risk-showcase-bias",
+      "severity": "high",
+      "status": "closed",
+      "text": "Both outputs now share committed content, behavior, constraints, copy, and dependency budget while direction-level asset choices and evolution policy are explicit; README and VALIDATION.md limit interpretation to this controlled fixture."
+    },
+    {
+      "id": "risk-showcase-mobile-performance",
+      "severity": "medium",
+      "status": "open",
+      "text": "Supplemental Lighthouse simulated mobile run scored performance 86 with LCP 4.2 s, exceeding the aspirational 2.5 s target; accessibility 100, CLS 0, TBT 0. Protected PNG compression is an advisory, not an established LCP cause. Broader performance optimization remains outside the bounded handoff and needs a separately scoped follow-up."
+    }
+  ],
+  "last_updated": "2026-09-22",
+  "last_audited": "2026-09-22"
+}

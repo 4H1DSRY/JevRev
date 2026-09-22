@@ -155,7 +155,6 @@ Decide does not repeat those scores. It asks:
 ## Deferred
 
 - persistent runs, event logs, locks, cache, and `resume`;
-- a trusted command recorder (`jevrev evidence run`);
 - automatic worktree creation;
 - integration and merge automation;
 - JevLoop and long-run monitoring;

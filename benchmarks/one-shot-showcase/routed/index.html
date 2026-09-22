@@ -1,0 +1,517 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <link rel="icon" href="data:,">
+  <title>JevRev | Routed one-shot</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --paper: #d8d1c1;
+      --paper-deep: #c4bcaa;
+      --paper-lift: #e5dfd1;
+      --ink: #1b211e;
+      --ink-soft: #464b45;
+      --line: #817d70;
+      --line-soft: rgba(40, 43, 38, 0.22);
+      --accent: #9f3828;
+      --accent-deep: #672219;
+      --accent-text: #672219;
+      --accent-ink: #fff8ec;
+      --wash: rgba(133, 54, 38, 0.18);
+      --shadow: rgba(45, 35, 27, 0.22);
+      --radius: 0px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        color-scheme: dark;
+        --paper: #171a18;
+        --paper-deep: #20231f;
+        --paper-lift: #282a24;
+        --ink: #eee7d8;
+        --ink-soft: #bbb4a7;
+        --line: #797367;
+        --line-soft: rgba(232, 223, 204, 0.18);
+        --accent: #d05a42;
+        --accent-deep: #8b3528;
+        --accent-text: #e9795f;
+        --accent-ink: #10120f;
+        --wash: rgba(208, 90, 66, 0.16);
+        --shadow: rgba(0, 0, 0, 0.42);
+      }
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      overflow-x: hidden;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: Arial, Helvetica, sans-serif;
+      line-height: 1.5;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      pointer-events: none;
+      opacity: 0.15;
+      background-image:
+        repeating-linear-gradient(12deg, transparent 0 7px, rgba(47, 39, 31, 0.11) 8px),
+        repeating-linear-gradient(96deg, transparent 0 13px, rgba(255, 255, 255, 0.08) 14px);
+      mix-blend-mode: multiply;
+    }
+    a { color: inherit; }
+    button { color: inherit; font: inherit; }
+    a:focus-visible, button:focus-visible, summary:focus-visible, [role="tabpanel"]:focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; }
+    button, a, summary { -webkit-tap-highlight-color: transparent; }
+    .page { width: min(1320px, calc(100% - 48px)); margin: 0 auto; }
+    .site-header { position: relative; z-index: 5; border-bottom: 1px solid var(--line); }
+    .nav { min-height: 72px; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 24px; }
+    .brand { justify-self: start; font: 900 1.2rem/1 Arial, sans-serif; letter-spacing: -0.05em; text-decoration: none; }
+    .nav-links { display: flex; gap: 28px; font-size: 0.78rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; }
+    .nav-links a { text-decoration: none; }
+    .nav-install { justify-self: end; min-height: 40px; display: inline-flex; align-items: center; border: 1px solid var(--ink); padding: 0 14px; background: var(--ink); color: var(--paper); font-weight: 800; text-decoration: none; white-space: nowrap; }
+
+    section { scroll-margin-top: 20px; }
+    .hero { min-height: calc(100dvh - 72px); display: grid; grid-template-columns: 7.5fr 4.5fr; grid-template-rows: 1fr auto; column-gap: clamp(32px, 5vw, 76px); align-items: center; padding: 44px 0 0; }
+    .hero-copy { position: relative; z-index: 2; align-self: center; padding: 24px 0 48px; }
+    .tagline { margin: 0 0 22px; color: var(--accent-deep); font-size: 0.78rem; font-weight: 900; letter-spacing: 0.13em; text-transform: uppercase; }
+    h1, h2, h3, p, figure { margin-top: 0; }
+    h1 { max-width: 730px; margin-bottom: 24px; font: 700 clamp(3.45rem, 5vw, 5.2rem)/0.88 Georgia, "Times New Roman", serif; letter-spacing: -0.068em; }
+    h1 .line { display: block; }
+    .hero-summary { max-width: 570px; margin-bottom: 30px; color: var(--ink-soft); font-size: clamp(1rem, 1.6vw, 1.24rem); }
+    .actions { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+    .button { min-height: 48px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--ink); padding: 0 18px; background: var(--accent); color: var(--accent-ink); font-weight: 900; text-decoration: none; white-space: nowrap; box-shadow: 4px 4px 0 var(--ink); }
+    .text-link { font-weight: 900; text-underline-offset: 5px; }
+    .button:active, .nav-install:active, button:active { transform: translateY(1px); }
+
+    .brand-visual { position: relative; align-self: stretch; min-height: 500px; margin: 0; overflow: hidden; border-left: 1px solid var(--line); border-right: 1px solid var(--line); background: radial-gradient(circle at 90% 7%, rgba(159, 56, 40, 0.11) 0, rgba(159, 56, 40, 0.045) 15%, transparent 31%); isolation: isolate; }
+    .brand-visual img { position: absolute; inset: 0; width: 171%; height: 100%; object-fit: cover; object-position: 24% center; filter: brightness(0.23) contrast(1.15); opacity: 0.92; }
+    @media (prefers-color-scheme: dark) {
+      .tagline { color: var(--accent-text); }
+      .brand-visual { background: radial-gradient(circle at 90% 7%, rgba(208, 90, 66, 0.14) 0, rgba(208, 90, 66, 0.055) 15%, transparent 31%); }
+      .brand-visual img { filter: none; opacity: 0.96; }
+    }
+
+    .case-index { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--line); }
+    .case-index div { padding: 16px 18px 17px 0; border-right: 1px solid var(--line-soft); }
+    .case-index div:nth-child(2) { padding-left: 18px; }
+    .case-index div:last-child { padding-left: 18px; border-right: 0; }
+    .case-index strong { display: block; margin-bottom: 3px; font: 800 0.75rem/1.2 Consolas, "Courier New", monospace; text-transform: uppercase; }
+    .case-index span { color: var(--ink-soft); font-size: 0.83rem; }
+
+    .workflow-section { border-top: 1px solid var(--line); padding: 100px 0; }
+    .section-title { max-width: 850px; margin-bottom: 52px; }
+    .section-title h2 { margin-bottom: 16px; font: 700 clamp(2.7rem, 5.6vw, 6rem)/0.9 Georgia, "Times New Roman", serif; letter-spacing: -0.06em; }
+    .section-title p { max-width: 650px; margin-bottom: 0; color: var(--ink-soft); font-size: 1.05rem; }
+    .decision-room { display: grid; grid-template-columns: 4.3fr 7.7fr; min-height: 570px; border: 1px solid var(--line); box-shadow: 12px 12px 0 var(--shadow); }
+    .stage-rail { display: grid; grid-template-rows: repeat(3, 1fr); border-right: 1px solid var(--line); }
+    .stage-tab { position: relative; display: grid; align-content: center; width: 100%; border: 0; border-bottom: 1px solid var(--line); padding: 24px 30px 24px 54px; background: transparent; text-align: left; cursor: pointer; }
+    .stage-tab:last-child { border-bottom: 0; }
+    .stage-tab::before { content: ""; position: absolute; left: 29px; top: 0; bottom: 0; border-left: 1px solid var(--line); }
+    .stage-tab:first-child::before { top: 50%; }
+    .stage-tab:last-child::before { bottom: 50%; }
+    .stage-tab[aria-selected="true"] { background: var(--paper-lift); }
+    .stage-tab[aria-selected="true"]::before { border-color: var(--accent); border-left-width: 3px; }
+    .stage-tab .route-mark { position: absolute; left: 14px; top: calc(50% - 15px); display: grid; place-items: center; width: 31px; height: 31px; border: 1px solid var(--line); background: var(--paper); color: var(--ink); font: 800 0.82rem/1 Consolas, monospace; }
+    .stage-tab[aria-selected="true"] .route-mark { border: 2px solid var(--accent); background: var(--ink); color: var(--paper); }
+    .stage-tab .route-name { display: block; margin-bottom: 12px; font: 800 0.73rem/1 Consolas, monospace; text-transform: uppercase; letter-spacing: 0.1em; }
+    .stage-tab strong { display: block; margin-bottom: 8px; font: 900 clamp(1.3rem, 2.2vw, 1.9rem)/1 "Arial Black", Arial, sans-serif; letter-spacing: -0.045em; }
+    .stage-tab span { display: block; max-width: 300px; color: var(--ink-soft); font-size: 0.9rem; }
+    .stage-panel { position: relative; display: grid; align-content: space-between; overflow: hidden; padding: clamp(30px, 5vw, 68px); background: var(--paper-deep); }
+    .stage-state { display: flex; align-items: center; gap: 14px; margin-bottom: 26px; font: 800 0.78rem/1 Consolas, monospace; text-transform: uppercase; letter-spacing: 0.08em; }
+    .stage-mark { display: grid; place-items: center; width: 48px; height: 48px; background: var(--ink); color: var(--paper); font-size: 2rem; }
+    .stage-content { min-width: 0; }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+    .stage-question { position: relative; z-index: 1; max-width: 680px; }
+    .stage-kicker { display: block; margin-bottom: 18px; color: var(--accent-text); font: 800 0.76rem/1.2 Consolas, "Courier New", monospace; text-transform: uppercase; letter-spacing: 0.08em; }
+    .stage-question h3 { margin-bottom: 20px; font: 700 clamp(2.35rem, 4.2vw, 4.8rem)/0.93 Georgia, "Times New Roman", serif; letter-spacing: -0.05em; }
+    .stage-question p { max-width: 570px; color: var(--ink-soft); font-size: 1.02rem; }
+    .stage-facts { position: relative; z-index: 1; display: grid; grid-template-columns: repeat(3, 1fr); margin-top: 44px; border-top: 1px solid var(--line); }
+    .stage-fact { padding: 18px 16px 0 0; }
+    .stage-fact b { display: block; margin-bottom: 4px; font: 800 0.86rem/1.3 Consolas, "Courier New", monospace; }
+    .stage-fact span { color: var(--ink-soft); font-size: 0.8rem; }
+
+    .proof-section { border-top: 1px solid var(--line); padding: 100px 0; }
+    .proof-head { display: grid; grid-template-columns: 7fr 5fr; gap: 60px; align-items: end; margin-bottom: 46px; }
+    .proof-head h2 { margin-bottom: 0; font: 700 clamp(3rem, 6vw, 6.8rem)/0.84 Georgia, "Times New Roman", serif; letter-spacing: -0.07em; }
+    .proof-intro p { margin-bottom: 16px; color: var(--ink-soft); font-size: 1.02rem; }
+    .proof-intro strong { font-size: 1.12rem; }
+    .lens-controls { display: inline-grid; grid-template-columns: 1fr 1fr; margin-bottom: 18px; border: 1px solid var(--line); }
+    .lens-controls button { min-height: 42px; border: 0; border-right: 1px solid var(--line); padding: 0 16px; background: transparent; font-weight: 800; cursor: pointer; }
+    .lens-controls button:last-child { border-right: 0; }
+    .lens-controls button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+    .candidate-sheet { border-top: 2px solid var(--ink); }
+    .candidate { display: grid; grid-template-columns: 2.2fr 1fr 1fr; gap: 28px; align-items: center; min-height: 132px; border-bottom: 1px solid var(--line); }
+    .candidate-name { padding: 25px 0; }
+    .candidate-name span { display: block; margin-bottom: 5px; color: var(--ink-soft); font: 800 0.72rem/1.2 Consolas, "Courier New", monospace; text-transform: uppercase; }
+    .candidate-name h3 { margin-bottom: 0; font: 900 clamp(1.55rem, 2.7vw, 2.55rem)/1 "Arial Black", Arial, sans-serif; letter-spacing: -0.045em; }
+    .candidate-reading, .candidate-route { padding: 25px 0; }
+    .candidate-reading span, .candidate-route span { display: block; margin-bottom: 5px; color: var(--ink-soft); font-size: 0.74rem; font-weight: 800; text-transform: uppercase; }
+    .candidate-reading b, .candidate-route b { font: 800 0.95rem/1.3 Consolas, "Courier New", monospace; }
+    .candidate-route b { color: var(--accent-text); }
+    .candidate[data-state="winner"] { background: var(--paper-lift); box-shadow: inset 4px 0 var(--accent); }
+    .candidate[data-state="winner"] .candidate-name { padding-left: 18px; }
+    .candidate[data-state="winner"] .candidate-name span { color: var(--ink); }
+    .candidate[data-state="winner"] .candidate-route b { color: var(--ink); }
+    .proof-conclusion { display: grid; grid-template-columns: 1fr 2fr; gap: 36px; margin-top: 34px; }
+    .decision-stamp { align-self: start; border: 2px solid var(--line); padding: 16px; color: var(--ink-soft); font: 900 0.82rem/1.25 Consolas, "Courier New", monospace; text-align: center; text-transform: uppercase; }
+    .decision-stamp[data-decision="evidence"] { border-color: var(--ink); background: var(--ink); color: var(--paper); box-shadow: inset 4px 0 var(--accent); }
+    .source-trail { border-top: 1px solid var(--line); }
+    .source-trail summary { padding: 18px 0; font-weight: 900; cursor: pointer; }
+    .source-trail p { max-width: 760px; margin-bottom: 12px; color: var(--ink-soft); }
+    .source-trail a { font-weight: 800; text-underline-offset: 4px; }
+
+    .install-section { border-top: 1px solid var(--line); padding: 96px 0; }
+    .install-grid { display: grid; grid-template-columns: 7fr 5fr; gap: clamp(40px, 8vw, 110px); align-items: end; }
+    .install-grid h2 { max-width: 720px; margin-bottom: 18px; font: 700 clamp(3rem, 6vw, 6.6rem)/0.87 Georgia, "Times New Roman", serif; letter-spacing: -0.065em; }
+    .install-grid p { max-width: 620px; margin-bottom: 0; color: var(--ink-soft); }
+    .command { border: 1px solid var(--ink); box-shadow: 7px 7px 0 var(--shadow); }
+    .command code { display: block; padding: 22px; overflow-wrap: anywhere; font: 700 0.94rem/1.4 Consolas, "Courier New", monospace; }
+    .command button { width: 100%; min-height: 48px; border: 0; border-top: 1px solid var(--ink); border-radius: var(--radius); background: var(--accent); color: var(--accent-ink); font-weight: 900; cursor: pointer; }
+    footer { border-top: 1px solid var(--line); }
+    .footer-row { min-height: 76px; display: flex; align-items: center; justify-content: space-between; color: var(--ink-soft); font-size: 0.82rem; }
+
+    .js .reveal { opacity: 0; transform: translateY(20px); transition: opacity 650ms cubic-bezier(0.16, 1, 0.3, 1), transform 650ms cubic-bezier(0.16, 1, 0.3, 1); }
+    .js .reveal.is-visible { opacity: 1; transform: translateY(0); }
+
+    @media (max-width: 860px) {
+      .page { width: min(100% - 28px, 1320px); }
+      .nav { grid-template-columns: 1fr auto; min-height: 64px; }
+      .nav-links { display: none; }
+      .hero { min-height: auto; grid-template-columns: 1fr; grid-template-rows: auto auto auto; padding-top: 46px; }
+      h1 { font-size: clamp(3.25rem, 16vw, 5rem); }
+      h1 .line { display: inline; }
+      .brand-visual { min-height: 330px; border-top: 1px solid var(--line); border-left: 0; }
+      .brand-visual img { width: 150%; object-position: 22% center; }
+      .brand-visual figcaption { right: 10px; bottom: 10px; }
+      .case-index { grid-template-columns: 1fr; }
+      .case-index div, .case-index div:nth-child(2), .case-index div:last-child { padding: 13px 0; border-right: 0; border-bottom: 1px solid var(--line-soft); }
+      .case-index div:last-child { border-bottom: 0; }
+      .workflow-section, .proof-section, .install-section { padding: 72px 0; }
+      .decision-room { grid-template-columns: 1fr; min-height: 0; box-shadow: 7px 7px 0 var(--shadow); }
+      .stage-rail { grid-template-rows: none; grid-template-columns: repeat(3, 1fr); border-right: 0; border-bottom: 1px solid var(--line); }
+      .stage-tab { min-height: 112px; border-right: 1px solid var(--line); border-bottom: 0; padding: 58px 8px 16px; text-align: center; }
+      .stage-tab:last-child { border-right: 0; }
+      .stage-tab span { display: none; }
+      .stage-tab::before { display: block; left: 0; right: 0; top: 29px; bottom: auto; border-left: 0; border-top: 1px solid var(--line); }
+      .stage-tab:first-child::before { top: 29px; left: 50%; }
+      .stage-tab:last-child::before { bottom: auto; right: 50%; }
+      .stage-tab[aria-selected="true"]::before { border-left: 0; border-top: 3px solid var(--accent); }
+      .stage-tab .route-mark { left: calc(50% - 15px); top: 14px; }
+      .stage-tab .route-name { display: block; margin: 0; font-size: 0.8rem; }
+      .stage-tab strong { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+      .stage-tab strong { margin: 0; font: 800 0.82rem/1 Arial, sans-serif; text-transform: uppercase; }
+      .stage-panel { min-height: 450px; padding: 30px 24px; }
+      .stage-facts { grid-template-columns: 1fr; gap: 8px; }
+      .stage-fact { padding-top: 10px; }
+      .proof-head, .proof-conclusion, .install-grid { grid-template-columns: 1fr; gap: 32px; }
+      .candidate { grid-template-columns: 1fr 1fr; gap: 8px 20px; padding: 20px 0; }
+      .candidate-name { grid-column: 1 / -1; padding: 0; }
+      .candidate-reading, .candidate-route { padding: 0; }
+      .candidate[data-state="winner"] .candidate-reading { padding-left: 18px; }
+      .decision-stamp { max-width: 230px; }
+      .footer-row { align-items: flex-start; flex-direction: column; justify-content: center; gap: 3px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after { transition: none !important; animation: none !important; }
+      .js .reveal { opacity: 1; transform: none; }
+      .button:active, .nav-install:active, button:active { transform: none; }
+    }
+  </style>
+  <script>document.documentElement.classList.add('js');</script>
+</head>
+<body>
+  <header class="site-header page">
+    <nav class="nav" aria-label="Primary navigation">
+      <a class="brand" href="#top">JevRev</a>
+      <div class="nav-links">
+        <a href="#workflow">Workflow</a>
+        <a href="#proof">Proof</a>
+      </div>
+      <a class="nav-install" href="#install">Install JevRev</a>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero page" aria-labelledby="hero-title">
+      <div class="hero-copy reveal">
+        <p class="tagline">Explore wide. Prove cheap. Commit once.</p>
+        <h1 id="hero-title"><span class="line">Choose the better path</span><span class="line"> before code hardens.</span></h1>
+        <p class="hero-summary">JevRev helps coding agents sift options, run bounded probes, and decide from recorded evidence.</p>
+        <div class="actions">
+          <a class="button" href="#install">Install JevRev</a>
+          <a class="text-link" href="#proof">See the proof</a>
+        </div>
+      </div>
+      <figure class="brand-visual reveal">
+        <img src="../../../.github/assets/jevrev-skull-negative.png" alt="Hand-drawn JevRev skull and wordmark">
+      </figure>
+      <div class="case-index" aria-label="Decision sequence">
+        <div><strong>Sift</strong><span>Choose what earns a probe</span></div>
+        <div><strong>Probe</strong><span>Hold survivors to equal evidence</span></div>
+        <div><strong>Decide</strong><span>Route from what survived</span></div>
+      </div>
+    </section>
+
+    <section id="workflow" class="workflow-section" aria-labelledby="workflow-title">
+      <div class="page">
+        <div class="section-title reveal">
+          <h2 id="workflow-title">One brief. Three controlled moves.</h2>
+          <p>The interface follows the decision. Select a move to inspect the question it must answer and the evidence it passes forward.</p>
+        </div>
+        <div class="decision-room reveal">
+          <div class="stage-rail" role="tablist" aria-label="JevRev decision stages">
+            <button class="stage-tab" id="tab-sift" type="button" role="tab" aria-selected="true" aria-controls="stage-panel" data-stage-tab="sift">
+              <span class="route-mark" aria-hidden="true">S</span><span class="route-name">Sift</span>
+              <strong>Explore wide</strong>
+              <span>Generate materially different paths around one frozen brief.</span>
+            </button>
+            <button class="stage-tab" id="tab-probe" type="button" role="tab" aria-selected="false" aria-controls="stage-panel" tabindex="-1" data-stage-tab="probe">
+              <span class="route-mark" aria-hidden="true">P</span><span class="route-name">Probe</span>
+              <strong>Probe what matters</strong>
+              <span>Give the strongest candidates the same bounded checks.</span>
+            </button>
+            <button class="stage-tab" id="tab-decide" type="button" role="tab" aria-selected="false" aria-controls="stage-panel" tabindex="-1" data-stage-tab="decide">
+              <span class="route-mark" aria-hidden="true">D</span><span class="route-name">Decide</span>
+              <strong>Commit once</strong>
+              <span>Integrate the route that survives recorded evidence.</span>
+            </button>
+          </div>
+          <div class="stage-panel" id="stage-panel" role="tabpanel" tabindex="0" aria-labelledby="tab-sift" data-mark="S">
+            <div class="stage-state"><span class="stage-mark" aria-hidden="true" data-stage-mark>S</span><span data-stage-name>Sift / Proposal state</span></div>
+            <div class="stage-content">
+            <div class="stage-question">
+              <span class="stage-kicker" data-stage-kicker>Proposal question</span>
+              <h3 data-stage-title>Which hypotheses earn a probe?</h3>
+              <p data-stage-body>Sift compares distinct mechanisms, then issues bounded work orders. A high score opens an investigation. It does not close the case.</p>
+            </div>
+            <div class="stage-facts" data-stage-facts>
+              <div class="stage-fact"><b>4 directions</b><span>Screened under one brief</span></div>
+              <div class="stage-fact"><b>Bounded survivors</b><span>Only selected routes continue</span></div>
+              <div class="stage-fact"><b>Proposal state</b><span>Nothing is proven yet</span></div>
+            </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="proof" class="proof-section" aria-labelledby="proof-title">
+      <div class="page">
+        <div class="proof-head reveal">
+          <h2 id="proof-title">The faster shortcut lost.</h2>
+          <div class="proof-intro">
+            <p>A regex scanner ranked first on paper and ran faster locally. It failed quoted-field correctness. The state machine passed and won.</p>
+            <strong>Faster is not the same as right.</strong>
+          </div>
+        </div>
+
+        <div class="reveal">
+          <div class="lens-controls" aria-label="Candidate comparison lens">
+            <button type="button" aria-pressed="true" data-lens="proposal">Proposal lens</button>
+            <button type="button" aria-pressed="false" data-lens="evidence">Evidence lens</button>
+          </div>
+          <div class="candidate-sheet">
+            <article class="candidate" data-candidate="regex" data-state="favorite">
+              <div class="candidate-name"><span>Proposal favorite</span><h3>regex-shortcut</h3></div>
+              <div class="candidate-reading"><span data-reading-label>Sift reading</span><b data-reading-value>0.9593</b></div>
+              <div class="candidate-route"><span>Route</span><b data-route-value>Probe first</b></div>
+            </article>
+            <article class="candidate" data-candidate="state" data-state="survivor">
+              <div class="candidate-name"><span>Lower-ranked proposal</span><h3>indexed-state-machine</h3></div>
+              <div class="candidate-reading"><span data-reading-label>Sift reading</span><b data-reading-value>0.8773</b></div>
+              <div class="candidate-route"><span>Route</span><b data-route-value>Probe second</b></div>
+            </article>
+          </div>
+
+          <div class="proof-conclusion">
+            <div class="decision-stamp" data-decision-stamp>Proposal order only</div>
+            <details class="source-trail">
+              <summary>Trace the decision record</summary>
+              <p>The same five correctness cases and seven benchmark samples were recorded for each candidate. Required checks controlled the final route.</p>
+              <p><a href="../../workflow-fixture/probe.mjs">Open the executable case</a> or <a href="../VALIDATION.md">read the showcase validation</a>.</p>
+            </details>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="install" class="install-section" aria-labelledby="install-title">
+      <div class="install-grid page reveal">
+        <div>
+          <h2 id="install-title">Add the decision layer.</h2>
+          <p>Your coding agent still writes the code. JevRev makes the route explicit.</p>
+        </div>
+        <div class="command">
+          <code>npm install -g jevrev</code>
+          <button type="button" data-copy-command>Copy command</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="footer-row page"><strong>JevRev</strong><span>Evidence before commitment.</span></div>
+  </footer>
+
+  <script>
+    const motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const stageLayout = window.matchMedia('(max-width: 860px)');
+    const stateNotice = document.createElement('p');
+    stateNotice.className = 'sr-only';
+    stateNotice.setAttribute('role', 'status');
+    stateNotice.setAttribute('aria-atomic', 'true');
+    document.querySelector('main').append(stateNotice);
+    // One-shot state transitions only. A preference change also stops in-flight motion.
+    function transitionState(node, frames, duration = 340) {
+      node.getAnimations().forEach((animation) => animation.cancel());
+      if (!motionPreference.matches) node.animate(frames, { duration, easing: 'cubic-bezier(0.16, 1, 0.3, 1)' });
+    }
+    motionPreference.addEventListener('change', () => {
+      if (motionPreference.matches) document.getAnimations().forEach((animation) => animation.cancel());
+    });
+    const stageData = {
+      sift: {
+        mark: 'S', kicker: 'Proposal question', title: 'Which hypotheses earn a probe?',
+        body: 'Sift compares distinct mechanisms, then issues bounded work orders. A high score opens an investigation. It does not close the case.',
+        facts: [['4 directions', 'Screened under one brief'], ['Bounded survivors', 'Only selected routes continue'], ['Proposal state', 'Nothing is proven yet']]
+      },
+      probe: {
+        mark: 'P', kicker: 'Evidence question', title: 'What survives equal checks?',
+        body: 'Every survivor faces the same required behavior and repeated measurement contract. Raw observations stay attached to the candidate that produced them.',
+        facts: [['5 cases each', 'Quoted fields included'], ['7 samples each', 'Raw measurements retained'], ['Same contract', 'No favored route gets an easier test']]
+      },
+      decide: {
+        mark: 'D', kicker: 'Routing question', title: 'What is safe to integrate?',
+        body: 'Deterministic gates read requirement results before semantic judgment. The faster local shortcut failed correctness, so the passing state machine became the winner.',
+        facts: [['Regex rejected', 'Required behavior failed'], ['State machine ready', 'All five cases passed'], ['Next action', 'integrate_winner']]
+      }
+    };
+
+    const tabs = [...document.querySelectorAll('[data-stage-tab]')];
+    const panel = document.querySelector('#stage-panel');
+    let currentStage = 'sift';
+    function setRailOrientation() {
+      document.querySelector('.stage-rail').setAttribute('aria-orientation', stageLayout.matches ? 'horizontal' : 'vertical');
+    }
+    setRailOrientation();
+    stageLayout.addEventListener('change', setRailOrientation);
+    function selectStage(name, focus = false) {
+      if (name === currentStage) return;
+      const direction = Object.keys(stageData).indexOf(name) > Object.keys(stageData).indexOf(currentStage) ? 1 : -1;
+      currentStage = name;
+      const data = stageData[name];
+      tabs.forEach((tab) => {
+        const selected = tab.dataset.stageTab === name;
+        tab.setAttribute('aria-selected', String(selected));
+        tab.tabIndex = selected ? 0 : -1;
+        if (selected) panel.setAttribute('aria-labelledby', tab.id);
+      });
+      panel.dataset.mark = data.mark;
+      panel.querySelector('[data-stage-mark]').textContent = data.mark;
+      panel.querySelector('[data-stage-name]').textContent = `${name} / ${name === 'sift' ? 'Proposal state' : name === 'probe' ? 'Observed evidence' : 'Final route'}`;
+      panel.querySelector('[data-stage-kicker]').textContent = data.kicker;
+      panel.querySelector('[data-stage-title]').textContent = data.title;
+      panel.querySelector('[data-stage-body]').textContent = data.body;
+      panel.querySelector('[data-stage-facts]').innerHTML = data.facts.map(([value, label]) => `<div class="stage-fact"><b>${value}</b><span>${label}</span></div>`).join('');
+      transitionState(panel.querySelector('.stage-content'), [{ opacity: 0.35, transform: `translateY(${direction * 12}px)` }, { opacity: 1, transform: 'translateY(0)' }]);
+      stateNotice.textContent = `${name}: ${data.title}`;
+      if (focus) tabs.find((tab) => tab.dataset.stageTab === name).focus();
+    }
+    tabs.forEach((tab, index) => {
+      tab.addEventListener('click', () => selectStage(tab.dataset.stageTab));
+      tab.addEventListener('keydown', (event) => {
+        let next = index;
+        if (event.key === 'ArrowRight' || event.key === 'ArrowDown') next = (index + 1) % tabs.length;
+        else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') next = (index - 1 + tabs.length) % tabs.length;
+        else if (event.key === 'Home') next = 0;
+        else if (event.key === 'End') next = tabs.length - 1;
+        else return;
+        event.preventDefault();
+        selectStage(tabs[next].dataset.stageTab, true);
+      });
+    });
+
+    const lensData = {
+      proposal: {
+        regex: ['Sift reading', '0.9593', 'Probe first', 'favorite'],
+        state: ['Sift reading', '0.8773', 'Probe second', 'survivor'],
+        stamp: 'Proposal order only'
+      },
+      evidence: {
+        regex: ['Correctness', '2 of 5 passed', 'Rejected', 'rejected'],
+        state: ['Correctness', '5 of 5 passed', 'Evidence winner', 'winner'],
+        stamp: 'Winner: integrate_winner'
+      }
+    };
+    const lensButtons = [...document.querySelectorAll('[data-lens]')];
+    const sheet = document.querySelector('.candidate-sheet');
+    const candidates = [...sheet.querySelectorAll('[data-candidate]')];
+    let currentLens = 'proposal';
+    function selectLens(name) {
+      if (name === currentLens) return;
+      currentLens = name;
+      candidates.forEach((candidate) => candidate.getAnimations().forEach((animation) => animation.cancel()));
+      const positions = new Map(candidates.map((candidate) => [candidate, candidate.getBoundingClientRect().top]));
+      lensButtons.forEach((button) => button.setAttribute('aria-pressed', String(button.dataset.lens === name)));
+      candidates.forEach((candidate) => {
+        const [label, reading, route, state] = lensData[name][candidate.dataset.candidate];
+        candidate.dataset.state = state;
+        candidate.querySelector('[data-reading-label]').textContent = label;
+        candidate.querySelector('[data-reading-value]').textContent = reading;
+        candidate.querySelector('[data-route-value]').textContent = route;
+        candidate.querySelector('.candidate-name span').textContent = name === 'proposal' ? (state === 'favorite' ? 'Proposal favorite' : 'Lower-ranked proposal') : (state === 'winner' ? 'Evidence winner' : 'Correctness failed');
+      });
+      // Reorder the actual articles so visual and assistive reading order agree.
+      const order = name === 'evidence' ? ['state', 'regex'] : ['regex', 'state'];
+      order.forEach((id) => sheet.append(candidates.find((candidate) => candidate.dataset.candidate === id)));
+      candidates.forEach((candidate) => transitionState(candidate, [
+        { transform: `translateY(${positions.get(candidate) - candidate.getBoundingClientRect().top}px)`, opacity: 0.55 },
+        { transform: 'translateY(0)', opacity: 1 }
+      ], 460));
+      const stamp = document.querySelector('[data-decision-stamp]');
+      stamp.textContent = lensData[name].stamp;
+      stamp.dataset.decision = name;
+      transitionState(stamp, [{ opacity: 0.3, transform: 'translateY(6px)' }, { opacity: 1, transform: 'translateY(0)' }], 460);
+      stateNotice.textContent = name === 'evidence' ? 'Evidence order: state machine first, 5 of 5 passed, winner. Regex rejected, 2 of 5 passed. Next action: integrate_winner.' : 'Proposal order: regex first, state machine second. Neither result is proven.';
+    }
+    lensButtons.forEach((button) => button.addEventListener('click', () => selectLens(button.dataset.lens)));
+
+    const copyButton = document.querySelector('[data-copy-command]');
+    copyButton.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText('npm install -g jevrev');
+        copyButton.textContent = 'Copied';
+        stateNotice.textContent = 'Install command copied.';
+      } catch {
+        copyButton.textContent = 'Copy failed';
+        stateNotice.textContent = 'Copy failed. Select the install command to copy it manually.';
+      }
+    });
+
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const revealItems = [...document.querySelectorAll('.reveal')];
+    if (reduceMotion || !('IntersectionObserver' in window)) {
+      revealItems.forEach((item) => item.classList.add('is-visible'));
+    } else {
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          entry.target.classList.add('is-visible');
+          observer.unobserve(entry.target);
+        });
+      }, { threshold: 0.14 });
+      revealItems.forEach((item) => observer.observe(item));
+    }
+  </script>
+</body>
+</html>
