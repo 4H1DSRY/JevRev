@@ -173,6 +173,28 @@ The full state, trust model, and acceptance criteria are in
 [`docs/WORKFLOW.md`](docs/WORKFLOW.md). Wire formats and exit codes are in
 [`docs/PROTOCOL.md`](docs/PROTOCOL.md).
 
+## Product layers
+
+JevRev is the umbrella product. The current implementation is deliberately
+split into two primitives:
+
+- **JevSift** is `jevrev sift` (with `run`/`rank` compatibility aliases). It
+  filters proposal cards and emits bounded probe work orders. It does not know
+  whether an implementation works.
+- **Probe/Decide** is `jevrev decide`. It checks recorded command and metric
+  evidence, then uses Jev only for evidence sufficiency and residual-risk
+  judgment.
+
+Two future layers are intentionally not claimed by this release:
+
+- **JevLoop** will audit each completed agent round and return a typed next
+  action so the host agent can continue, revise, stop, or ask a human.
+- **JevLong** will monitor a long-running session for drift, stalls, repeated
+  tool failures, and budget risk.
+
+Until those state machines exist, `jevrev` does not imply an always-on loop or
+monitoring daemon.
+
 ## Providers
 
 ### Hosted Jev

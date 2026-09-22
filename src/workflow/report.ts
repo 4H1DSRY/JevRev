@@ -15,6 +15,7 @@ export function renderCampaignHuman(campaign: Campaign): string {
       `  evidence: ${workOrder.required_evidence
         .map(({ id, description }) => `${id}: ${description}`)
         .join("; ")}`,
+      `  stop conditions: ${workOrder.stop_conditions.join("; ")}`,
       "",
     );
   }
