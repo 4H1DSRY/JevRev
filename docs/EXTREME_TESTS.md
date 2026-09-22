@@ -111,5 +111,5 @@ The repository currently covers these adversarial classes with automated tests:
 - recorder workspace, credential-isolation, and quiet-by-default checks.
 
 The remaining provider transport cases should be run against a mock HTTP server
-before JevLoop is designed. A live API run is not a substitute for those fault
-injection tests.
+before adding a live Jev observer or expanding provider-side automation. A live
+API run is not a substitute for those fault-injection tests.
