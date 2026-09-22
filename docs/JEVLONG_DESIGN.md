@@ -33,9 +33,7 @@ The MVP is a local JSONL observer with a small CLI surface:
 jevrev long create   --directory .jevrev/long --spec long-spec.json
 jevrev long ingest   --directory .jevrev/long --input events.jsonl
 jevrev long status   --directory .jevrev/long --format human
-jevrev long status   --directory .jevrev/long --watch --interval-ms 1000
-jevrev long report   --directory .jevrev/long --format json
-jevrev long close    --directory .jevrev/long --reason "human stopped session"
+jevrev long watch    --directory .jevrev/long --interval-ms 1000
 ```
 
 `ingest` accepts normalized events. Adapters for Codex, Claude Code, CI, or a
@@ -49,7 +47,7 @@ agent/harness -> JSONL stdout or file -> JevLong -> human stderr / JSON report
 There is no daemon requirement in the first release. A host may call `ingest`
 after every event, after a bounded batch, or at a heartbeat interval. A future
 TUI can read the same snapshot and alert files without changing the reducer.
-Without a host heartbeat or an explicit `status --watch`, a silent process cannot
+Without a host heartbeat or an explicit `watch`, a silent process cannot
 produce a new alert by itself; this is an explicit limitation, not hidden
 background behavior.
 
@@ -323,7 +321,7 @@ open -> acknowledged -> recovered -> closed
 not snapshot-only fields. A heartbeat can recover `silent`; it cannot by itself
 recover `stall` or `failure_loop`.
 
-### Module G: snapshot and reports (`src/long/report.ts`)
+### Module G: snapshot and dashboard (`src/long/store.ts`, `src/long/tui.ts`)
 
 Build a stable `LongSnapshot` after each accepted event:
 
@@ -342,15 +340,21 @@ Neither output implies that an agent should be automatically driven.
 ### Module H: CLI and adapters (`src/long/commands.ts`, `src/cli.ts`)
 
 The first adapter is JSONL/stdin/file. Later adapters can be added without
-changing the reducer. Proposed commands:
+changing the reducer. The current commands are:
 
 ```text
 long create     freeze a LongSpec
 long ingest     normalize and append one bounded event batch
 long status     print the current snapshot
-long report     emit event/indicator/alert history
-long acknowledge mark an alert as human-seen
-long close      explicitly end or abort the observation
+long watch      render the external dashboard without driving the agent
+```
+
+The following are planned extensions, not commands in the current release:
+
+```text
+long report       emit event/indicator/alert history
+long acknowledge  mark an alert as human-seen
+long close        explicitly end or abort the observation
 ```
 
 `long ingest` must be idempotent for an adapter event ID. It must never execute

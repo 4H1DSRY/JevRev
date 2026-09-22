@@ -28,6 +28,9 @@
 - Add JevLoop: frozen single-artifact specs, bounded work orders, hash-chained
   event storage, evidence audits, scope/budget gates, resume/abort/approval,
   replay/local providers, and the `loop evidence-template` CLI command.
+- Add JevLong: a read-only JSONL observer with deterministic `long create`,
+  `long ingest`, `long status`, and `long watch` commands. It reports session
+  health to a human and never drives the agent.
 - Harden JevLoop revision boundaries so old audits cannot carry into a new
   frozen contract; require explicit human confirmation and an attestation for
   resume; expose artifact summaries/excerpts to Jev; and support explicit
