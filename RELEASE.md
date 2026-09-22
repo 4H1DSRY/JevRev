@@ -1,12 +1,13 @@
-# JevRev 0.1.1 release sheet
+# JevRev 0.2.0 release sheet
 
-Tagline: **Pick the right path before you build.**
+Tagline: **Explore wide. Prove cheap. Commit once.**
 
-Package: `jevrev@0.1.1`
-Publish artifact: `jevrev-0.1.1.tgz`
-Git tag: `v0.1.1`
+Package: `jevrev@0.2.0`
+Publish artifact: `jevrev-0.2.0.tgz`
+Git tag: `v0.2.0`
 
-Final package SHA-256: `E8389CF9D6635973A59ECDF48AA353CEBFF47534E3E0F188F9BF8BA8677AEA10`
+Final package SHA-256 is recorded in the GitHub release metadata after the
+tarball is generated; it is not self-embedded in the package.
 
 ## Publish sequence
 
@@ -15,6 +16,8 @@ npm ci
 npm run check
 npm test
 npm run build
+npm run demo:all
+npm run demo:workflow
 npm pack --dry-run
 npm publish --access public
 ```
@@ -33,6 +36,9 @@ live API key, local model, or `benchmarks/results/` output.
 - local model lifecycle scripts and an at-least-five-repetition benchmark harness.
 - read-only case evaluator (`scripts/eval-cases.mjs`) and explicit skill
   installer (`jevrev-skill-install`).
+- Sift campaigns, bounded probe work orders, evidence packets, and evidence-backed
+  Decide outcomes.
+- deterministic ranking-reversal workflow demo (`npm run demo:workflow`).
 
 See [`docs/ACCEPTANCE.md`](docs/ACCEPTANCE.md) for the recorded checks and
 known boundaries. The hosted/local case comparison is documented in

@@ -1,0 +1,58 @@
+{
+  "version": "1",
+  "task": {
+    "goal": "Increase delimiter-counting throughput without changing quoted-field behavior.",
+    "context": "A JavaScript CSV scanner counts delimiters outside quoted fields. The baseline is correct but allocates an array for every input.",
+    "constraints": [
+      {
+        "id": "correctness",
+        "text": "Quoted delimiters and escaped quotes must retain baseline behavior.",
+        "kind": "hard"
+      },
+      {
+        "id": "api",
+        "text": "Keep the countDelimiters(input) API.",
+        "kind": "hard"
+      }
+    ],
+    "success": [
+      {
+        "id": "speed",
+        "text": "Repeated throughput is higher than the allocation-heavy baseline."
+      },
+      {
+        "id": "tests",
+        "text": "The correctness probe passes all quoted-field cases."
+      }
+    ]
+  },
+  "budget": { "max_survivors": 2 },
+  "candidates": [
+    {
+      "id": "regex-shortcut",
+      "title": "Count delimiters with one regex",
+      "summary": "Replace the allocating state scan with a compact native regex.",
+      "mechanism": "Use a global comma regex and return the number of matches.",
+      "assumptions": ["Native regex scanning dominates a JavaScript loop"],
+      "risks": ["The shortcut may count delimiters inside quoted fields"],
+      "validation": [
+        "Run quoted-field and escaped-quote correctness cases.",
+        "Measure repeated throughput against the baseline."
+      ],
+      "effort": "small"
+    },
+    {
+      "id": "indexed-state-machine",
+      "title": "Use an allocation-free indexed state machine",
+      "summary": "Preserve quote state while scanning code units without an intermediate array.",
+      "mechanism": "Walk the input by index, track quoted state, and skip escaped quote pairs.",
+      "assumptions": ["Array materialization is a material baseline cost"],
+      "risks": ["Quote transition logic could diverge from the baseline"],
+      "validation": [
+        "Run quoted-field and escaped-quote correctness cases.",
+        "Measure repeated throughput against the baseline."
+      ],
+      "effort": "small"
+    }
+  ]
+}

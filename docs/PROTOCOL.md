@@ -46,9 +46,10 @@ The CLI accepts one JSON object from `--input <path>` or stdin (`--input -`).
 Rules:
 
 - `version` must be `"1"`.
-- Protocol version `1` is still the wire version in 0.1.1, but the result now
-  includes `provider_profile`, `next_action`, and `empty_reason`; strict
-  consumers should accept those fields before upgrading.
+- Rank protocol version `1` remains the compatibility wire version. Since
+  0.1.1 the result includes `provider_profile`, `next_action`, and
+  `empty_reason`; strict consumers must accept those fields. Campaign,
+  evidence, and Decide objects use their own `kind` plus `schema_version`.
 - Candidate and criterion IDs use lowercase letters, digits, `_`, and `-`.
 - Candidate IDs must be unique.
 - A request contains 2-12 candidates.
@@ -153,6 +154,49 @@ Replay fixtures must include `candidate_order`, an array of candidate IDs in
 the exact order used when the answers were recorded. JevRev rejects a replay
 whose order does not match the input instead of applying positional answers to
 the wrong candidate.
+
+## Evidence workflow protocols
+
+`jevrev sift` accepts the same rank request but emits a
+`jevrev.campaign` envelope. The existing rank result is preserved under `sift`;
+`work_orders` contains one entry for each strict survivor. Candidate SHA-256
+digests bind later evidence to the exact proposal.
+
+`jevrev decide` accepts two files:
+
+```bash
+jevrev decide --campaign campaign.json --evidence evidence.json
+```
+
+The evidence file is a `jevrev.evidence-bundle` containing zero or one packet
+per work order. A packet records revision identity, command observations, raw
+metric samples, requirement results, changed files, development cost, and known
+failures. A `pass` requirement must cite at least one known observation or
+metric. Packets with unknown references, duplicate IDs, mismatched campaign or
+candidate hashes, or inconsistent base commits fail closed.
+
+Decide recomputes metric means, sample standard deviations (`n - 1`), and
+relative improvement. Required command failures, failed hard requirements, and
+budget violations are applied before Jev is called. Builder notes are omitted
+from judge state.
+
+The result kind is `jevrev.decide-result`. `decision` is one of:
+
+- `winner` — integrate the named winner after review;
+- `merge` — run a combined probe for two independently viable candidates;
+- `probe_more` — collect missing or discriminating evidence;
+- `no_winner` — revise the candidate set;
+- `human_review` — resolve a low-confidence or subjective trade-off.
+
+Packets may attach content-addressed `artifacts` (source, diff, demo, or
+screenshot) and typed `artifact_evaluations`. Current imported evaluations are
+explicitly marked `source: "imported"`; a future trusted recorder can add a
+runner-produced source without changing the packet shape. Decide receives
+artifact excerpts and evaluation summaries, never arbitrary repository access.
+
+These are normal results and exit with code `0`. Nonzero exit codes remain
+reserved for usage/input, provider, protocol, and unexpected failures. The
+complete trust model and acceptance criteria are in [`WORKFLOW.md`](WORKFLOW.md).
 
 ## Provider addresses
 

@@ -1,8 +1,8 @@
 # JevRev release acceptance
 
-Release candidate: `0.1.1`
+Release candidate: `0.2.0`
 Product: JevRev
-Tagline: **Pick the right path before you build.**
+Tagline: **Explore wide. Prove cheap. Commit once.**
 
 The checks below are the acceptance record for this package. Commands were run
 from the repository root on Node.js 25.2.1 / Windows PowerShell; the package
@@ -19,8 +19,13 @@ requires Node.js 20 or newer.
 | Legacy local adapter | Reranker protocol at `/v1/score` retained as an explicit compatibility provider | PASS |
 | Policy | Hard gates, confidence review route, effort weighting, deduplication, survivor budget, empty-result action | PASS |
 | Handoff | JSON `selected`, `shortlist`, decisions, reason codes, usage, stable run IDs, provider profile, thresholds | PASS |
+| Campaign | Deterministic survivor hashes, bounded probe work orders, evidence requirements and stop conditions | PASS |
+| Evidence | Campaign/candidate binding, reference integrity, raw samples, revision identity, command and budget gates | PASS |
+| Agent handoff | Skill phase contract plus safe incomplete evidence-template generator | PASS |
+| Artifacts | Content-addressed source/demo/screenshot references and typed imported evaluator observations | PASS |
+| Decide | Distinct evidence questions; winner, merge, probe-more, no-winner, and human-review outcomes | PASS |
 | Replay safety | Candidate-order metadata checked before positional answers are accepted | PASS |
-| CLI | `run`, `rank` compatibility alias, stdin, file input, `--output`, stable exit codes | PASS |
+| CLI | `run`/`rank` compatibility, `sift`, `decide`, stdin, file output, stable exit codes | PASS |
 | Evaluation/skill tooling | Read-only case evaluator and explicit skill installer | PASS |
 | Operations | `doctor`, local health probes, PowerShell model lifecycle scripts | PASS |
 | Documentation | README, protocol, design, local setup, skill, release notes | PASS |
@@ -30,15 +35,17 @@ requires Node.js 20 or newer.
 
 ```text
 npm run check     PASS
-npm test          PASS — 62 tests
+npm test          PASS — 97 tests
 npm run build     PASS
 ```
 
 The tests cover schema rejection, question construction, official-client
 transport, local response mapping, SemIf option-logit normalization, policy
-invariants, replay-order rejection, empty-result actions, JSON/human reporting,
-stdin, output files, provider errors, skill installation safety, and the public
-input-address diagnostic.
+invariants, replay-order rejection, empty-result actions, workflow schemas,
+evidence references, artifact references, sample statistics, hard-gate ranking
+reversal, objective dominance, all five Decide outcomes, JSON/human reporting,
+CLI/provider integration, skill installation safety, and the public input-address
+diagnostic.
 
 The legacy Python reranker runtime suite also passes:
 
@@ -52,10 +59,20 @@ python -m unittest discover -s runtime/tests -v  PASS — 7 tests
 npm run demo      PASS — parser-speedup fixture
 npm run demo:all  PASS — parser-speedup, api-boundary-hardening,
                        flaky-ci-concurrency
+npm run demo:workflow PASS — executes two implementations, five correctness
+                         cases and seven benchmark samples per candidate;
+                         paper favorite fails and runner-up wins
+live long cases PASS — tenant auth, checkout performance, and payment
+                       idempotency requests ran against Jev; results are
+                       recorded in the task handoff, not committed as fixtures
 ```
 
-Offline fixtures prove deterministic protocol and policy behavior. They are
-not presented as live model measurements.
+The original demos prove deterministic protocol and policy behavior. The
+workflow demo executes a self-contained delimiter-counter fixture, captures
+real command exits/durations/output digests and repeated benchmark samples, and
+writes its campaign, evidence, replay, and decision artifacts under the ignored
+`benchmarks/results/workflow-demo/` directory. Sift and Decide model answers are
+replayed; measured throughput varies by machine.
 
 ## Local model run
 
@@ -110,10 +127,10 @@ record.
 
 The recorded v0.1.0 run is `bench_muagsjry_b903c3c2` with its then-current CLI
 artifact SHA-256 `5853d720bb356e446af8383e51966d6e151532c789e1f491b557761a9febbce5`.
-The v0.1.1 CLI artifact produced by this checkout is tracked separately in the
-release asset and changes because of the replay and handoff hardening.
-The final npm tarball asset is `jevrev-0.1.1.tgz`, SHA-256
+The v0.1.1 release asset SHA-256 was
 `E8389CF9D6635973A59ECDF48AA353CEBFF47534E3E0F188F9BF8BA8677AEA10`.
+The v0.2.0 SHA-256 is recorded in the GitHub release metadata after packaging;
+it is not embedded here because changing an included file changes the tarball.
 
 ## Real-case provider check
 
@@ -129,12 +146,16 @@ and is not stored in this repository.
 
 ## Known boundaries
 
-- A `selected` candidate is a routing decision, not proof of correctness.
+- A Sift `selected` candidate is a routing decision, not proof of correctness.
 - `review` candidates remain unresolved; `shortlist` makes them visible to the
   host agent without silently approving them.
+- Evidence is imported in v0.2.0. Candidate/campaign hashes and reference checks
+  prevent accidental misattachment, but a trusted command recorder is deferred.
+- JevRev does not create worktrees, run arbitrary commands, or merge code. The
+  host agent executes work orders and stops before merge.
+- `merge` requests a combined probe; it is not permission to integrate two
+  branches without testing the combination.
 - The benchmark evaluates decision quality against declared scenario labels;
   it does not claim that JevRev alone improves production latency or defect
   rate.
-- The public repository is
-  `https://github.com/Alex314618-create/JevRev`. Tag `v0.1.1` points at the
-  release commit for this acceptance record.
+- The public repository is `https://github.com/Alex314618-create/JevRev`.

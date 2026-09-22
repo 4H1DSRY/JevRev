@@ -1,0 +1,151 @@
+# JevRev evidence workflow
+
+Status: vertical-slice design
+
+## Product contract
+
+JevRev is a speculative engineering funnel for coding agents:
+
+```text
+ideas -> sift -> cheap probes -> evidence -> decide
+```
+
+The host agent still writes code. JevRev freezes the brief, removes weak or
+duplicative directions, emits comparable probe work orders, validates the
+evidence returned by the host, and adjudicates only after deterministic facts
+have been checked.
+
+The default promise is:
+
+> Explore wide. Prove cheap. Commit once.
+
+It is not "build five products and ask a model which one looks best." The
+expensive stages get progressively narrower:
+
+```text
+4-7 hypotheses -> 2 probes -> winner, merge probe, more evidence, or no winner
+```
+
+Simple or obvious tasks should bypass the workflow. It is useful only when the
+expected cost of choosing the wrong mechanism exceeds the cost of two bounded
+probes.
+
+## Truth hierarchy
+
+Jev is not the final source of truth. Decision inputs are applied in this
+order:
+
+1. Schema, hashes, candidate identity, budgets, and command exit codes.
+2. Required tests, hard constraints, and recorded measurements.
+3. Jev judgments about evidence coverage, reproducibility, residual risk, and
+   whether the result is worth shipping.
+4. Deterministic product policy.
+
+A failed required command or hard constraint cannot be overturned by a high
+Jev score. Builder notes are untrusted context and cannot satisfy a required
+criterion by themselves.
+
+## Stateless vertical slice
+
+The first release adds two composable primitives without building another
+coding agent:
+
+```bash
+jevrev sift --input proposals.json > campaign.json
+jevrev decide --campaign campaign.json --evidence evidence.json
+```
+
+`run` and `rank` keep their current output for compatibility. `sift` wraps the
+same shortlist result in a campaign and emits one bounded work order per strict
+survivor. A work order contains the hypothesis, the smallest-probe instruction,
+required evidence, budget, and stop conditions.
+
+The host agent performs each work order in an isolated branch or worktree and
+returns an evidence bundle. JevRev does not run arbitrary shell commands or
+merge a branch in this slice.
+
+`jevrev-evidence-template --campaign campaign.json --output evidence.json`
+creates a schema-valid handoff with `not_started` development and `unknown`
+requirements. It removes envelope boilerplate without fabricating evidence; an
+unchanged template deterministically routes to `probe_more`.
+
+`decide` first checks deterministic evidence. Only viable finalists are sent
+to Jev (or a supported local judge) for narrow evidence questions. The result
+is one of:
+
+- `winner`: one candidate is ready to integrate;
+- `merge`: independently viable, complementary candidates deserve a combined
+  probe; this is not permission to merge untested code;
+- `probe_more`: evidence is missing or the leading candidates are too close;
+- `no_winner`: every candidate failed a deterministic or semantic gate;
+- `human_review`: the judge is too uncertain or the trade-off is subjective.
+
+## Evidence contract
+
+An evidence packet is tied to a campaign and candidate hash. It records:
+
+- revision identity (`base_commit`, optional `head_commit`, and optional diff
+  hash);
+- command observations with argv, exit code, duration, and output digests;
+- raw baseline and candidate metric samples;
+- explicit results for every success criterion and hard constraint;
+- content-addressed source, diff, demo, or screenshot artifacts plus imported
+  evaluator observations when a probe produces a qualitative result;
+- changed files, wall time, optional token/cost accounting;
+- known failures and untrusted builder notes.
+
+JevRev recomputes metric mean, sample standard deviation, and relative change
+from raw samples. A passing requirement must cite a recorded observation or
+metric. Evidence with the wrong campaign, candidate hash, duplicate IDs,
+inconsistent base revision, a failed cited command, or a wall-time
+contradiction fails closed.
+
+## Sift and decide use different questions
+
+Sift keeps the existing proposal signals:
+
+- goal fit;
+- hard-constraint fit;
+- feasibility;
+- validation quality;
+- execution value;
+- pairwise duplication.
+
+Decide does not repeat those scores. It asks:
+
+- does the evidence causally support the declared success criteria?
+- is the result reproducible from the recorded observations?
+- is residual risk acceptable?
+- is the verified gain worth integrating?
+- are two independently viable candidates complementary enough to justify a
+  combined probe?
+
+## Acceptance criteria for the slice
+
+1. Existing `run`/`rank` JSON and replay behavior remain compatible.
+2. `sift` produces a schema-valid campaign and deterministic candidate hashes.
+3. `decide` rejects mismatched or incomplete evidence before calling policy.
+4. A failed required command or hard constraint can never win.
+5. Metric summaries are recomputed from raw samples with sample standard
+   deviation (`n - 1`).
+6. Decisions support all five normal outcomes and do not force a winner.
+7. Jev, SemIf, legacy local, and replay providers remain usable through the
+   shared typed-question boundary.
+8. An executable demo runs correctness and repeated benchmark probes for two
+   implementations, then shows the paper favorite losing after a regression
+   while the initially second-ranked candidate wins on evidence. Jev answers
+   are replayed; command and metric evidence is measured.
+9. JSON stdout remains machine-readable; diagnostics stay on stderr.
+10. No command is executed and no branch is merged by `sift` or `decide`.
+
+## Deferred
+
+- persistent runs, event logs, locks, cache, and `resume`;
+- a trusted command recorder (`jevrev evidence run`);
+- automatic worktree creation;
+- integration and merge automation;
+- JevLoop and long-run monitoring;
+- a web UI, daemon, or MCP server.
+
+Those features should reuse this campaign/evidence/decision contract after the
+stateless slice proves useful.

@@ -210,6 +210,50 @@ function localItemId(index: number, signal: SignalName): string {
 }
 
 function buildLocalItems(plan: QuestionPlan): PlannedLocalItem[] {
+  const state = plan.state;
+  if (
+    state !== null &&
+    !Array.isArray(state) &&
+    typeof state === "object" &&
+    Array.isArray(state.finalists)
+  ) {
+    const task = state.task;
+    const finalists = state.finalists;
+    return Object.entries(plan.questions).map(([answerKey, question]) => {
+      const finalistMatch = /^finalist_(\d+)_/.exec(answerKey);
+      const pairMatch = /^finalist_pair_(\d+)_(\d+)_complementary$/.exec(answerKey);
+      let document: unknown = state;
+      if (finalistMatch !== null) {
+        document = finalists[Number(finalistMatch[1])];
+      } else if (pairMatch !== null) {
+        document = {
+          left_finalist: finalists[Number(pairMatch[1])],
+          right_finalist: finalists[Number(pairMatch[2])],
+        };
+      }
+      if (document === undefined) {
+        throw new ProtocolError(`Local judge cannot map ${answerKey} to a finalist`);
+      }
+      if (question.type !== "noul" && question.type !== "score") {
+        throw new ProtocolError(`Unsupported local question type for ${answerKey}`);
+      }
+      return {
+        item: {
+          id: answerKey,
+          query: jsonText(task),
+          document: jsonText(document),
+          instruction: typeof question.instructions === "string"
+            ? question.instructions
+            : question.instructions === undefined
+              ? "Apply the declared criterion."
+              : jsonText(question.instructions),
+        },
+        answerKey,
+        answerType: question.type,
+      };
+    });
+  }
+
   const { task, candidates } = localState(plan);
   const planned: PlannedLocalItem[] = [];
 
@@ -605,6 +649,8 @@ function buildSemIfQuestions(plan: QuestionPlan): SemIfPlannedQuestion[] {
     let evidence: unknown;
     const candidateMatch = /^candidate_(\d+)_/.exec(answerKey);
     const pairMatch = /^pair_(\d+)_(\d+)_duplicate$/.exec(answerKey);
+    const finalistMatch = /^finalist_(\d+)_/.exec(answerKey);
+    const finalistPairMatch = /^finalist_pair_(\d+)_(\d+)_complementary$/.exec(answerKey);
     if (candidateMatch !== null) {
       const index = Number(candidateMatch[1]);
       evidence = answerKey.endsWith("_constraint_fit")
@@ -616,6 +662,29 @@ function buildSemIfQuestions(plan: QuestionPlan): SemIfPlannedQuestion[] {
         Number(pairMatch[1]),
         Number(pairMatch[2]),
       );
+    } else if (finalistMatch !== null) {
+      const finalists = state.finalists;
+      const index = Number(finalistMatch[1]);
+      if (!Array.isArray(finalists) || finalists[index] === undefined) {
+        throw new ProtocolError(`SemIf state is missing finalists[${index}]`);
+      }
+      evidence = { task: state.task, finalist: finalists[index] };
+    } else if (finalistPairMatch !== null) {
+      const finalists = state.finalists;
+      const left = Number(finalistPairMatch[1]);
+      const right = Number(finalistPairMatch[2]);
+      if (
+        !Array.isArray(finalists) ||
+        finalists[left] === undefined ||
+        finalists[right] === undefined
+      ) {
+        throw new ProtocolError(`SemIf state is missing finalists[${left}] or finalists[${right}]`);
+      }
+      evidence = {
+        task: state.task,
+        left_finalist: finalists[left],
+        right_finalist: finalists[right],
+      };
     } else {
       evidence = state;
     }

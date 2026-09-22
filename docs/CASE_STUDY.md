@@ -26,6 +26,28 @@ the README uses deterministic candidate-order rotations and reports the sample
 standard deviation (`n - 1`) of the naive first choice versus the returned
 shortlist. It measures order sensitivity, not general model uncertainty.
 
+## Hosted/local fixture comparison
+
+The supplied `local-setup` directory also contains captured hosted-Jev and
+local-Qwen result files. Comparing those files offline avoids pretending that a
+live API call happened when no credential or local server is configured:
+
+| Case | Hosted selection | Local selection | Same selection? |
+| --- | --- | --- | --- |
+| shiny rewrite | `trim-and-split`, `assets-and-fonts` | `trim-and-split`, `assets-and-fonts` | yes |
+| constraint traps | `streaming-pipeline` | `streaming-pipeline` | yes |
+| duplicate and validation | `weighted-test-sharding`, `dependency-and-build-cache` | empty | no; local calibration failure |
+| twelve candidates | `request-id-propagation`, `prometheus-metrics` | `request-id-propagation` | partial; local judge reviewed the second path |
+
+The first two cases agree across providers. The latter two are useful failure
+cases: a small local judge can be too conservative or uncertain even when the
+hosted result is decisive. JevRev should surface that disagreement through
+provider profiles and review, not hide it behind a shared score.
+
+The live evaluator requires an explicit credential or a running local service.
+With neither configured, it fails each case with a provider error and zero
+tokens; that is an expected setup failure, not a quality measurement.
+
 ## Reproduce
 
 Build the CLI, then point the read-only evaluator at the case directory:

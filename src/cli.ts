@@ -18,13 +18,19 @@ import {
 import { rankCandidates } from "./policy.js";
 import { buildQuestionPlan } from "./questions.js";
 import { renderHuman, renderJson } from "./report.js";
+import { buildCampaign } from "./workflow/campaign.js";
+import { decideCampaign } from "./workflow/decide.js";
+import { buildDecidePlan } from "./workflow/decide-questions.js";
+import { prepareDecision } from "./workflow/evidence.js";
+import { campaignSchema, evidenceBundleSchema } from "./workflow/schemas.js";
+import { renderCampaignHuman, renderDecideHuman, renderWorkflowJson } from "./workflow/report.js";
 
 type Provider = "jev" | "typesafe" | "local" | "semif";
 type OutputFormat = "human" | "json";
 
 const DEFAULT_SEMIF_URL = "http://127.0.0.1:4878";
 const DEFAULT_LOCAL_URL = "http://127.0.0.1:4877";
-const VERSION = "0.1.1";
+const VERSION = "0.2.0";
 
 interface RankOptions {
   input: string;
@@ -47,6 +53,20 @@ interface DoctorOptions {
   jevUrl: string;
   localUrl: string;
   semifUrl: string;
+}
+
+interface DecideOptions {
+  campaign: string;
+  evidence: string;
+  replay?: string;
+  format: OutputFormat;
+  model: string;
+  provider: Provider | string;
+  jevUrl?: string;
+  localUrl?: string;
+  semifUrl?: string;
+  semifModel?: string;
+  output?: string;
 }
 
 function envValue(...names: string[]): string | undefined {
@@ -97,6 +117,16 @@ function normalizedProvider(provider: Provider): Exclude<Provider, "typesafe"> {
   return provider === "typesafe" ? "jev" : provider;
 }
 
+function requireJevApiKey(provider: Exclude<Provider, "typesafe">): string | undefined {
+  const key = envValue("JEVREV_JEV_API_KEY", "TYPESAFE_API_KEY");
+  if (provider === "jev" && key === undefined) {
+    throw new ProviderError(
+      "Missing Jev API key. Set JEVREV_JEV_API_KEY (or TYPESAFE_API_KEY), or use --provider semif/local.",
+    );
+  }
+  return key;
+}
+
 function validateFormat(format: string): asserts format is OutputFormat {
   if (format !== "human" && format !== "json") {
     throw new InputError("--format must be human or json");
@@ -115,7 +145,7 @@ async function emit(rendered: string, outputPath: string | undefined): Promise<v
   }
 }
 
-async function runRank(options: RankOptions): Promise<void> {
+async function evaluateRank(options: RankOptions) {
   const rawRequest = await readJson(options.input);
   let request: RankRequest;
   try {
@@ -135,7 +165,7 @@ async function runRank(options: RankOptions): Promise<void> {
 
   const plan = buildQuestionPlan(request, { canonicalize: options.replay === undefined });
   const provider = normalizedProvider(parseProvider(String(options.provider)));
-  const jevApiKey = envValue("JEVREV_JEV_API_KEY", "TYPESAFE_API_KEY");
+  const jevApiKey = options.replay === undefined ? requireJevApiKey(provider) : undefined;
   const judge =
     options.replay === undefined
       ? provider === "local"
@@ -160,7 +190,74 @@ async function runRank(options: RankOptions): Promise<void> {
     ? `${provider}/${response.model}`
     : "replay";
   const result = rankCandidates(request, response, plan.candidateOrder, { providerProfile });
+  return { request, result };
+}
+
+async function runRank(options: RankOptions): Promise<void> {
+  const { result } = await evaluateRank(options);
   await emit(options.format === "json" ? renderJson(result) : `${renderHuman(result)}\n`, options.output);
+}
+
+async function runSift(options: RankOptions): Promise<void> {
+  const { request, result } = await evaluateRank(options);
+  const campaign = buildCampaign(request, result);
+  await emit(
+    options.format === "json"
+      ? renderWorkflowJson(campaign)
+      : `${renderCampaignHuman(campaign)}\n`,
+    options.output,
+  );
+}
+
+async function runDecide(options: DecideOptions): Promise<void> {
+  const rawCampaign = await readJson(options.campaign);
+  const rawEvidence = await readJson(options.evidence);
+  let campaign;
+  let bundle;
+  try {
+    campaign = campaignSchema.parse(rawCampaign);
+    bundle = evidenceBundleSchema.parse(rawEvidence);
+  } catch (error) {
+    if (error instanceof ZodError) {
+      throw new InputError(`Invalid decide input: ${error.message}`, { cause: error });
+    }
+    throw error;
+  }
+
+  const prepared = prepareDecision(campaign, bundle);
+  let response;
+  let candidateOrder: readonly number[] = [];
+  let providerProfile = "deterministic/no-viable-finalists";
+  if (prepared.viable.length > 0) {
+    const plan = buildDecidePlan(prepared, { canonicalize: options.replay === undefined });
+    candidateOrder = plan.candidateOrder;
+    const provider = normalizedProvider(parseProvider(String(options.provider)));
+    const jevApiKey = options.replay === undefined ? requireJevApiKey(provider) : undefined;
+    const judge = options.replay === undefined
+      ? provider === "local"
+        ? new LocalJudge(options.localUrl === undefined ? {} : { baseUrl: options.localUrl })
+        : provider === "semif"
+          ? new SemIfJudge({
+              ...(options.semifUrl ?? options.localUrl
+                ? { baseUrl: options.semifUrl ?? options.localUrl }
+                : {}),
+              ...(options.semifModel === undefined ? {} : { model: options.semifModel }),
+            })
+          : new TypeSafeJudge({
+              model: options.model,
+              ...(jevApiKey === undefined ? {} : { apiKey: jevApiKey }),
+              ...(options.jevUrl === undefined ? {} : { baseUrl: options.jevUrl }),
+            })
+      : new ReplayJudge(await readJson(options.replay));
+    response = await judge.evaluate(plan);
+    providerProfile = options.replay === undefined ? `${provider}/${response.model}` : "replay";
+  }
+
+  const result = decideCampaign(prepared, response, candidateOrder, { providerProfile });
+  await emit(
+    options.format === "json" ? renderWorkflowJson(result) : `${renderDecideHuman(result)}\n`,
+    options.output,
+  );
 }
 
 function validatedHttpUrl(value: string, label: string): string {
@@ -250,12 +347,14 @@ async function runDoctor(options: DoctorOptions): Promise<void> {
   await emit(options.format === "json" ? `${JSON.stringify(data, null, 2)}\n` : doctorHuman(data), undefined);
 }
 
-function addRankCommand(program: Command, name: "run" | "rank"): void {
-  const defaultFormat: OutputFormat = name === "run" ? "json" : "human";
+function addRankCommand(program: Command, name: "run" | "rank" | "sift"): void {
+  const defaultFormat: OutputFormat = name === "rank" ? "human" : "json";
   program
     .command(name)
     .description(
-      name === "run"
+      name === "sift"
+        ? "Sift candidate approaches and emit bounded probe work orders"
+        : name === "run"
         ? "Evaluate candidate approaches and return an implementation shortlist"
         : "Compatibility alias for run",
     )
@@ -296,7 +395,8 @@ function addRankCommand(program: Command, name: "run" | "rank"): void {
     .option("-o, --output <path>", "write the rendered result to a file")
     .action(async (rawOptions: RankOptions) => {
       validateFormat(rawOptions.format);
-      await runRank(rawOptions);
+      if (name === "sift") await runSift(rawOptions);
+      else await runRank(rawOptions);
     });
 }
 
@@ -310,6 +410,30 @@ function createProgram(): Command {
 
   addRankCommand(program, "run");
   addRankCommand(program, "rank");
+  addRankCommand(program, "sift");
+
+  program
+    .command("decide")
+    .description("Choose from probed finalists using deterministic evidence and Jev")
+    .requiredOption("--campaign <path>", "campaign JSON emitted by `jevrev sift`")
+    .requiredOption("--evidence <path>", "evidence bundle JSON")
+    .option("--replay <path>", "use a captured decide response instead of a live provider")
+    .option("--format <format>", "human or json", "json")
+    .option(
+      "--provider <provider>",
+      "jev, semif, or local (typesafe is a compatibility alias)",
+      envValue("JEVREV_PROVIDER", "SPECJEV_PROVIDER") ?? "jev",
+    )
+    .option("--jev-url <url>", "Jev API root", envValue("JEVREV_JEV_URL", "TYPESAFE_BASE_URL"))
+    .option("--local-url <url>", "legacy local reranker base URL", envValue("JEVREV_LOCAL_URL", "SPECJEV_LOCAL_URL"))
+    .option("--semif-url <url>", "local SemIf llama.cpp base URL", envValue("JEVREV_SEMIF_URL", "SPECJEV_SEMIF_URL"))
+    .option("--semif-model <model>", "SemIf model identifier", envValue("JEVREV_SEMIF_MODEL", "SPECJEV_SEMIF_MODEL"))
+    .option("--model <model>", "Jev model", envValue("JEVREV_JEV_MODEL", "TYPESAFE_DEFAULT_MODEL") ?? "jev-latest")
+    .option("-o, --output <path>", "write the rendered result to a file")
+    .action(async (rawOptions: DecideOptions) => {
+      validateFormat(rawOptions.format);
+      await runDecide(rawOptions);
+    });
 
   program
     .command("doctor")

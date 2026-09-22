@@ -1,362 +1,274 @@
 <p align="center">
-  <img src=".github/assets/jevrev-banner.png" alt="JevRev: a skull illustration beside the JevRev wordmark" width="100%" />
+  <img src=".github/assets/jevrev-banner.png" alt="JevRev banner" width="100%" />
 </p>
 
 <h1 align="center">JevRev</h1>
 
-<p align="center"><strong>Pick the right path before you build.</strong></p>
+<p align="center"><strong>Explore wide. Prove cheap. Commit once.</strong></p>
 
 <p align="center">
-  <a href="https://github.com/Alex314618-create/JevRev/tags"><img alt="Latest tag" src="https://img.shields.io/github/v/tag/Alex314618-create/JevRev?style=flat-square&amp;label=release&amp;color=111111" /></a>
+  <a href="https://github.com/Alex314618-create/JevRev/releases"><img alt="Release" src="https://img.shields.io/github/v/release/Alex314618-create/JevRev?style=flat-square" /></a>
   <a href="package.json"><img alt="Node.js 20 or newer" src="https://img.shields.io/badge/Node.js-%3E%3D20-339933?style=flat-square&amp;logo=nodedotjs&amp;logoColor=white" /></a>
-  <a href="package.json"><img alt="TypeScript 5.9" src="https://img.shields.io/badge/TypeScript-5.9-3178C6?style=flat-square&amp;logo=typescript&amp;logoColor=white" /></a>
   <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/License-MIT-F4C430?style=flat-square" /></a>
 </p>
 
-Cut 3-7 candidate approaches to the one or two worth building before you spend
-two days on the wrong one. Hard-constraint risks are surfaced and gated;
-material duplicates are cut. One command, JSON out, no plugin, never touches
-your repo. Offline runs need no key; local judging has zero API spend and keeps
-the request on your machine.
+> Explore wide. Prove cheap. Commit once.
 
-JevRev is a CLI gate between planning and implementation. Your coding agent
-drafts 3-7 materially different approaches. Jev (or a local judge) scores them
-against one brief, removes material duplicates and hard-constraint failures,
-and returns a short queue to implement and test.
+Coding agents are good at finding plausible ways forward. They are less good at
+noticing when the first plausible way is merely the first one they wrote down.
 
-The first pass should feel like an octopus: several arms reach into the problem
-at once. JevRev keeps the arms that have earned another step. It does not edit
-your repository or pretend that a score is proof.
+JevRev gives an agent a small speculative-engineering funnel:
 
-## Try it in a minute
+```text
+4-7 ideas
+   ↓  Jev sifts proposals
+2 bounded probes
+   ↓  tests and benchmarks produce evidence
+winner / merge probe / more evidence / no winner
+```
 
-From a source checkout:
+It is a CLI, not another coding agent. Codex, Claude Code, or your own harness
+still generates and implements the alternatives. JevRev freezes the brief,
+prunes weak directions, issues comparable work orders, validates the returned
+evidence, and makes the final route explicit.
+
+## The part that matters
+
+A plan score is not proof. JevRev uses two different decisions:
+
+1. **Sift** asks whether a proposed mechanism is plausible, distinct, feasible,
+   testable, and worth a probe.
+2. **Decide** starts with command exits, requirement results, raw metric samples,
+   revision identity, and budgets. Jev then judges evidence coverage,
+   reproducibility, residual risk, and shipping value.
+
+A failed required test cannot be rescued by a high model score. The final result
+can be `winner`, `merge`, `probe_more`, `no_winner`, or `human_review`.
+
+That distinction is the product.
+
+## See the ranking reverse
+
+The bundled workflow demo is offline and deterministic:
 
 ```bash
 git clone https://github.com/Alex314618-create/JevRev.git
 cd JevRev
 npm install
-npm run build
-npm run demo
+npm run demo:workflow
 ```
-
-The demo is offline and deterministic. It ranks seven parser-speedup ideas:
 
 ```text
-JevRev jvr_... | jev-1.13.0-demo
-Kept 2/7 | shortlist 2 | review 0 | rejected 5
-Implement next: allocation-cut, byte-fast-path
+JevRev workflow demo — executed ranking reversal
+Paper favorite: regex-shortcut (sift score 0.9593)
+  measured throughput: 65.10x baseline
+  correctness command: failed
+  result: rejected
+Evidence winner: indexed-state-machine
+  measured throughput: 5.20x baseline
+  correctness command: passed
+Decision: winner -> integrate_winner
 ```
 
-The calling agent implements the IDs in `selected`, runs the tests, and keeps or
-drops the result using real evidence. To run all three included scenarios:
+Throughput varies by machine. The demo actually executes both implementations'
+correctness probes and seven-sample benchmarks; only the Jev Sift/Decide answers
+are replayed so the routing policy stays deterministic. The deliberately
+tempting regex is much faster but counts quoted delimiters incorrectly, so the
+slower verified state machine wins. Campaign, raw evidence, output digests,
+source hashes, replays, and the final decision are written under
+`benchmarks/results/workflow-demo/`.
 
-```bash
-npm run demo:all
+## Use it from an agent
+
+The normal entry point is a short instruction to the coding agent:
+
+```text
+Use JevRev for this task. Generate materially different hypotheses, run `jevrev
+sift`, perform only the returned probes in isolation, record raw test and
+benchmark evidence, then run `jevrev decide`. Stop before merging.
 ```
 
-After the package is published, install the CLI separately and point it at your
-own request file:
+JevRev also ships a file-based agent skill:
 
 ```bash
 npm install -g jevrev
-jevrev run --input request.json --provider jev --format json
+jevrev-skill-install --target codex
 ```
 
-It is a small command between planning and editing, not a second coding agent,
-workflow dashboard, or patch generator.
+The skill keeps JSON plumbing out of the user's conversation. It teaches the
+host agent when the workflow is worth using and when a simple direct edit is
+cheaper.
 
-## Why this exists
+## CLI
 
-The expensive mistake is often made before the first line of code: the agent
-chooses the first plausible approach and only discovers a better one after the
-implementation has grown around it.
+### 1. Sift the ideas
 
-JevRev makes the agent compare first.
-
-- The calling agent proposes 3-7 candidate cards.
-- JevRev asks the same narrow questions about every card.
-- Deterministic policy removes hard-constraint failures, material duplicates,
-  and low-value work outside the budget.
-- The calling agent builds the few that remain.
-
-The input and output are ordinary JSON. That is the integration surface. Call it
-from Codex, Claude Code, CI, or a shell script.
-
-## See it run
-
-The included replay demos need no account and no model. They cover three
-concrete problems:
-
-- parser throughput without changing a public API;
-- API boundary validation without weakening limits;
-- flaky CI caused by shared state and time.
-
-The live provider can be Jev, or a local model. With a request file of your own:
+The input is a frozen brief plus 2-12 structured candidate cards. See
+[`examples/parser-speedup.json`](examples/parser-speedup.json) for a complete
+request.
 
 ```bash
-jevrev run --input request.json --provider jev --format json
-jevrev run --input request.json --provider semif --format json
+jevrev sift --input proposals.json --provider jev > campaign.json
 ```
 
-## The result
+Each strict survivor receives a work order containing:
 
-JSON mode returns two queues. The example below is abridged:
+- the hypothesis;
+- a smallest-probe instruction;
+- required evidence;
+- wall-time and changed-file budgets;
+- stop conditions.
 
-```json
-{
-  "selected": ["allocation-cut", "byte-fast-path"],
-  "shortlist": ["allocation-cut", "byte-fast-path"],
-  "decisions": [
-    { "candidate_id": "allocation-cut", "status": "keep" },
-    { "candidate_id": "native-extension", "status": "reject" }
-  ]
-}
-```
-
-`selected` is the set that passed JevRev's policy gates; still verify it.
-`shortlist` is the handoff queue and may include a `review` item when Jev is
-uncertain. Review is visible and deliberate, not an automatic approval.
-
-A decision includes the score, confidence, five signal values, reason codes,
-policy version, thresholds and weights, provider profile, run ID, and provider
-token usage. The policy is deterministic; the judge supplies typed signals, not
-prose. Every result also includes `next_action` and `empty_reason`, so a host
-agent can tell whether to implement, ask for a human decision, revise the
-cards, or revisit a hard constraint without reverse-engineering an empty
-`selected` array.
-
-## What gets checked
-
-JevRev asks five small questions for each candidate:
-
-1. Does the mechanism fit the goal and success criteria?
-2. Does it satisfy every hard constraint?
-3. Is it feasible in the supplied context?
-4. Can the validation plan catch a false win or regression?
-5. Is it worth one implementation slot right now?
-
-Candidate pairs are also checked for material duplication. Low-confidence answers
-go to review unless the same answer also exposes a hard-constraint risk; a hard
-constraint failure remains a rejection even when the judge is uncertain.
-
-The duplicate check is deliberately conservative and pairwise. It catches a
-candidate that is materially the same as an already-kept card; it is not a
-general semantic clustering system, and the check grows quadratically with the
-number of cards.
-
-The calling agent still owns the repository, implementation, tests, benchmarks,
-and final decision. A JevRev result is a routing signal, not proof that a patch
-is correct.
-
-Captured responses used with `--replay` must carry a `candidate_order` list.
-This makes offline runs safe when request files are copied or edited: a changed
-candidate order fails loudly instead of silently attaching an answer to the
-wrong card.
-
-## The numbers
-
-We ran the three included scenarios against a local Qwen3.5-4B Q4_K_M SemIf
-service on Windows. This is one recorded local run, not a production
-benchmark. For each scenario, candidate order was rotated until every card had
-appeared first at least once.
-
-The first-choice column is the mean utility of the card a naive workflow would
-try first. The next column is the sample standard deviation of first-choice
-utility (left) and best-shortlist utility (right) across the same rotations
-(`n - 1` denominator). These are cyclic candidate-order rotations, not repeated
-stochastic model runs. It measures order sensitivity, not general model
-uncertainty. `Shortlist best` is the best utility among the paths returned for
-implementation or review; it is not a claim that every returned path is
-equally good.
-
-The three scenarios ran 7, 6, and 6 rotations respectively. CLI time is
-process wall time, including Node startup and the provider request.
-
-| Scenario | Naive first-choice mean (0-1) | Order sensitivity (sample sd): first choice -> shortlist best | Shortlist utility, best / mean (0-1) | CLI wall time (mean +/- sd) | Judge tokens (mean) |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| Parser speedup | 0.550 | 0.382 -> 0.000 | 1.000 / 0.975 | 10.234s +/- 0.189 | 27,488 in / 56 out |
-| API boundary hardening | 0.412 | 0.385 -> 0.000 | 1.000 / 0.850 | 8.005s +/- 0.035 | 21,430 in / 45 out |
-| Flaky CI concurrency | 0.433 | 0.448 -> 0.000 | 1.000 / 0.975 | 8.148s +/- 0.022 | 21,539 in / 45 out |
-
-The useful result is the middle column. In this fixed local run, changing which
-candidate appeared first changed the naive choice a lot, but did not change the
-final JevRev shortlist. Order sensitivity fell from 0.382, 0.385, and 0.448 to
-0.000. Against the predeclared scenario labels, each recorded shortlist had
-precision and recall of 1.00; the full per-scenario figures are in the
-acceptance report.
-
-This is a routing comparison, not an apples-to-apples quality uplift: the
-first-choice number describes one path, while `best` is the maximum utility in
-a returned set. The shortlist mean is included to make that distinction
-visible.
-
-This is a decision-stability measurement, not a claim that the model is always
-right or that production engineering time will drop by the same amount. The
-rubric was written before the run by a human, and the experiment used one local
-model. Full precision/recall, token deltas, benchmark summaries, and the exact
-method are in [docs/ACCEPTANCE.md](docs/ACCEPTANCE.md). The raw observations
-are regenerated locally by `npm run benchmark:demos`.
-
-Run the benchmark yourself after starting the local SemIf service (see
-[Provider setup](#provider-setup)):
+`run` and `rank` remain available as the original one-pass shortlist primitive:
 
 ```bash
-npm run benchmark:demos
+jevrev run --input proposals.json --provider jev
 ```
 
-Local inference has zero API spend. Hosted cost estimates can be supplied with
-`JEVREV_INPUT_USD_PER_MILLION` and `JEVREV_OUTPUT_USD_PER_MILLION`; those are
-user-supplied rates, not official Jev billing.
+### 2. Probe in isolation
 
-## Provider setup
+The host agent implements the work orders in branches or worktrees. JevRev does
+not execute arbitrary commands or merge code in this release.
 
-### Jev
+Evidence packets record raw facts rather than a success story:
 
-The default adapter uses the official TypeSafe SDK:
+- base/head revision and optional diff digest;
+- command argv, exit code, duration, and output digests;
+- baseline and candidate metric samples;
+- a result for each success criterion and hard constraint;
+- changed files, time, optional tokens/cost, and known failures.
+
+Passing requirements must cite recorded observations or metrics. Candidate and
+campaign hashes prevent evidence from being attached to the wrong proposal.
+
+Create a safe, explicitly incomplete envelope instead of hand-writing the JSON:
+
+```bash
+jevrev-evidence-template \
+  --campaign campaign.json \
+  --output evidence.json \
+  --base-commit "$(git rev-parse HEAD)"
+```
+
+Every generated status is `unknown` and every packet is `not_started`. If it is
+passed to Decide unchanged, the result is `probe_more`, never a winner.
+
+### 3. Decide from evidence
+
+```bash
+jevrev decide \
+  --campaign campaign.json \
+  --evidence evidence.json \
+  --provider jev
+```
+
+The policy applies facts first:
 
 ```text
-API root:   https://api.typesafe.ai
-request:    POST https://api.typesafe.ai/v1/systemone
-credential: JEVREV_JEV_API_KEY or TYPESAFE_API_KEY
+schema and hashes
+→ required commands and hard constraints
+→ metric summaries recomputed from raw samples
+→ Jev evidence review
+→ deterministic outcome
 ```
+
+For an offline replay:
+
+```bash
+jevrev decide \
+  --campaign campaign.json \
+  --evidence evidence.json \
+  --replay decide-response.json
+```
+
+The full state, trust model, and acceptance criteria are in
+[`docs/WORKFLOW.md`](docs/WORKFLOW.md). Wire formats and exit codes are in
+[`docs/PROTOCOL.md`](docs/PROTOCOL.md).
+
+## Product layers
+
+JevRev is the umbrella product. The current implementation is deliberately
+split into two primitives:
+
+- **JevSift** is `jevrev sift` (with `run`/`rank` compatibility aliases). It
+  filters proposal cards and emits bounded probe work orders. It does not know
+  whether an implementation works.
+- **Probe/Decide** is `jevrev decide`. It checks recorded command and metric
+  evidence, then uses Jev only for evidence sufficiency and residual-risk
+  judgment.
+
+Two future layers are intentionally not claimed by this release:
+
+- **JevLoop** will audit each completed agent round and return a typed next
+  action so the host agent can continue, revise, stop, or ask a human.
+- **JevLong** will monitor a long-running session for drift, stalls, repeated
+  tool failures, and budget risk.
+
+Until those state machines exist, `jevrev` does not imply an always-on loop or
+monitoring daemon.
+
+## Providers
+
+### Hosted Jev
 
 ```bash
 export JEVREV_JEV_API_KEY="..."
-jevrev run --input request.json --provider jev --model jev-latest
+jevrev sift --input proposals.json --provider jev
 ```
 
-Jev URL overrides are accepted through `--jev-url` or `JEVREV_JEV_URL`.
-Compatibility aliases `TYPESAFE_BASE_URL` and `TYPESAFE_DEFAULT_MODEL` are also
-accepted.
+Default request: `POST https://api.typesafe.ai/v1/systemone`
+
+Override the root with `--jev-url` or `JEVREV_JEV_URL`. The compatibility names
+`TYPESAFE_API_KEY`, `TYPESAFE_BASE_URL`, and `TYPESAFE_DEFAULT_MODEL` remain
+supported. Credentials are read from the environment and are never accepted as
+CLI arguments.
 
 ### Local SemIf
 
-The tested local path uses a Qwen3.5-4B GGUF behind llama.cpp. The model service
-must be installed and running separately:
+The tested local path uses a Qwen3.5-4B GGUF behind llama.cpp:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts/check-semif.ps1
 powershell -ExecutionPolicy Bypass -File scripts/start-semif.ps1 -Background
-jevrev run --input request.json --provider semif --format json
+jevrev sift --input proposals.json --provider semif
 ```
 
-```text
-request: POST http://127.0.0.1:4878/v1/chat/completions
-health:  GET http://127.0.0.1:4878/health
-```
+Default request: `POST http://127.0.0.1:4878/v1/chat/completions`
 
-The older local reranker remains available at
-`POST http://127.0.0.1:4877/v1/score`. Run
-`jevrev doctor --format json --check` to inspect all configured addresses.
+The legacy reranker remains available at `http://127.0.0.1:4877/v1/score` with
+`--provider local`. Run `jevrev doctor --format json --check` to inspect the
+configured endpoints. Local setup is documented in
+[`docs/SEMIF_LOCAL.md`](docs/SEMIF_LOCAL.md).
 
-Model setup and lifecycle scripts are documented in
-[docs/SEMIF_LOCAL.md](docs/SEMIF_LOCAL.md).
+All four modes—Jev, SemIf, legacy local, and replay—support both Sift and Decide.
 
-## Input
+## What JevRev does not do
 
-A candidate is more than a title. It states the mechanism, assumptions, risks,
-validation plan, and expected effort. Requests contain 2-12 candidates.
+JevRev does not:
 
-```json
-{
-  "version": "1",
-  "task": {
-    "goal": "Make the parser at least 2x faster",
-    "context": "Single-threaded TypeScript parser; public API is stable",
-    "constraints": [
-      { "id": "api", "text": "Do not change the public API", "kind": "hard" }
-    ],
-    "success": [
-      { "id": "speed", "text": "Throughput is at least 2.0x baseline" }
-    ]
-  },
-  "budget": { "max_survivors": 2 },
-  "candidates": [
-    {
-      "id": "byte-fast-path",
-      "title": "Add an ASCII byte fast path",
-      "summary": "Bypass intermediate strings for common input.",
-      "mechanism": "Parse common token classes directly from the input buffer and retain a Unicode fallback.",
-      "assumptions": ["ASCII-heavy files dominate the benchmark corpus"],
-      "risks": ["Fast and fallback paths could diverge"],
-      "validation": ["Differential tests", "Corpus benchmark"],
-      "effort": "medium"
-    },
-    {
-      "id": "allocation-cut",
-      "title": "Reduce hot-path allocations",
-      "summary": "Reuse bounded temporary storage on the measured path.",
-      "mechanism": "Pool temporary arrays with reset-on-parse ownership and retain the fallback path.",
-      "assumptions": ["Allocation pressure is a measured bottleneck"],
-      "risks": ["State could leak between parses"],
-      "validation": ["Run the full suite", "Compare allocation counts and throughput"],
-      "effort": "small"
-    }
-  ]
-}
-```
+- force several ideas onto an obvious one-line fix;
+- build five complete products just to compare them;
+- treat a judge probability as ground truth;
+- trust builder notes as evidence;
+- run arbitrary shell commands in the current release;
+- merge a branch or modify the user's repository;
+- force a winner when every probe fails.
 
-Use `--input -` for stdin, `--top 3` to override the survivor budget, and
-`--output result.json` for a file handoff. `jevrev rank` and the `specjev` binary
-remain compatibility aliases.
+Use it when wrong-path regret is larger than the cost of two small probes. Skip
+it when the solution is obvious or cheap to reverse.
 
-The complete protocol, field limits, reason codes, and exit codes are in
-[docs/PROTOCOL.md](docs/PROTOCOL.md).
+## One-pass benchmark record
 
-## For agent authors
+Before the evidence workflow existed, the Sift primitive was exercised on three
+local Qwen3.5-4B scenarios with cyclic candidate-order rotations. In that fixed
+run, the sample standard deviation of naive first-choice utility was 0.382,
+0.385, and 0.448; the returned shortlist's best utility was unchanged across
+the same rotations. This measures order sensitivity, not general model quality
+or engineering time saved.
 
-The repository includes [skills/jevrev/SKILL.md](skills/jevrev/SKILL.md).
-The calling convention is short:
-
-1. State the goal, constraints, success criteria, and implementation budget.
-2. Draft 3-7 materially different candidate cards.
-3. Run `jevrev run --input request.json --format json`.
-4. Implement only `selected`; send `review` items to a human or another pass.
-5. Verify the result with real tests and measurements.
-
-No repository contents are sent unless the calling agent includes them in the
-request. Credentials are read from the environment and never printed.
-
-### Install the bundled skill
-
-The package includes the same instructions as a file-based agent skill. Install
-it into a known tool directory with an explicit target:
-
-```bash
-jevrev-skill-install --target codex
-jevrev-skill-install --target claude
-```
-
-`codex` uses `$CODEX_HOME/skills/jevrev` when `CODEX_HOME` is set, otherwise
-`~/.codex/skills/jevrev`. The `claude`, `agents`, and `dsh` targets use their
-matching directories under `~`. For a project-local install, pass the exact
-destination instead:
-
-```bash
-jevrev-skill-install --destination .agents/skills/jevrev
-```
-
-An existing, different `SKILL.md` is never replaced unless `--force` is given.
-The installer copies only the bundled skill and does not read or write API
-credentials. From a source checkout, use `node scripts/install-skill.mjs` in
-place of `jevrev-skill-install`.
-
-### Replay a case directory
-
-The evaluator is useful for a real case set such as the reports that accompany
-this release. It reads request JSON, calls the selected provider, and prints
-one line per case with survivors, review count, rejected count, tokens, and
-wall time. It does not write result files or print credentials:
-
-```bash
-npm run build
-node scripts/eval-cases.mjs --cases-dir C:\path\to\local-setup --provider jev
-```
-
-Use `--provider semif` for a local SemIf service or `--provider local` for the
-legacy scorer. `JEVREV_CASES_DIR`, `JEVREV_EVAL_PROVIDER`, and
-`JEVREV_EVAL_TIMEOUT_MS` are available for scripted runs.
+The exact method, sample counts, token overhead, and limitations are preserved
+in [`docs/ACCEPTANCE.md`](docs/ACCEPTANCE.md). New users should start with the
+ranking-reversal workflow demo above; it shows the more important distinction
+between proposal quality and empirical evidence.
 
 ## Development
 
@@ -366,18 +278,12 @@ npm run check
 npm test
 npm run build
 npm run demo:all
+npm run demo:workflow
 npm pack --dry-run
 ```
 
-Node.js 20 or newer is required. The package includes the compiled CLI,
-protocol docs, examples, local-provider scripts, runtime, and the JevRev skill.
-See [RELEASE.md](RELEASE.md) for the release checklist.
-
-## Boundaries
-
-JevRev stops at the shortlist. It does not edit a repository, create worktrees,
-run an implementation, merge a patch, or replace a test suite. Those boundaries
-keep the tool useful inside the workflows agents already use.
+Node.js 20 or newer is required. Generated benchmark artifacts and credentials
+are excluded from the package.
 
 ## License
 

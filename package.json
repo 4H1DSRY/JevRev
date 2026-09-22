@@ -1,7 +1,7 @@
 {
   "name": "jevrev",
-  "version": "0.1.1",
-  "description": "A command-line shortlist engine for agent-generated approaches, powered by Jev or a local judge.",
+  "version": "0.2.0",
+  "description": "An evidence-backed speculative engineering funnel for coding agents.",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -14,13 +14,25 @@
   "bin": {
     "jevrev": "dist/cli.js",
     "specjev": "dist/cli.js",
-    "jevrev-skill-install": "scripts/install-skill.mjs"
+    "jevrev-skill-install": "scripts/install-skill.mjs",
+    "jevrev-evidence-template": "scripts/create-evidence-template.mjs"
   },
   "files": [
     "dist",
-    "docs",
+    "docs/ACCEPTANCE.md",
+    "docs/CASE_STUDY.md",
+    "docs/DESIGN.md",
+    "docs/LOCAL_BASELINE.md",
+    "docs/LOCAL_MODEL.md",
+    "docs/PROTOCOL.md",
+    "docs/SEMIF_LOCAL.md",
+    "docs/TEST_PLAN.md",
+    "docs/WORKFLOW.md",
+    "docs/EXTREME_TESTS.md",
     "examples",
     "benchmarks/README.md",
+    "benchmarks/live-cases",
+    "benchmarks/workflow-fixture",
     "scripts",
     "skills/jevrev",
     "runtime",
@@ -36,9 +48,11 @@
     "test:watch": "vitest",
     "demo": "node dist/cli.js run --input examples/parser-speedup.json --replay examples/parser-jev-response.json --format human",
     "demo:all": "node scripts/run-demos.mjs",
+    "demo:workflow": "node scripts/run-workflow-demo.mjs",
     "eval:cases": "node scripts/eval-cases.mjs",
     "benchmark:demos": "node scripts/benchmark-demos.mjs",
     "install-skill": "node scripts/install-skill.mjs",
+    "evidence-template": "node scripts/create-evidence-template.mjs",
     "prepare": "npm run build",
     "prepack": "npm run check && npm run test && npm run build"
   },
@@ -62,6 +76,8 @@
     "agents",
     "coding-agents",
     "candidate-selection",
+    "speculative-execution",
+    "evidence",
     "cli",
     "evaluation"
   ],

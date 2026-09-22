@@ -3,6 +3,8 @@ import { rankResultSchema } from "../src/domain/schemas.js";
 import { rankCandidates } from "../src/policy.js";
 import { buildQuestionPlan } from "../src/questions.js";
 import { renderHuman, renderJson } from "../src/report.js";
+import { renderCampaignHuman } from "../src/workflow/report.js";
+import { buildCampaign } from "../src/workflow/campaign.js";
 import { makeResponse, minimalRequest } from "./fixtures.js";
 
 describe("reporting", () => {
@@ -21,6 +23,18 @@ describe("reporting", () => {
     });
 
     expect(result.policy.provider_profile).toBe("semif/Qwen3.5-4B-Q4_K_M");
+  });
+
+  it("renders structured work-order evidence as useful human text", () => {
+    const request = structuredClone(minimalRequest);
+    request.budget.max_survivors = 1;
+    const plan = buildQuestionPlan(request);
+    const sift = rankCandidates(request, makeResponse(plan));
+    const output = renderCampaignHuman(buildCampaign(request, sift));
+
+    expect(output).toContain("probe-1:");
+    expect(output).toContain("Run tests and allocation benchmark");
+    expect(output).not.toContain("[object Object]");
   });
 
   it("labels rules without claiming model-generated reasoning", () => {
