@@ -1,5 +1,5 @@
 <p align="center">
-  <img src=".github/assets/jevrev-banner.png" alt="JevRev banner" width="100%" />
+  <img src="https://raw.githubusercontent.com/Alex314618-create/JevRev/main/.github/assets/jevrev-banner.png" alt="JevRev banner" width="100%" />
 </p>
 
 <h1 align="center">JevRev</h1>
@@ -46,6 +46,89 @@ A failed required test cannot be rescued by a high model score. The final result
 can be `winner`, `merge`, `probe_more`, `no_winner`, or `human_review`.
 
 That distinction is the product.
+
+## JevLoop: keep one artifact moving
+
+JevSift is for choosing between proposals. JevLoop is for the work after that:
+one agent keeps improving one artifact, while Jev checks the evidence at the end
+of each round. It does not run the agent, merge code, or decide to continue in
+the background. The handoff is deliberately plain JSON, so Codex, Claude Code,
+CI, or a home-grown harness can call it.
+
+```text
+agent edits and tests
+        ↓  submit round-evidence.json
+JevLoop checks commands, metrics, regressions, and judged evidence
+        ↓
+continue / fix_regression / verify / replan / ask_human / completed
+```
+
+Create a frozen contract, issue a work order, then let the host agent do the
+round:
+
+```bash
+jevrev loop create \
+  --directory .jevrev/parser-loop \
+  --spec examples/loop-parser-spec.json \
+  --base-revision "$(git rev-parse HEAD)"
+
+jevrev loop next \
+  --directory .jevrev/parser-loop \
+  --plan examples/loop-parser-plan.json \
+  --format json > round-work-order.json
+```
+
+The agent executes the order and writes a `jevrev.round-evidence` document. The
+human or harness submits it for one audit:
+
+```bash
+jevrev loop audit \
+  --directory .jevrev/parser-loop \
+  --evidence round-evidence.json \
+  --provider jev \
+  --format human
+
+jevrev loop status --directory .jevrev/parser-loop
+```
+
+To avoid starting the envelope by hand, create a bound incomplete template:
+
+```bash
+jevrev loop evidence-template \
+  --directory .jevrev/parser-loop \
+  --head-revision "$(git rev-parse HEAD)" \
+  --output round-evidence.json
+```
+
+The existing `jevrev evidence run/metric/artifact` recorders currently target
+the Sift/Probe evidence bundle, not this Loop envelope. A host agent may use
+their captured facts to fill the template, but must preserve the Loop IDs,
+round, head, and hashes before submitting it.
+
+Work-order `required_evidence` entries are prompts for the round. Completion is
+decided from criterion and protected-surface claims plus their cited, current
+observations; a prompt name alone is never proof.
+
+Use `--replay examples/loop-parser-replay.json` for an offline run. Local
+providers are available with `--provider local --local-url http://127.0.0.1:4877`
+or `--provider semif --semif-url http://127.0.0.1:4878`. The configured Jev
+request address is `POST <JEVREV_JEV_URL>/v1/systemone` (default:
+`https://api.typesafe.ai/v1/systemone`); credentials stay in
+`JEVREV_JEV_API_KEY` or `TYPESAFE_API_KEY`.
+
+The Loop contract has three non-negotiable properties:
+
+- a progress score never claims completion;
+- a completion audit needs fresh evidence for every criterion and protected
+  surface on the same head;
+- changing a target or rubric requires an explicit human-approved spec revision.
+
+`loop resume --approved-by ... --reason ... --yes`, `loop abort`, and
+`loop approve --yes` are the only commands that change a paused/approved human
+boundary. `loop next` never launches an agent.
+See [`docs/JEVLOOP_DESIGN.md`](docs/JEVLOOP_DESIGN.md) for the protocol and
+[`examples/loop-parser-spec.json`](examples/loop-parser-spec.json) for a full
+contract.
 
 ## See the ranking reverse
 
@@ -263,15 +346,10 @@ split into two primitives:
   evidence, then uses Jev only for evidence sufficiency and residual-risk
   judgment.
 
-Two future layers are intentionally not claimed by this release:
-
-- **JevLoop** will audit each completed agent round and return a typed next
-  action so the host agent can continue, revise, stop, or ask a human.
-- **JevLong** will monitor a long-running session for drift, stalls, repeated
-  tool failures, and budget risk.
-
-Until those state machines exist, `jevrev` does not imply an always-on loop or
-monitoring daemon.
+The current release also includes **JevLoop**: a human-controlled, single-artifact
+round protocol. It audits submitted evidence and returns a typed next action;
+it never launches the agent, merges code, or runs as a background daemon.
+**JevLong** remains future work and is not included in this release.
 
 ## Providers
 

@@ -11,13 +11,13 @@ useless answer.
 | JevRev | implemented umbrella | package, CLI, protocol, provider boundary | pretend one score proves a patch |
 | JevSift | implemented inside JevRev | filter proposal cards and emit bounded probe work orders | claim a proposal works |
 | Probe/Decide | implemented inside JevRev | validate recorded evidence, then choose a route | trust builder prose over facts |
-| JevLoop | not implemented | audit each completed agent round and return the next action | become an uncontrolled infinite loop |
+| JevLoop | implemented | audit each completed agent round and return the next action | become an uncontrolled infinite loop |
 | JevLong | not implemented | monitor a long-running session for drift, stalls, tool failures, and budget risk | run as a hidden daemon or change code |
 
 The current commands are intentionally namespaced under the `jevrev` binary:
-`jevrev sift` is JevSift; `jevrev decide` is the evidence decision primitive.
-JevLoop and JevLong must not be implied by those commands until their state
-machines exist.
+`jevrev sift` is JevSift; `jevrev decide` is the evidence decision primitive;
+`jevrev loop` is the explicit JevLoop round protocol. JevLong remains future
+work and must not be implied by any command.
 
 ## Extreme cases
 
