@@ -21,7 +21,7 @@ requires Node.js 20 or newer.
 | Handoff | JSON `selected`, `shortlist`, decisions, reason codes, usage, stable run IDs, provider profile, thresholds | PASS |
 | Campaign | Deterministic survivor hashes, bounded probe work orders, evidence requirements and stop conditions | PASS |
 | Evidence | Campaign/candidate binding, reference integrity, raw samples, revision identity, command and budget gates | PASS |
-| Agent handoff | Skill phase contract, safe evidence template, and trusted shell-free command recorder | PASS |
+| Agent handoff | Skill phase contract, safe template, command/metric/artifact recorders, and evidence status | PASS |
 | Artifacts | Content-addressed source/demo/screenshot references and typed imported evaluator observations | PASS |
 | Decide | Distinct evidence questions; winner, merge, probe-more, no-winner, and human-review outcomes | PASS |
 | Replay safety | Candidate-order metadata checked before positional answers are accepted | PASS |
@@ -35,7 +35,7 @@ requires Node.js 20 or newer.
 
 ```text
 npm run check     PASS
-npm test          PASS — 102 tests
+npm test          PASS — 106 tests
 npm run build     PASS
 ```
 

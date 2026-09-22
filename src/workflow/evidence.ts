@@ -204,6 +204,20 @@ export function prepareDecision(
         requirementMap.get(`${required.kind}:${required.id}`)),
       ...workOrder.required_evidence.map((required) => probeMap.get(required.id)),
     ].filter((result) => result !== undefined);
+    const artifactEvaluationMap = new Map(
+      (packet.artifact_evaluations ?? []).map((evaluation) => [evaluation.id, evaluation]),
+    );
+    const mandatoryArtifactEvaluationIds = new Set(
+      mandatoryResults.flatMap((result) => result.artifact_evaluation_ids ?? []),
+    );
+    for (const evaluationId of mandatoryArtifactEvaluationIds) {
+      const evaluation = artifactEvaluationMap.get(evaluationId);
+      if (evaluation?.status === "fail") addReason("ARTIFACT_EVALUATION_FAILED");
+      else if (evaluation === undefined || evaluation.status === "unknown") {
+        requirementsComplete = false;
+        addReason("MISSING_ARTIFACT_EVALUATION");
+      }
+    }
     const citedObservationIds = new Set(
       mandatoryResults.flatMap((result) => result.observation_ids),
     );
@@ -226,6 +240,7 @@ export function prepareDecision(
       "MISSING_REQUIRED_COMMAND",
       "MISSING_REQUIREMENT",
       "MISSING_PROBE_EVIDENCE",
+      "MISSING_ARTIFACT_EVALUATION",
     ]);
     const incomplete = reasons.some((reason) => incompleteReasons.has(reason));
     const rejected = reasons.some((reason) => !incompleteReasons.has(reason));

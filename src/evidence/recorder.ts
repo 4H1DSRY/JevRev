@@ -1,13 +1,16 @@
-import { createHash, randomUUID } from "node:crypto";
-import { realpath, readFile, rename, unlink, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { realpath } from "node:fs/promises";
 import { isAbsolute, relative, resolve } from "node:path";
 import { performance } from "node:perf_hooks";
 import { spawnSync } from "node:child_process";
 import { InputError, ProtocolError } from "../domain/errors.js";
+import type { EvidenceBundle } from "../workflow/schemas.js";
 import {
-  evidenceBundleSchema,
-  type EvidenceBundle,
-} from "../workflow/schemas.js";
+  appendUnique,
+  evidencePacket,
+  readEvidenceBundle,
+  writeEvidenceBundle,
+} from "./store.js";
 
 export interface RecordCommandOptions {
   evidencePath: string;
@@ -67,35 +70,6 @@ async function safeWorkingDirectory(
   return { absolute: cwd, relative: pathFromWorkspace.replaceAll("\\", "/") };
 }
 
-async function readBundle(path: string): Promise<EvidenceBundle> {
-  let raw: unknown;
-  try {
-    raw = JSON.parse(await readFile(path, "utf8")) as unknown;
-  } catch (error) {
-    throw new InputError(`Could not read evidence bundle: ${path}`, { cause: error });
-  }
-  const parsed = evidenceBundleSchema.safeParse(raw);
-  if (!parsed.success) {
-    throw new InputError(`Invalid evidence bundle: ${parsed.error.message}`);
-  }
-  return parsed.data;
-}
-
-async function atomicWrite(path: string, value: EvidenceBundle): Promise<void> {
-  const temporary = `${path}.${randomUUID()}.tmp`;
-  try {
-    await writeFile(temporary, `${JSON.stringify(value, null, 2)}\n`, "utf8");
-    await rename(temporary, path);
-  } catch (error) {
-    await unlink(temporary).catch(() => undefined);
-    throw new InputError(`Could not update evidence bundle: ${path}`, { cause: error });
-  }
-}
-
-function appendUnique(values: string[], value: string): void {
-  if (!values.includes(value)) values.push(value);
-}
-
 function linkProbe(
   bundle: EvidenceBundle,
   candidateId: string,
@@ -103,7 +77,7 @@ function linkProbe(
   probeId: string,
   passed: boolean,
 ): void {
-  const packet = bundle.packets.find((item) => item.candidate_id === candidateId)!;
+  const packet = evidencePacket(bundle, candidateId);
   const probe = packet.probe_results.find((item) => item.evidence_id === probeId);
   if (probe === undefined) throw new ProtocolError(`Unknown probe evidence ID: ${probeId}`);
   appendUnique(probe.observation_ids, observationId);
@@ -123,7 +97,7 @@ function linkRequirement(
   if ((kind !== "success" && kind !== "constraint") || criterionId.length === 0) {
     throw new InputError(`Requirement must be success:<id> or constraint:<id>: ${reference}`);
   }
-  const packet = bundle.packets.find((item) => item.candidate_id === candidateId)!;
+  const packet = evidencePacket(bundle, candidateId);
   const requirement = packet.requirement_results.find(
     (item) => item.kind === kind && item.criterion_id === criterionId,
   );
@@ -141,10 +115,8 @@ export async function recordCommand(options: RecordCommandOptions): Promise<Reco
   if (!Number.isInteger(timeoutMs) || timeoutMs < 1) throw new InputError("timeout must be a positive integer");
   if (!Number.isInteger(maxOutputBytes) || maxOutputBytes < 1) throw new InputError("max output bytes must be a positive integer");
 
-  const evidencePath = resolve(options.evidencePath);
-  const bundle = await readBundle(evidencePath);
-  const packet = bundle.packets.find((item) => item.candidate_id === options.candidateId);
-  if (packet === undefined) throw new ProtocolError(`Unknown evidence candidate: ${options.candidateId}`);
+  const { path: evidencePath, bundle } = await readEvidenceBundle(options.evidencePath);
+  const packet = evidencePacket(bundle, options.candidateId);
   const existingIndex = packet.observations.findIndex((item) => item.id === options.observationId);
   if (existingIndex >= 0 && !options.replace) {
     throw new ProtocolError(`Observation already exists: ${options.observationId}; pass --replace to overwrite it`);
@@ -213,8 +185,7 @@ export async function recordCommand(options: RecordCommandOptions): Promise<Reco
     linkRequirement(bundle, options.candidateId, options.observationId, reference, passed);
   }
 
-  const validated = evidenceBundleSchema.parse(bundle);
-  await atomicWrite(evidencePath, validated);
+  await writeEvidenceBundle(evidencePath, bundle);
   return {
     candidate_id: options.candidateId,
     observation_id: options.observationId,

@@ -1,0 +1,164 @@
+import { readFileSync, rmSync, writeFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { afterEach, describe, expect, it } from "vitest";
+import { recordArtifact } from "../src/evidence/artifact.js";
+import { recordMetric } from "../src/evidence/metric.js";
+import { evidenceStatus, renderEvidenceStatus } from "../src/evidence/status.js";
+import { buildCampaign } from "../src/workflow/campaign.js";
+import { evidenceBundleSchema, type EvidenceBundle } from "../src/workflow/schemas.js";
+import { buildQuestionPlan } from "../src/questions.js";
+import { rankCandidates } from "../src/policy.js";
+import { makeResponse, minimalRequest } from "./fixtures.js";
+
+const root = resolve(import.meta.dirname, "..");
+const temporaryFiles: string[] = [];
+
+afterEach(() => {
+  for (const path of temporaryFiles.splice(0)) rmSync(path, { force: true });
+});
+
+function fixture() {
+  const request = structuredClone(minimalRequest);
+  const plan = buildQuestionPlan(request);
+  const campaign = buildCampaign(request, rankCandidates(request, makeResponse(plan)));
+  const workOrder = campaign.work_orders[0]!;
+  const bundle: EvidenceBundle = {
+    kind: "jevrev.evidence-bundle",
+    schema_version: "1",
+    campaign_id: campaign.campaign_id,
+    packets: [{
+      kind: "jevrev.evidence-packet",
+      schema_version: "1",
+      campaign_id: campaign.campaign_id,
+      candidate_id: workOrder.candidate_id,
+      candidate_sha256: workOrder.candidate_sha256,
+      revision: { base_commit: "base" },
+      development: { status: "not_started", wall_ms: 0 },
+      observations: [],
+      metrics: [],
+      requirement_results: [
+        { criterion_id: "speed", kind: "success", status: "unknown", observation_ids: [], metric_ids: [] },
+        { criterion_id: "api", kind: "constraint", status: "unknown", observation_ids: [], metric_ids: [] },
+      ],
+      probe_results: workOrder.required_evidence.map((evidence) => ({
+        evidence_id: evidence.id,
+        status: "unknown",
+        observation_ids: [],
+        metric_ids: [],
+      })),
+      artifacts: [],
+      artifact_evaluations: [],
+      changed_files: [],
+      known_failures: ["TEMPLATE: fill evidence"],
+    }],
+  };
+  const suffix = Math.random().toString(16).slice(2);
+  const campaignPath = resolve(root, "tests", `tmp-tools-campaign-${suffix}.json`);
+  const evidencePath = resolve(root, "tests", `tmp-tools-evidence-${suffix}.json`);
+  temporaryFiles.push(campaignPath, evidencePath);
+  writeFileSync(campaignPath, `${JSON.stringify(campaign, null, 2)}\n`, "utf8");
+  writeFileSync(evidencePath, `${JSON.stringify(bundle, null, 2)}\n`, "utf8");
+  return { campaign, workOrder, campaignPath, evidencePath };
+}
+
+describe("evidence metric, artifact, and status tools", () => {
+  it("records raw metric samples and links an explicit result", async () => {
+    const { workOrder, evidencePath } = fixture();
+    const summary = await recordMetric({
+      evidencePath,
+      candidateId: workOrder.candidate_id,
+      metric: {
+        id: "throughput",
+        kind: "metric",
+        criterion_id: "speed",
+        unit: "ops/s",
+        direction: "higher",
+        baseline_samples: [99, 100, 101],
+        candidate_samples: [199, 200, 201],
+      },
+      resultStatus: "pass",
+      probeIds: ["probe-1"],
+      requirementRefs: ["success:speed"],
+    });
+    const bundle = evidenceBundleSchema.parse(JSON.parse(readFileSync(evidencePath, "utf8")));
+
+    expect(summary.relative_improvement).toBe(1);
+    expect(bundle.packets[0]?.metrics[0]?.baseline_samples).toEqual([99, 100, 101]);
+    expect(bundle.packets[0]?.requirement_results[0]).toMatchObject({
+      status: "pass",
+      metric_ids: ["throughput"],
+    });
+    expect(bundle.packets[0]?.probe_results[0]).toMatchObject({
+      status: "pass",
+      metric_ids: ["throughput"],
+    });
+  });
+
+  it("rejects a metric linked to a different criterion", async () => {
+    const { workOrder, evidencePath } = fixture();
+    await expect(recordMetric({
+      evidencePath,
+      candidateId: workOrder.candidate_id,
+      metric: {
+        id: "latency",
+        kind: "metric",
+        criterion_id: "speed",
+        unit: "ms",
+        direction: "lower",
+        baseline_samples: [10, 11],
+        candidate_samples: [8, 9],
+      },
+      resultStatus: "pass",
+      requirementRefs: ["constraint:api"],
+    })).rejects.toThrow("measures speed, not api");
+  });
+
+  it("records a content-addressed artifact and links its evaluation", async () => {
+    const { workOrder, evidencePath } = fixture();
+    const artifactPath = resolve(root, "tests", `tmp-artifact-${Math.random().toString(16).slice(2)}.txt`);
+    temporaryFiles.push(artifactPath);
+    writeFileSync(artifactPath, "verified demo output", "utf8");
+
+    const artifact = await recordArtifact({
+      evidencePath,
+      candidateId: workOrder.candidate_id,
+      artifactId: "demo",
+      file: artifactPath,
+      workspace: root,
+      evaluation: {
+        id: "demo-check",
+        evaluator: "playwright-smoke",
+        criterionId: "api",
+        status: "pass",
+        score: 0.9,
+        summary: "The demo preserves the expected interface.",
+      },
+      probeIds: ["probe-1"],
+      requirementRefs: ["constraint:api"],
+    });
+    const bundle = evidenceBundleSchema.parse(JSON.parse(readFileSync(evidencePath, "utf8")));
+    const packet = bundle.packets[0]!;
+
+    expect(artifact.path).toMatch(/^tests\//);
+    expect(artifact.content_excerpt).toBe("verified demo output");
+    expect(packet.artifact_evaluations?.[0]).toMatchObject({
+      id: "demo-check",
+      source: "imported",
+      artifact_ids: ["demo"],
+    });
+    expect(packet.requirement_results.find((item) => item.criterion_id === "api"))
+      .toMatchObject({ status: "pass", artifact_evaluation_ids: ["demo-check"] });
+  });
+
+  it("shows missing evidence and a concrete next action", async () => {
+    const { campaignPath, evidencePath } = fixture();
+    const status = await evidenceStatus(campaignPath, evidencePath);
+    const human = renderEvidenceStatus(status);
+
+    expect(status.summary.incomplete).toBe(1);
+    expect(status.candidates[0]?.next_action).toBe("collect_evidence");
+    expect(human).toContain("success:speed — unknown");
+    expect(human).toContain("probe-1 — unknown");
+    expect(human).toContain("next: collect_evidence");
+  });
+});
