@@ -364,7 +364,7 @@ describe("evidence-backed decide policy", () => {
       packetFixture(campaign, 1, { status: "failed" }),
     ]));
 
-    expect(prepared.evaluations[0]?.status).toBe("rejected");
+    expect(prepared.evaluations[0]?.status).toBe("incomplete");
     expect(prepared.evaluations[0]?.reasons).toContain("MISSING_REQUIRED_COMMAND");
   });
 

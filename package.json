@@ -14,7 +14,8 @@
   "bin": {
     "jevrev": "dist/cli.js",
     "specjev": "dist/cli.js",
-    "jevrev-skill-install": "scripts/install-skill.mjs"
+    "jevrev-skill-install": "scripts/install-skill.mjs",
+    "jevrev-evidence-template": "scripts/create-evidence-template.mjs"
   },
   "files": [
     "dist",
@@ -51,6 +52,7 @@
     "eval:cases": "node scripts/eval-cases.mjs",
     "benchmark:demos": "node scripts/benchmark-demos.mjs",
     "install-skill": "node scripts/install-skill.mjs",
+    "evidence-template": "node scripts/create-evidence-template.mjs",
     "prepare": "npm run build",
     "prepack": "npm run check && npm run test && npm run build"
   },

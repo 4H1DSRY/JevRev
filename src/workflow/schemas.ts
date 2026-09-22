@@ -198,7 +198,7 @@ export const evidencePacketSchema = z
       .strict(),
     development: z
       .object({
-        status: z.enum(["completed", "failed", "stopped"]),
+        status: z.enum(["not_started", "completed", "failed", "stopped"]),
         wall_ms: z.number().int().nonnegative(),
         tokens: z.number().int().nonnegative().optional(),
         cost_usd: z.number().nonnegative().optional(),
@@ -357,6 +357,7 @@ export const decideReasonCodeSchema = z.enum([
   "MISSING_EVIDENCE",
   "DEVELOPMENT_FAILED",
   "DEVELOPMENT_STOPPED",
+  "DEVELOPMENT_NOT_STARTED",
   "MISSING_REQUIRED_COMMAND",
   "REQUIRED_COMMAND_FAILED",
   "MISSING_REQUIREMENT",

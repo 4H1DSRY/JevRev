@@ -64,6 +64,11 @@ The host agent performs each work order in an isolated branch or worktree and
 returns an evidence bundle. JevRev does not run arbitrary shell commands or
 merge a branch in this slice.
 
+`jevrev-evidence-template --campaign campaign.json --output evidence.json`
+creates a schema-valid handoff with `not_started` development and `unknown`
+requirements. It removes envelope boilerplate without fabricating evidence; an
+unchanged template deterministically routes to `probe_more`.
+
 `decide` first checks deterministic evidence. Only viable finalists are sent
 to Jev (or a supported local judge) for narrow evidence questions. The result
 is one of:

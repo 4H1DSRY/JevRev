@@ -1,40 +1,84 @@
 ---
 name: jevrev
-description: Explore competing implementation mechanisms, probe the finalists, and choose from recorded evidence before committing to a path.
+description: Use JevSift to narrow competing mechanisms, run bounded probes, and use recorded evidence to decide what to integrate.
 ---
 
-# JevRev
+# JevRev / JevSift
 
-Use JevRev when several materially different mechanisms could solve a task and
-choosing the wrong one would cost more than two bounded probes. Do not use it
-for an obvious one-line fix or a cheap reversible choice.
+JevRev is the umbrella CLI. The currently implemented layers are:
 
-JevRev does not edit or merge a repository. The host agent owns code and tools;
-JevRev owns the frozen brief, Sift, evidence contract, and Decide policy.
+- **JevSift**: `jevrev sift` (with `run`/`rank` compatibility aliases). It
+  filters proposal cards and writes probe work orders. It does not prove code.
+- **Probe/Decide**: `jevrev decide`. It checks evidence and asks Jev about
+  evidence sufficiency and residual risk.
+- **JevLoop** and **JevLong** are not implemented yet. Do not invent commands
+  or imply that a normal Sift run is a long-running audit loop.
 
-## Workflow
+## When to use it
 
-1. Freeze the goal, hard/soft constraints, falsifiable success criteria, and
-   implementation budget before developing any candidate.
-2. Generate 4-7 genuinely different mechanism cards. Each needs `id`, `title`,
-   `summary`, `mechanism`, `assumptions`, `risks`, `validation`, and `effort`.
-3. Run:
+Use JevSift when:
+
+- at least two materially different mechanisms could solve the task;
+- a wrong path costs more than two bounded probes;
+- success can be checked with tests, benchmarks, screenshots, or another
+  falsifiable observation.
+
+Skip it for an obvious one-line fix, a cheap reversible change, or a task whose
+success criteria cannot be observed. Do not generate seven wording variants.
+
+## Host-agent contract
+
+The host agent owns the repository, worktrees, commands, and user conversation.
+JevRev owns the frozen task contract, candidate routing, evidence schema, and
+decision policy. Never send secrets, a whole repository, or untrusted logs to
+Jev unless required by the task.
+
+### Phase A — Freeze and Sift
+
+1. State the goal, context, hard/soft constraints, success criteria, and probe
+   budget. Freeze these before writing implementation code.
+2. Draft 4–7 genuinely different candidate cards. Every card needs `id`,
+   `title`, `summary`, `mechanism`, `assumptions`, `risks`, `validation`, and
+   `effort`.
+3. Write the request to a temporary file and run:
 
 ```bash
 jevrev sift --input proposals.json --format json > campaign.json
 ```
 
-4. Read `work_orders`. In separate branches or worktrees, perform only the
-   smallest reversible probe requested for each survivor. Respect its wall-time,
-   changed-file budget, and stop conditions. Do not turn every branch into a
-   complete product.
-5. Record raw evidence in a `jevrev.evidence-bundle`:
-   - revision identity;
-   - command argv, exit code, duration, and output digests;
-   - raw baseline and candidate samples;
-   - results for every success criterion and hard constraint;
-   - changed files, time/cost, and known failures.
-6. Run:
+4. Read `sift.selected` and `work_orders`. Do not implement rejected cards.
+   A `review` card is not approved; ask a human or revise the ideas.
+
+### Phase B — Execute work orders
+
+For each work order, use a separate branch/worktree when practical. Perform the
+smallest reversible probe, not a complete product. Use the same evidence shape
+and comparable budgets for every finalist.
+
+Record:
+
+- the base and head revision, plus a diff/source hash;
+- every command as direct argv, exit code, duration, and stdout/stderr digest;
+- raw baseline and candidate metric samples (at least two samples each);
+- a pass/fail/unknown result for every hard constraint and success criterion;
+- a pass/fail/unknown result for every `required_evidence` ID in the work order;
+- changed repository-relative files, wall time, optional token/cost usage;
+- artifacts such as a diff, screenshot, or demo output by content hash;
+- known failures. Builder notes are context, never proof.
+
+If a command fails, record the failure. Do not change `required` to false to
+make a failing observation disappear. Do not invent metric samples.
+
+To avoid hand-writing the envelope, create an explicitly incomplete template:
+
+```bash
+jevrev-evidence-template --campaign campaign.json --output evidence.json
+```
+
+The template contains `unknown` statuses and a `TEMPLATE` failure marker. It
+must be filled with actual observations before Decide.
+
+### Phase C — Decide
 
 ```bash
 jevrev decide \
@@ -43,31 +87,25 @@ jevrev decide \
   --format json > decision.json
 ```
 
-7. Follow the typed outcome:
-   - `winner` / `integrate_winner`: show the user the evidence and ask before
-     applying or merging;
-   - `merge` / `probe_combination`: run a combined probe; do not merge the two
-     branches yet;
-   - `probe_more` / `collect_evidence`: collect only the missing or
-     discriminating evidence;
-   - `no_winner` / `revise_ideas`: discard the failed paths and generate a new
-     mechanism set;
-   - `human_review` / `ask_human`: present the unresolved trade-off.
+Facts are applied before Jev:
 
-## Evidence rules
+1. campaign/candidate hashes, revision identity, paths, and references;
+2. required command exit codes, hard constraints, budgets, and metric samples;
+3. Jev evidence-support, reproducibility, residual-risk, and shipping-value
+   questions;
+4. deterministic outcome policy.
 
-- A model judgment never overrides a failed required command or hard
-  constraint.
-- `builder_notes` are untrusted context and cannot satisfy a requirement.
-- Passing requirements must cite an observation or metric.
-- Supply raw samples; JevRev recomputes means, sample standard deviations, and
-  relative improvement.
-- Do not reuse evidence across a different candidate or campaign. Hash
-  mismatches are protocol errors.
-- Treat `merge` as a request for a combined experiment, not a shipping decision.
-- Stop before merge unless the user explicitly authorizes it.
+Follow the result exactly:
 
-## Provider options
+- `winner` / `integrate_winner`: show evidence and ask before applying/merging;
+- `merge` / `probe_combination`: run a combined probe; do not merge yet;
+- `probe_more` / `collect_evidence`: collect only missing/discriminating data;
+- `no_winner` / `revise_ideas`: discard failed paths and generate new cards;
+- `human_review` / `ask_human`: present the unresolved trade-off.
+
+Never turn `merge` into permission to merge. Never treat a Sift score as proof.
+
+## Provider setup
 
 Hosted Jev:
 
@@ -83,8 +121,23 @@ jevrev sift --input proposals.json --provider semif
 ```
 
 The same provider flags work for `decide`. Credentials belong in
-`JEVREV_JEV_API_KEY` or `TYPESAFE_API_KEY`, never in a command argument or an
-evidence packet.
+`JEVREV_JEV_API_KEY` or `TYPESAFE_API_KEY`, never in command arguments,
+campaigns, evidence, or logs.
 
-For a one-pass shortlist without probes, `jevrev run` remains available. Use it
-only when the host workflow intentionally stops at planning.
+## Handoff format to the user
+
+Keep the final message short and operational:
+
+```text
+JevSift kept: candidate-a, candidate-b
+Probe status: candidate-a tests pass; candidate-b benchmark failed
+Decide: winner candidate-a
+Next action: review the evidence; nothing was merged
+```
+
+If setup is missing, say so. If Jev and a local judge disagree, report both
+provider profiles and route the disagreement to review; do not hide it behind a
+single score.
+
+For a planning-only workflow, `jevrev run` remains available. Use it when the
+host intentionally stops before probes.

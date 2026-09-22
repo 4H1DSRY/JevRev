@@ -141,6 +141,18 @@ Evidence packets record raw facts rather than a success story:
 Passing requirements must cite recorded observations or metrics. Candidate and
 campaign hashes prevent evidence from being attached to the wrong proposal.
 
+Create a safe, explicitly incomplete envelope instead of hand-writing the JSON:
+
+```bash
+jevrev-evidence-template \
+  --campaign campaign.json \
+  --output evidence.json \
+  --base-commit "$(git rev-parse HEAD)"
+```
+
+Every generated status is `unknown` and every packet is `not_started`. If it is
+passed to Decide unchanged, the result is `probe_more`, never a winner.
+
 ### 3. Decide from evidence
 
 ```bash

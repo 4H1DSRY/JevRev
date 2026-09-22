@@ -44,7 +44,8 @@ machines exist.
    passing requirement. It must still reject because cited mandatory evidence
    failed.
 8. A packet has no commands at all but marks every requirement as pass. It must
-   reject with `MISSING_REQUIRED_COMMAND`, not pass by vacuous truth.
+   remain incomplete with `MISSING_REQUIRED_COMMAND`, never pass by vacuous
+   truth or become a winner.
 9. `development.wall_ms` is smaller than a recorded command duration. The
    packet is internally contradictory and must fail closed.
 10. The campaign's probe budget, required evidence, stop conditions, or Sift

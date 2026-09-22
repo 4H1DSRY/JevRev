@@ -12,6 +12,8 @@
   instead of forcing a winner.
 - Add an executed ranking-reversal workflow demo and shared Decide support for
   Jev, SemIf, legacy local, and replay providers.
+- Add `jevrev-evidence-template` so host agents can create a safe incomplete
+  evidence handoff without manually reproducing the schema.
 
 ## 0.1.1 — 2026-09-21
 

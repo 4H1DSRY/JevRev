@@ -168,6 +168,7 @@ export function prepareDecision(
     const addReason = (reason: DecideReasonCode): void => {
       if (!reasons.includes(reason)) reasons.push(reason);
     };
+    if (packet.development.status === "not_started") addReason("DEVELOPMENT_NOT_STARTED");
     if (packet.development.status === "failed") addReason("DEVELOPMENT_FAILED");
     if (packet.development.status === "stopped") addReason("DEVELOPMENT_STOPPED");
 
@@ -220,12 +221,14 @@ export function prepareDecision(
     if (!withinWallBudget) addReason("WALL_BUDGET_EXCEEDED");
     if (!withinFileBudget) addReason("FILE_BUDGET_EXCEEDED");
 
-    const incomplete = reasons.some((reason) =>
-      reason === "MISSING_REQUIREMENT" || reason === "MISSING_PROBE_EVIDENCE"
-    );
-    const rejected = reasons.some((reason) =>
-      reason !== "MISSING_REQUIREMENT" && reason !== "MISSING_PROBE_EVIDENCE"
-    );
+    const incompleteReasons = new Set<DecideReasonCode>([
+      "DEVELOPMENT_NOT_STARTED",
+      "MISSING_REQUIRED_COMMAND",
+      "MISSING_REQUIREMENT",
+      "MISSING_PROBE_EVIDENCE",
+    ]);
+    const incomplete = reasons.some((reason) => incompleteReasons.has(reason));
+    const rejected = reasons.some((reason) => !incompleteReasons.has(reason));
     return {
       candidate_id: candidate.id,
       packet,
