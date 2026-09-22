@@ -76,6 +76,13 @@ atomically updates the packet, and returns the child exit code after persisting
 the observation. Repeated `--probe` and `--requirement` flags bind the real exit
 status to frozen evidence slots.
 
+`jevrev evidence metric` appends raw baseline/candidate samples and links them
+to frozen slots only with an explicit result. `jevrev evidence artifact`
+content-addresses a workspace-bound file and can attach an explicitly imported
+evaluator result. `jevrev evidence status` is the read-only handoff view: it
+lists missing/failed requirements and probes and tells the host whether to
+collect evidence, revise/stop, or call Decide.
+
 `decide` first checks deterministic evidence. Only viable finalists are sent
 to Jev (or a supported local judge) for narrow evidence questions. The result
 is one of:

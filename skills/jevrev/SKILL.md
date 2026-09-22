@@ -87,6 +87,36 @@ mode are saved before the recorder exits. A failed child command makes the
 recorder exit nonzero but does not lose the recorded failure. Continue the
 workflow by inspecting the evidence file, not by rerunning blindly.
 
+Record raw benchmark samples with:
+
+```bash
+jevrev evidence metric \
+  --evidence evidence.json \
+  --candidate <candidate-id> \
+  --input metric.json \
+  --result pass \
+  --probe probe-2 \
+  --requirement success:<criterion-id>
+```
+
+Do not reduce samples to one claimed percentage. `metric.json` must contain raw
+baseline and candidate arrays. Set `--result` by applying the frozen success
+criterion, not merely because relative improvement is positive.
+
+Record content-addressed artifacts and an imported evaluator result with
+`jevrev evidence artifact`. Link an artifact to a requirement only when an
+actual evaluator/status/summary is supplied; a file's existence is not proof.
+
+Before Decide, always run:
+
+```bash
+jevrev evidence status --campaign campaign.json --evidence evidence.json
+```
+
+Proceed only when every intended finalist says `ready_for_decide`. For
+`collect_evidence`, record exactly the missing item. For `revise_or_stop`, do
+not spend more budget without user direction.
+
 To avoid hand-writing the envelope, create an explicitly incomplete template:
 
 ```bash

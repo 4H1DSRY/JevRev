@@ -153,13 +153,15 @@ export const requirementResultSchema = z
     status: z.enum(["pass", "fail", "unknown"]),
     observation_ids: z.array(id).max(64),
     metric_ids: z.array(id).max(64),
+    artifact_evaluation_ids: z.array(id).max(64).optional(),
   })
   .strict()
   .superRefine((result, context) => {
     if (
       result.status === "pass" &&
       result.observation_ids.length === 0 &&
-      result.metric_ids.length === 0
+      result.metric_ids.length === 0 &&
+      (result.artifact_evaluation_ids?.length ?? 0) === 0
     ) {
       context.addIssue({
         code: "custom",
@@ -175,13 +177,15 @@ export const probeResultSchema = z
     status: z.enum(["pass", "fail", "unknown"]),
     observation_ids: z.array(id).max(64),
     metric_ids: z.array(id).max(64),
+    artifact_evaluation_ids: z.array(id).max(64).optional(),
   })
   .strict()
   .superRefine((result, context) => {
     if (
       result.status === "pass" &&
       result.observation_ids.length === 0 &&
-      result.metric_ids.length === 0
+      result.metric_ids.length === 0 &&
+      (result.artifact_evaluation_ids?.length ?? 0) === 0
     ) {
       context.addIssue({
         code: "custom",
@@ -280,6 +284,7 @@ export const evidencePacketSchema = z
 
     const knownObservations = new Set(observationIds);
     const knownMetrics = new Set(metricIds);
+    const knownArtifactEvaluations = new Set(artifactEvaluationIds);
     packet.requirement_results.forEach((result, index) => {
       result.observation_ids.forEach((reference) => {
         if (!knownObservations.has(reference)) {
@@ -296,6 +301,15 @@ export const evidencePacketSchema = z
             code: "custom",
             path: ["requirement_results", index, "metric_ids"],
             message: `unknown metric ID: ${reference}`,
+          });
+        }
+      });
+      (result.artifact_evaluation_ids ?? []).forEach((reference) => {
+        if (!knownArtifactEvaluations.has(reference)) {
+          context.addIssue({
+            code: "custom",
+            path: ["requirement_results", index, "artifact_evaluation_ids"],
+            message: `unknown artifact evaluation ID: ${reference}`,
           });
         }
       });
@@ -316,6 +330,15 @@ export const evidencePacketSchema = z
             code: "custom",
             path: ["probe_results", index, "metric_ids"],
             message: `unknown metric ID: ${reference}`,
+          });
+        }
+      });
+      (result.artifact_evaluation_ids ?? []).forEach((reference) => {
+        if (!knownArtifactEvaluations.has(reference)) {
+          context.addIssue({
+            code: "custom",
+            path: ["probe_results", index, "artifact_evaluation_ids"],
+            message: `unknown artifact evaluation ID: ${reference}`,
           });
         }
       });
@@ -373,6 +396,8 @@ export const decideReasonCodeSchema = z.enum([
   "REQUIREMENT_FAILED",
   "MISSING_PROBE_EVIDENCE",
   "PROBE_EVIDENCE_FAILED",
+  "MISSING_ARTIFACT_EVALUATION",
+  "ARTIFACT_EVALUATION_FAILED",
   "WALL_BUDGET_EXCEEDED",
   "FILE_BUDGET_EXCEEDED",
   "LOW_EVIDENCE_SUPPORT",

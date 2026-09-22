@@ -19,11 +19,14 @@ import { rankCandidates } from "./policy.js";
 import { buildQuestionPlan } from "./questions.js";
 import { renderHuman, renderJson } from "./report.js";
 import { recordCommand } from "./evidence/recorder.js";
+import { recordMetric, type EvidenceResultStatus } from "./evidence/metric.js";
+import { recordArtifact } from "./evidence/artifact.js";
+import { evidenceStatus, renderEvidenceStatus } from "./evidence/status.js";
 import { buildCampaign } from "./workflow/campaign.js";
 import { decideCampaign } from "./workflow/decide.js";
 import { buildDecidePlan } from "./workflow/decide-questions.js";
 import { prepareDecision } from "./workflow/evidence.js";
-import { campaignSchema, evidenceBundleSchema } from "./workflow/schemas.js";
+import { campaignSchema, evidenceBundleSchema, metricObservationSchema } from "./workflow/schemas.js";
 import { renderCampaignHuman, renderDecideHuman, renderWorkflowJson } from "./workflow/report.js";
 
 type Provider = "jev" | "typesafe" | "local" | "semif";
@@ -87,6 +90,42 @@ interface EvidenceRunOptions {
   requirement: string[];
 }
 
+interface EvidenceMetricOptions {
+  evidence: string;
+  candidate: string;
+  input: string;
+  result?: EvidenceResultStatus;
+  replace: boolean;
+  probe: string[];
+  requirement: string[];
+}
+
+interface EvidenceArtifactOptions {
+  evidence: string;
+  candidate: string;
+  id: string;
+  file: string;
+  workspace?: string;
+  mediaType?: string;
+  excerpt: boolean;
+  replace: boolean;
+  evaluationId?: string;
+  evaluator?: string;
+  result?: EvidenceResultStatus;
+  summary?: string;
+  criterion?: string;
+  score?: number;
+  probe: string[];
+  requirement: string[];
+}
+
+interface EvidenceStatusOptions {
+  campaign: string;
+  evidence: string;
+  format: OutputFormat;
+  output?: string;
+}
+
 function envValue(...names: string[]): string | undefined {
   for (const name of names) {
     const value = env[name]?.trim();
@@ -134,6 +173,19 @@ function parsePositiveNumber(value: string): number {
 
 function collectValue(value: string, previous: string[]): string[] {
   return [...previous, value];
+}
+
+function parseEvidenceResult(value: string): EvidenceResultStatus {
+  if (value === "pass" || value === "fail" || value === "unknown") return value;
+  throw new InvalidArgumentError("must be pass, fail, or unknown");
+}
+
+function parseUnitScore(value: string): number {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed < 0 || parsed > 1) {
+    throw new InvalidArgumentError("must be a number from 0 to 1");
+  }
+  return parsed;
 }
 
 function parseProvider(value: string): Provider {
@@ -511,6 +563,127 @@ function createProgram(): Command {
         `jevrev: recorded ${recorded.observation_id} for ${recorded.candidate_id}: exit ${recorded.exit_code}, ${recorded.duration_ms}ms, ${recorded.termination}\n`,
       );
       commandExitCode = recorded.exit_code;
+    });
+
+  evidence
+    .command("metric")
+    .description("Record raw metric samples and link them to frozen evidence slots")
+    .requiredOption("--evidence <path>", "evidence bundle to update")
+    .requiredOption("--candidate <id>", "candidate packet to update")
+    .requiredOption("--input <path>", "metric JSON path, or - for stdin")
+    .option("--result <status>", "pass, fail, or unknown for linked slots", parseEvidenceResult)
+    .option("--replace", "replace a metric with the same ID", false)
+    .option("--probe <id>", "link metric to a required probe ID; repeatable", collectValue, [])
+    .option(
+      "--requirement <kind:id>",
+      "link metric to success:<id> or constraint:<id>; repeatable",
+      collectValue,
+      [],
+    )
+    .action(async (rawOptions: EvidenceMetricOptions) => {
+      const raw = await readJson(rawOptions.input);
+      const candidateMetric = raw !== null && typeof raw === "object" && !Array.isArray(raw)
+        ? { ...raw, kind: "metric" }
+        : raw;
+      const parsed = metricObservationSchema.safeParse(candidateMetric);
+      if (!parsed.success) throw new InputError(`Invalid metric input: ${parsed.error.message}`);
+      const summary = await recordMetric({
+        evidencePath: rawOptions.evidence,
+        candidateId: rawOptions.candidate,
+        metric: parsed.data,
+        ...(rawOptions.result === undefined ? {} : { resultStatus: rawOptions.result }),
+        replace: rawOptions.replace,
+        probeIds: rawOptions.probe,
+        requirementRefs: rawOptions.requirement,
+      });
+      stderr.write(
+        `jevrev: recorded metric ${summary.metric_id} for ${rawOptions.candidate}: ${summary.baseline_mean} -> ${summary.candidate_mean} ${summary.unit}\n`,
+      );
+    });
+
+  evidence
+    .command("artifact")
+    .description("Record a content-addressed artifact and optional imported evaluation")
+    .requiredOption("--evidence <path>", "evidence bundle to update")
+    .requiredOption("--candidate <id>", "candidate packet to update")
+    .requiredOption("--id <id>", "stable artifact ID")
+    .requiredOption("--file <path>", "artifact path inside the workspace")
+    .option("--workspace <path>", "workspace boundary (default: current directory)")
+    .option("--media-type <type>", "artifact media type (otherwise inferred)")
+    .option("--no-excerpt", "do not include a bounded text excerpt")
+    .option("--replace", "replace the artifact/evaluation with the same ID", false)
+    .option("--evaluation-id <id>", "stable imported evaluation ID")
+    .option("--evaluator <name>", "evaluator or tool name")
+    .option("--result <status>", "pass, fail, or unknown", parseEvidenceResult)
+    .option("--summary <text>", "bounded evaluation summary")
+    .option("--criterion <id>", "criterion measured by the evaluation")
+    .option("--score <number>", "optional score from 0 to 1", parseUnitScore)
+    .option("--probe <id>", "link evaluation to a required probe ID; repeatable", collectValue, [])
+    .option(
+      "--requirement <kind:id>",
+      "link evaluation to success:<id> or constraint:<id>; repeatable",
+      collectValue,
+      [],
+    )
+    .action(async (rawOptions: EvidenceArtifactOptions) => {
+      const evaluationRequested = rawOptions.evaluationId !== undefined ||
+        rawOptions.evaluator !== undefined || rawOptions.result !== undefined ||
+        rawOptions.summary !== undefined || rawOptions.criterion !== undefined ||
+        rawOptions.score !== undefined || rawOptions.probe.length > 0 ||
+        rawOptions.requirement.length > 0;
+      if (evaluationRequested && (
+        rawOptions.evaluationId === undefined || rawOptions.evaluator === undefined ||
+        rawOptions.result === undefined || rawOptions.summary === undefined
+      )) {
+        throw new InputError(
+          "Artifact links require --evaluation-id, --evaluator, --result, and --summary",
+        );
+      }
+      const artifact = await recordArtifact({
+        evidencePath: rawOptions.evidence,
+        candidateId: rawOptions.candidate,
+        artifactId: rawOptions.id,
+        file: rawOptions.file,
+        ...(rawOptions.workspace === undefined ? {} : { workspace: rawOptions.workspace }),
+        ...(rawOptions.mediaType === undefined ? {} : { mediaType: rawOptions.mediaType }),
+        excerpt: rawOptions.excerpt,
+        replace: rawOptions.replace,
+        ...(evaluationRequested
+          ? {
+              evaluation: {
+                id: rawOptions.evaluationId!,
+                evaluator: rawOptions.evaluator!,
+                status: rawOptions.result!,
+                summary: rawOptions.summary!,
+                ...(rawOptions.criterion === undefined ? {} : { criterionId: rawOptions.criterion }),
+                ...(rawOptions.score === undefined ? {} : { score: rawOptions.score }),
+              },
+            }
+          : {}),
+        probeIds: rawOptions.probe,
+        requirementRefs: rawOptions.requirement,
+      });
+      stderr.write(
+        `jevrev: recorded artifact ${artifact.id} for ${rawOptions.candidate}: ${artifact.path} (${artifact.size_bytes} bytes)\n`,
+      );
+    });
+
+  evidence
+    .command("status")
+    .description("Show ready, missing, and failed evidence for every finalist")
+    .requiredOption("--campaign <path>", "campaign JSON")
+    .requiredOption("--evidence <path>", "evidence bundle JSON")
+    .option("--format <format>", "human or json", "human")
+    .option("-o, --output <path>", "write status to a file")
+    .action(async (rawOptions: EvidenceStatusOptions) => {
+      validateFormat(rawOptions.format);
+      const result = await evidenceStatus(rawOptions.campaign, rawOptions.evidence);
+      await emit(
+        rawOptions.format === "json"
+          ? `${JSON.stringify(result, null, 2)}\n`
+          : `${renderEvidenceStatus(result)}\n`,
+        rawOptions.output,
+      );
     });
 
   program

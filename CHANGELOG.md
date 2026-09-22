@@ -16,6 +16,8 @@
   evidence handoff without manually reproducing the schema.
 - Add `jevrev evidence run`, a shell-free command recorder that atomically
   captures argv, cwd, exit status, duration and output digests into evidence.
+- Add evidence metric/artifact recorders and a status command so an agent can
+  reach Decide without manually editing the evidence envelope.
 
 ## 0.1.1 — 2026-09-21
 
