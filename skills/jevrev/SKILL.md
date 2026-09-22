@@ -53,10 +53,12 @@ Jev unless required by the task.
 3. Write the request to a temporary file and run:
 
 ```bash
-jevrev sift --input proposals.json --format json > campaign.json
+jevrev sift --input proposals.json --format json --output campaign.json
 ```
 
 4. Read `sift.selected` and `work_orders`. Do not implement rejected cards.
+   If a strong borderline idea is `review`, use `jevrev reconsider` once for
+   that candidate instead of silently treating review as approval.
    A `review` card is not approved; ask a human or revise the ideas.
 
 ### Phase B — Execute work orders
@@ -144,7 +146,7 @@ must be filled with actual observations before Decide.
 jevrev decide \
   --campaign campaign.json \
   --evidence evidence.json \
-  --format json > decision.json
+  --format json --output decision.json
 ```
 
 Facts are applied before Jev:

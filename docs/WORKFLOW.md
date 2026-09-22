@@ -51,7 +51,7 @@ The first release adds two composable primitives without building another
 coding agent:
 
 ```bash
-jevrev sift --input proposals.json > campaign.json
+jevrev sift --input proposals.json --output campaign.json
 jevrev decide --campaign campaign.json --evidence evidence.json
 ```
 
@@ -83,6 +83,9 @@ evaluator result. `jevrev evidence status` is the read-only handoff view: it
 lists missing/failed requirements and probes and tells the host whether to
 collect evidence, revise/stop, or call Decide.
 
+Use `jevrev evidence status --next` after an interruption to print the first
+missing evidence slot. It is a resume hint, not an executor.
+
 `decide` first checks deterministic evidence. Only viable finalists are sent
 to Jev (or a supported local judge) for narrow evidence questions. The result
 is one of:
@@ -93,6 +96,19 @@ is one of:
 - `probe_more`: evidence is missing or the leading candidates are too close;
 - `no_winner`: every candidate failed a deterministic or semantic gate;
 - `human_review`: the judge is too uncertain or the trade-off is subjective.
+
+If Sift returns a candidate with `status: review`, it is not silently promoted
+or discarded. Reconsider one candidate explicitly:
+
+```bash
+jevrev reconsider --campaign campaign.json --candidate regex-match \
+  --provider jev --output reconsider.json
+```
+
+`reconsider` asks a narrow second-pass question set. `promote_to_probe` grants
+one bounded probe slot only; it never authorizes integration. `keep_review`
+means the evidence is still too uncertain, and `reject` closes the candidate
+under the current policy. Hard-constraint risk can never be promoted.
 
 ## Evidence contract
 

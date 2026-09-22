@@ -191,7 +191,7 @@ The input is a frozen brief plus 2-12 structured candidate cards. See
 request.
 
 ```bash
-jevrev sift --input proposals.json --provider jev > campaign.json
+jevrev sift --input proposals.json --provider jev --output campaign.json
 ```
 
 Each strict survivor receives a work order containing:
@@ -201,6 +201,21 @@ Each strict survivor receives a work order containing:
 - required evidence;
 - wall-time and changed-file budgets;
 - stop conditions.
+
+Review is an explicit, safe branch rather than a dead end. Reconsider one
+borderline candidate with a narrow second pass:
+
+```bash
+jevrev reconsider \
+  --campaign campaign.json \
+  --candidate regex-match \
+  --provider jev \
+  --output reconsider.json \
+  --promoted-campaign-output campaign-with-review-probe.json
+```
+
+Only `promote_to_probe` grants a single bounded probe slot. It does not make a
+candidate a winner, and a hard-constraint risk can never be promoted.
 
 `run` and `rank` remain available as the original one-pass shortlist primitive:
 
@@ -301,6 +316,9 @@ jevrev evidence status \
 
 The status view reports ready, incomplete, and rejected finalists, every frozen
 requirement/probe status, evidence counts, reason codes, and the next action.
+
+After an interruption, add `--next` to print the first missing evidence slot.
+This is a resume hint only; it never executes a command or fabricates a result.
 
 ### 3. Decide from evidence
 

@@ -15,6 +15,7 @@ export * from "./workflow/decide-questions.js";
 export * from "./workflow/evidence.js";
 export * from "./workflow/report.js";
 export * from "./workflow/schemas.js";
+export * from "./reconsider.js";
 export * from "./loop/schemas.js";
 export * from "./loop/state-machine.js";
 export * from "./loop/store.js";

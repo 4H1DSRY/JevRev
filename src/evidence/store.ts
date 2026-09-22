@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { readFile, rename, unlink, writeFile } from "node:fs/promises";
+import { rename, unlink, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { InputError, ProtocolError } from "../domain/errors.js";
 import {
@@ -7,21 +7,18 @@ import {
   type EvidenceBundle,
   type EvidencePacket,
 } from "../workflow/schemas.js";
+import { readJsonFile } from "../io/json.js";
+import { formatZodError } from "../io/validation.js";
 
 export async function readEvidenceBundle(pathInput: string): Promise<{
   path: string;
   bundle: EvidenceBundle;
 }> {
   const path = resolve(pathInput);
-  let raw: unknown;
-  try {
-    raw = JSON.parse(await readFile(path, "utf8")) as unknown;
-  } catch (error) {
-    throw new InputError(`Could not read evidence bundle: ${path}`, { cause: error });
-  }
+  const raw = await readJsonFile(path);
   const parsed = evidenceBundleSchema.safeParse(raw);
   if (!parsed.success) {
-    throw new InputError(`Invalid evidence bundle: ${parsed.error.message}`);
+    throw new InputError(`Invalid evidence bundle: ${formatZodError(parsed.error)}`);
   }
   return { path, bundle: parsed.data };
 }

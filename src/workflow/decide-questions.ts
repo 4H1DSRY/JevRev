@@ -119,7 +119,7 @@ export function buildDecidePlan(
           };
         })(),
         work_order: (() => {
-          const workOrder = prepared.campaign.work_orders.find(
+          const workOrder = [...prepared.campaign.work_orders, ...prepared.campaign.review_work_orders].find(
             (item) => item.candidate_id === evaluation.candidate_id,
           );
           return workOrder === undefined ? undefined : {

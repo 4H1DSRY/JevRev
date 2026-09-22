@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Accept UTF-8 BOM and UTF-16 JSON files, including PowerShell 5.1 output, and
+  report path-based validation errors.
+- Add `jevrev reconsider` for a bounded second pass on one Sift review
+  candidate, plus `jevrev evidence status --next` as a read-only resume hint.
+
 ## 0.2.0 — 2026-09-21
 
 - Add `sift` campaigns with bounded probe work orders while preserving the
