@@ -18,6 +18,7 @@ import {
 import { rankCandidates } from "./policy.js";
 import { buildQuestionPlan } from "./questions.js";
 import { renderHuman, renderJson } from "./report.js";
+import { recordCommand } from "./evidence/recorder.js";
 import { buildCampaign } from "./workflow/campaign.js";
 import { decideCampaign } from "./workflow/decide.js";
 import { buildDecidePlan } from "./workflow/decide-questions.js";
@@ -31,6 +32,7 @@ type OutputFormat = "human" | "json";
 const DEFAULT_SEMIF_URL = "http://127.0.0.1:4878";
 const DEFAULT_LOCAL_URL = "http://127.0.0.1:4877";
 const VERSION = "0.2.0";
+let commandExitCode = 0;
 
 interface RankOptions {
   input: string;
@@ -69,6 +71,22 @@ interface DecideOptions {
   output?: string;
 }
 
+interface EvidenceRunOptions {
+  evidence: string;
+  candidate: string;
+  id: string;
+  workspace?: string;
+  cwd: string;
+  timeoutMs: number;
+  maxOutputBytes: number;
+  optional: boolean;
+  complete: boolean;
+  replace: boolean;
+  quiet: boolean;
+  probe: string[];
+  requirement: string[];
+}
+
 function envValue(...names: string[]): string | undefined {
   for (const name of names) {
     const value = env[name]?.trim();
@@ -104,6 +122,18 @@ function parsePositiveInteger(value: string): number {
     throw new InvalidArgumentError("must be an integer from 1 to 5");
   }
   return parsed;
+}
+
+function parsePositiveNumber(value: string): number {
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed < 1) {
+    throw new InvalidArgumentError("must be a positive integer");
+  }
+  return parsed;
+}
+
+function collectValue(value: string, previous: string[]): string[] {
+  return [...previous, value];
 }
 
 function parseProvider(value: string): Provider {
@@ -435,6 +465,54 @@ function createProgram(): Command {
       await runDecide(rawOptions);
     });
 
+  const evidence = program
+    .command("evidence")
+    .description("Record trusted command evidence for a campaign finalist");
+
+  evidence
+    .command("run <command...>")
+    .description("Run argv directly and atomically append its observation to an evidence bundle")
+    .requiredOption("--evidence <path>", "evidence bundle created from a Sift campaign")
+    .requiredOption("--candidate <id>", "candidate packet to update")
+    .requiredOption("--id <id>", "stable observation ID")
+    .option("--workspace <path>", "workspace boundary (default: current directory)")
+    .option("--cwd <path>", "command cwd relative to the workspace", ".")
+    .option("--timeout-ms <n>", "command timeout", parsePositiveNumber, 120_000)
+    .option("--max-output-bytes <n>", "maximum captured bytes per stream", parsePositiveNumber, 4 * 1024 * 1024)
+    .option("--optional", "record the command as optional", false)
+    .option("--complete", "mark candidate development completed after recording", false)
+    .option("--replace", "replace an observation with the same ID", false)
+    .option("--quiet", "do not echo child stdout/stderr", false)
+    .option("--probe <id>", "link exit status to a required probe ID; repeatable", collectValue, [])
+    .option(
+      "--requirement <kind:id>",
+      "link exit status to success:<id> or constraint:<id>; repeatable",
+      collectValue,
+      [],
+    )
+    .action(async (command: string[], rawOptions: EvidenceRunOptions) => {
+      const recorded = await recordCommand({
+        evidencePath: rawOptions.evidence,
+        candidateId: rawOptions.candidate,
+        observationId: rawOptions.id,
+        argv: command,
+        ...(rawOptions.workspace === undefined ? {} : { workspace: rawOptions.workspace }),
+        cwd: rawOptions.cwd,
+        timeoutMs: rawOptions.timeoutMs,
+        maxOutputBytes: rawOptions.maxOutputBytes,
+        optional: rawOptions.optional,
+        complete: rawOptions.complete,
+        replace: rawOptions.replace,
+        probeIds: rawOptions.probe,
+        requirementRefs: rawOptions.requirement,
+        echo: !rawOptions.quiet,
+      });
+      stderr.write(
+        `jevrev: recorded ${recorded.observation_id} for ${recorded.candidate_id}: exit ${recorded.exit_code}, ${recorded.duration_ms}ms, ${recorded.termination}\n`,
+      );
+      commandExitCode = recorded.exit_code;
+    });
+
   program
     .command("doctor")
     .description("Show provider endpoints and optionally probe local services")
@@ -469,9 +547,10 @@ function createProgram(): Command {
 }
 
 export async function main(argv = process.argv): Promise<number> {
+  commandExitCode = 0;
   try {
     await createProgram().parseAsync(argv);
-    return 0;
+    return commandExitCode;
   } catch (error) {
     const label = "jevrev";
     if (error instanceof InvalidArgumentError) {
