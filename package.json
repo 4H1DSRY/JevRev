@@ -29,6 +29,7 @@
     "docs/TEST_PLAN.md",
     "docs/WORKFLOW.md",
     "docs/EXTREME_TESTS.md",
+    "docs/JEVLOOP_DESIGN.md",
     "examples",
     "benchmarks/README.md",
     "benchmarks/live-cases",

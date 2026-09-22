@@ -119,3 +119,13 @@
 - Consequences: The README now explains the negative skull as a traceable asset decision, distinguishes selection criteria from palette preference, and connects route, hierarchy, and evidence behavior to visible output. No new source image, runtime dependency, product claim, or page redesign is introduced. Publishing is deferred until the planned upstream main update is available for reconciliation.
 - Affected systems: documentation, experiments, flagship-visual
 - Supersedes: D-20260922-11 only for the public six-row trace layout
+
+## D-20260923-13 Integrate shipped JevLoop without rewriting the flagship README
+
+- Date: 2026-09-23
+- Status: accepted
+- Context: Upstream main advanced from `a7036b4` to `a15eb51` with the evidence-backed JevLoop round protocol, implementation, tests, examples, and documentation. The user requested immediate integration and PR publication while explicitly deferring a new README reconciliation pass.
+- Decision: Merge upstream main into the flagship branch. Preserve the current README during the merge, combine the Sift and JevLoop evidence boundaries in technical documentation, and record the now-stale README layer label as explicit documentation debt rather than silently rewriting the public narrative.
+- Consequences: The PR includes the upstream JevLoop implementation and preserves the completed visual case. README still labels JevLoop as roadmap until the requested follow-up; reviewers can see this known limitation in governance state. JevLong remains deferred.
+- Affected systems: jevloop, documentation, agent-integration, packaging-release
+- Supersedes: D-20260922-04 only for the product status of JevLoop

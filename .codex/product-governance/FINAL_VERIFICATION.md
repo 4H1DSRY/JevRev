@@ -167,3 +167,20 @@ dash scans, `git diff --check`, and the governance audit also passed with zero
 errors or warnings. No commit, push, or pull request was made. The next
 publication step is intentionally deferred until the upstream main update can
 be reconciled without rewriting this README case in the current turn.
+
+## Upstream JevLoop integration
+
+On 2026-09-23, `origin/main` advanced to `a15eb51` with the shipped JevLoop
+round protocol. The branch merged that commit rather than publishing from the
+older base. README retained the completed flagship case at the user's explicit
+request; its JevLoop roadmap label is recorded as open documentation debt for a
+separate follow-up. Shared acceptance and workflow documentation now describe
+both the trusted Sift evidence tools and JevLoop's separate bound round-evidence
+envelope.
+
+The merged branch passed `npm run check`, 18 test files with 182 tests, `npm run
+build`, `npm run demo:all`, `npm run demo:workflow`, `npm run demo:oneshot`, and
+`npm pack --dry-run --ignore-scripts`. The package dry run contained 158 files
+at approximately 183.6 kB. The workflow demo again rejected the faster regex on
+correctness and selected the indexed state machine. No new visual asset or
+public design claim was introduced during the upstream merge.

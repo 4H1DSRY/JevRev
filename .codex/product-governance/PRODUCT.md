@@ -23,7 +23,7 @@ JevRev is an evidence-backed speculative engineering funnel for coding agents. I
 - Agent-facing CLI, installable skill, examples, deterministic demonstrations, documentation, and npm packaging.
 - A concise README flagship case that explains the complete current workflow with reproducible evidence.
 - A compact, reproducible one-shot storefront comparison that makes design-direction routing visible without replacing the engineering evidence case.
-- Tiered product positioning that distinguishes the shipped decision spine from JevLoop and JevLong roadmap layers.
+- Tiered product positioning that distinguishes the shipped Sift, Probe, Decide, and JevLoop layers from the JevLong roadmap layer.
 - Clear first-run paths for an agent prompt, npm installation, hosted Jev, local SemIf, and agent-assisted configuration.
 
 ### Non-Goals
@@ -39,6 +39,7 @@ JevRev is an evidence-backed speculative engineering funnel for coding agents. I
 - Candidate funnel: request schemas, typed questions, policy, Sift campaigns, and work orders.
 - Evidence capture: templates, command recorder, metrics, hashes, references, and trust boundaries.
 - Decision engine: deterministic gates, evidence review, five outcomes, and human-readable reports.
+- JevLoop: evidence-backed round planning, audit, append-only state, resume, abort, and approval controls.
 - Providers and protocol: hosted Jev, SemIf, legacy local, replay, CLI contracts, and diagnostics.
 - Agent integration: installable skill and file-based handoff workflow.
 - Experiments: deterministic demos, executed mini-projects, case fixtures, and benchmark records.

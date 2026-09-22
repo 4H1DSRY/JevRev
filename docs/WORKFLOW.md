@@ -152,13 +152,13 @@ Decide does not repeat those scores. It asks:
 9. JSON stdout remains machine-readable; diagnostics stay on stderr.
 10. No command is executed and no branch is merged by `sift` or `decide`.
 
-## Deferred
+## Current boundaries
 
-- persistent runs, event logs, locks, cache, and `resume`;
-- automatic worktree creation;
-- integration and merge automation;
-- JevLoop and long-run monitoring;
-- a web UI, daemon, or MCP server.
+- JevLoop is available as `jevrev loop create/next/audit/status/resume/abort`.
+  It has its own append-only event log and `jevrev.round-evidence` envelope;
+  the existing Sift evidence recorder does not write that envelope directly.
+- JevLong, automatic worktree creation, integration/merge automation, a web UI,
+  daemon, and MCP server remain deferred.
 
-Those features should reuse this campaign/evidence/decision contract after the
-stateless slice proves useful.
+JevLoop reuses the same evidence-first trust model, but does not silently turn
+the stateless Sift recorder into a long-running agent controller.

@@ -27,25 +27,26 @@
       "README local GitHub-like audit: 1280 x 900 and 360 x 900, both themes, closed and expanded; two narrow-table defects corrected, equal hero image proportions preserved, and all relative images loaded. SVG XML and 680 x 490 original renders passed.",
       "Final verification details, exact README line ranges, local evidence locations, and the supplemental Lighthouse limitation are in .codex/product-governance/FINAL_VERIFICATION.md.",
       "Final product-governance audit returned Valid=true, zero errors, zero warnings. Final npm pack dry run passed with 130 files, approximately 144.5 kB; final git diff --check passed and the index remains empty.",
-      "2026-09-22 follow-up narrative pass: README now derives four visual-route tradeoffs from the committed Sift input and interleaves three existing captures with their causal decisions. GitHub-like rendering at 900 and 328 CSS pixels in light and dark had zero overflow, all images loaded, and the narrow single-column sequence remained readable. Check, 106 tests, build, demos, one-shot validation, a 130-file npm pack dry run at approximately 145.0 kB, local-link and public-copy scans, git diff check, and the product-governance audit passed. Publishing is deferred until the planned upstream main update."
+      "2026-09-22 follow-up narrative pass: README now derives four visual-route tradeoffs from the committed Sift input and interleaves three existing captures with their causal decisions. GitHub-like rendering at 900 and 328 CSS pixels in light and dark had zero overflow, all images loaded, and the narrow single-column sequence remained readable. Check, 106 tests, build, demos, one-shot validation, a 130-file npm pack dry run at approximately 145.0 kB, local-link and public-copy scans, git diff check, and the product-governance audit passed.",
+      "2026-09-23 publication integration: origin/main advanced to a15eb51 with the shipped JevLoop round protocol. The implementation and technical documentation were merged; the flagship README was intentionally preserved at the user's request and its JevLoop roadmap label is tracked as open documentation debt. The merged branch passed check, 18 test files with 182 tests, build, all demos, one-shot validation, and a 158-file npm pack dry run at approximately 183.6 kB."
     ]
   },
   "active_work": {
     "system_ids": [
       "documentation",
-      "experiments",
-      "flagship-visual"
+      "flagship-visual",
+      "jevloop",
+      "packaging-release"
     ],
-    "objective": "Refine the one-shot README case into an inspectable decision narrative: explain the four recorded visual directions, show why the selected dossier fit the frozen criteria, and interleave three real page states with the decisions that caused them without redesigning either fixture.",
+    "objective": "Integrate origin/main at a15eb51, preserve the completed flagship README without a new JevLoop copy pass, verify the combined JevLoop and showcase branch, and publish it as a pull request from the user fork.",
     "acceptance": [
-      "README names all four committed direction candidates and derives every tradeoff from sift-input.json rather than invented design claims.",
-      "The negative skull, direct structure, routed stage path, and evidence reversal appear as functional examples of decisions reaching the pixels.",
-      "The expanded case uses a regular but alternating image and text rhythm, remains compact when collapsed, and fits GitHub-like desktop and 360-pixel light and dark rendering.",
-      "The direct page, routed page, frozen copy, deterministic selection, engineering ranking-reversal proof, setup order, and interpretation boundary do not drift.",
-      "Public copy contains no unsupported superiority claim, em dash, en dash, or internal production language.",
-      "Relevant validation, link, rendering, and governance checks pass after the documentation change."
+      "All upstream JevLoop implementation, tests, examples, and protocol documentation are present without losing the flagship showcase files.",
+      "README remains the completed flagship version from bdaff77; its now-stale JevLoop roadmap label is recorded as explicit follow-up debt rather than silently changed.",
+      "Merge conflicts in shared technical files preserve both Sift evidence tooling and the separate JevLoop round-evidence boundary.",
+      "Check, tests, build, demos, packaging, diff, and governance verification pass on the merged branch.",
+      "The branch is pushed to the DuaNapic fork and a pull request targets Alex314618-create/JevRev main."
     ],
-    "status": "completed"
+    "status": "in_progress"
   },
   "balance_policy": {
     "maximum_must_have_spread": 2,
@@ -158,6 +159,32 @@
       "next_gate": "Confirm README onboarding does not conflict with the bundled skill."
     },
     {
+      "id": "jevloop",
+      "name": "JevLoop Round Control",
+      "purpose": "Plan and audit bounded coding-agent rounds from bound evidence while preserving explicit continue, revise, stop, ask, resume, abort, and approval routes.",
+      "priority": "must",
+      "status": "stable",
+      "maturity": 4,
+      "target_maturity": 4,
+      "dependencies": [
+        "evidence-capture",
+        "providers-protocol",
+        "agent-integration"
+      ],
+      "acceptance": [
+        "Round schemas, append-only state, scope and budget gates, evidence freshness, recovery, and CLI commands remain covered by the upstream JevLoop suite."
+      ],
+      "evidence": [
+        "src/loop",
+        "tests/loop-contracts.test.ts",
+        "tests/loop-auditor.test.ts",
+        "tests/loop-store.test.ts",
+        "tests/loop-cli.test.ts",
+        "docs/JEVLOOP_DESIGN.md"
+      ],
+      "next_gate": "Reconcile public README product-layer copy in the explicitly deferred documentation follow-up."
+    },
+    {
       "id": "experiments",
       "name": "Executed Experiments",
       "purpose": "Provide inspectable small projects that demonstrate how evidence changes routing decisions.",
@@ -229,7 +256,8 @@
         "package.json",
         "docs/ACCEPTANCE.md",
         "RELEASE.md",
-        "2026-09-22 final check, 106 tests, build, demos and npm pack dry run passed."
+        "2026-09-22 final check, 106 tests, build, demos and npm pack dry run passed.",
+        "2026-09-23 upstream integration check, 182 tests, build, demos and 158-file npm pack dry run passed."
       ],
       "next_gate": "Release authorization and remaining product-level gates; no commit or push requested."
     },
@@ -338,17 +366,17 @@
       "id": "req-tier1-reading-path",
       "text": "The README must lead from a concise tiered product explanation to verified proof and then to low-friction agent, hosted, and local setup without drifting the current product boundary.",
       "priority": "must",
-      "status": "verified",
+      "status": "in_progress",
       "system_ids": [
         "documentation",
         "agent-integration",
         "experiments"
       ],
       "acceptance": [
-        "The banner and key sections remain, repeated protocol detail is compressed, the ranking reversal precedes onboarding, and roadmap layers are clearly labeled."
+        "The banner and key sections remain, repeated protocol detail is compressed, the ranking reversal precedes onboarding, and shipped versus roadmap layers match the current implementation."
       ],
       "evidence": [
-        "README.md updated on 2026-09-22; preserved brand header, flagship case, CLI, product layers, providers, boundaries, development, license, and compatibility anchors while shortening the file."
+        "The 2026-09-22 flagship reading path remains verified. The 2026-09-23 upstream merge shipped JevLoop, while the user explicitly deferred updating the README product-layer label; debt-readme-jevloop-status tracks the remaining reconciliation."
       ]
     },
     {
@@ -394,6 +422,12 @@
       "severity": "medium",
       "status": "closed",
       "text": "docs/ACCEPTANCE.md now defines the trusted recorder boundary and docs/WORKFLOW.md no longer lists the shipped recorder as deferred."
+    },
+    {
+      "id": "debt-readme-jevloop-status",
+      "severity": "medium",
+      "status": "open",
+      "text": "README still labels JevLoop as roadmap after origin/main a15eb51 shipped the evidence-backed round protocol. The user explicitly deferred this README reconciliation to a later task; technical docs and governance state already reflect the shipped boundary."
     }
   ],
   "risks": [
@@ -401,7 +435,7 @@
       "id": "risk-upstream-drift",
       "severity": "high",
       "status": "closed",
-      "text": "The branch was rebased onto a7036b4 on 2026-09-22, the new evidence toolchain was exercised, and README copy now reflects metric, artifact, and status commands."
+      "text": "The branch merged origin/main a15eb51 on 2026-09-23. The combined Sift, evidence, JevLoop, showcase, build, demo, test, and package paths passed; the intentionally deferred README JevLoop status is tracked separately as documentation debt."
     },
     {
       "id": "risk-case-overclaim",
@@ -422,6 +456,6 @@
       "text": "Supplemental Lighthouse simulated mobile run scored performance 86 with LCP 4.2 s, exceeding the aspirational 2.5 s target; accessibility 100, CLS 0, TBT 0. Protected PNG compression is an advisory, not an established LCP cause. Broader performance optimization remains outside the bounded handoff and needs a separately scoped follow-up."
     }
   ],
-  "last_updated": "2026-09-22",
-  "last_audited": "2026-09-22"
+  "last_updated": "2026-09-23",
+  "last_audited": "2026-09-23"
 }

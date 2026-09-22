@@ -1,0 +1,47 @@
+{
+  "kind": "jevrev.loop-spec",
+  "schema_version": "1",
+  "revision": 1,
+  "title": "Parser performance loop",
+  "goal": "Double parser throughput without changing the public API or correctness",
+  "context": "The host agent owns the repository. JevLoop only issues work orders and audits submitted evidence.",
+  "workspace": ".",
+  "criteria": [
+    {
+      "id": "tests",
+      "type": "hard",
+      "description": "The complete test suite passes",
+      "required_commands": ["test-suite"]
+    },
+    {
+      "id": "throughput",
+      "type": "metric",
+      "description": "P75 throughput reaches at least 2x the frozen baseline",
+      "unit": "ops/s",
+      "direction": "higher",
+      "aggregation": "p75",
+      "baseline": 1000,
+      "target": 2,
+      "minimum_samples": 5
+    },
+    {
+      "id": "maintainability",
+      "type": "judged",
+      "description": "The implementation is understandable and preserves a clear fast/slow path",
+      "target": 0.75,
+      "required_confidence": 0.7,
+      "rubric": ["Hard to maintain", "Acceptable", "Clear and maintainable"],
+      "required_artifacts": ["diff"]
+    }
+  ],
+  "protected_surfaces": [
+    { "id": "public-api", "description": "Public parser API and serialized output remain compatible" }
+  ],
+  "budget": {
+    "per_round_wall_ms": 900000,
+    "per_round_changed_files": 12,
+    "pause_total_wall_ms": 7200000,
+    "pause_total_provider_tokens": 100000
+  },
+  "plateau": { "window": 3, "min_material_delta": 0.02 }
+}

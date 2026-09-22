@@ -10,7 +10,7 @@ Last reviewed: 2026-09-22
 - Treat experimental measurements as supporting evidence, not the product explanation.
 - Keep the final diff centered on README communication, the supporting asset, and necessary verification.
 - Preserve the existing banner, title, tagline, badges, product boundary, and durable section anchors while shortening the reading path.
-- Present JevSift and Probe/Decide as shipped; present JevLoop and JevLong or JevKanban only as roadmap layers.
+- Present JevSift, Probe/Decide, and JevLoop as shipped; present JevLong or JevKanban only as a roadmap layer.
 
 ## Current Phase P4 Flagship Evidence And Coherence
 
@@ -51,5 +51,5 @@ Exit criteria:
 - Automatic implementation or worktree orchestration.
 - A new general-purpose benchmark framework.
 - Production defect, developer-hour, or coding-agent token savings.
-- Persistent run state, dashboards, JevLoop, and long-run monitoring.
+- Dashboards, JevLong, and long-run monitoring beyond the shipped JevLoop round protocol.
 - Remote repository description and topics until final visual integration and copy review are complete.

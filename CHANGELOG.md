@@ -18,6 +18,13 @@
   captures argv, cwd, exit status, duration and output digests into evidence.
 - Add evidence metric/artifact recorders and a status command so an agent can
   reach Decide without manually editing the evidence envelope.
+- Add JevLoop: frozen single-artifact specs, bounded work orders, hash-chained
+  event storage, evidence audits, scope/budget gates, resume/abort/approval,
+  replay/local providers, and the `loop evidence-template` CLI command.
+- Harden JevLoop revision boundaries so old audits cannot carry into a new
+  frozen contract; require explicit human confirmation and an attestation for
+  resume; expose artifact summaries/excerpts to Jev; and support explicit
+  metric baselines for relative targets.
 
 ## 0.1.1 — 2026-09-21
 
