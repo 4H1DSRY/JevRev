@@ -28,6 +28,9 @@ requires Node.js 20 or newer.
 | CLI | `run`/`rank` compatibility, `sift`, `decide`, stdin, file output, stable exit codes | PASS |
 | Evaluation/skill tooling | Read-only case evaluator and explicit skill installer | PASS |
 | Operations | `doctor`, local health probes, PowerShell model lifecycle scripts | PASS |
+| JevLoop contracts | frozen spec, one active round, scope/budget gates, fresh completion evidence | PASS |
+| JevLoop store | hash-chained events, lock recovery, replay, resume/abort/approval | PASS |
+| JevLoop CLI | create, evidence template, next, audit, status, resume, abort, approve | PASS |
 | Documentation | README, protocol, design, local setup, skill, release notes | PASS |
 | Packaging | `npm pack --dry-run`, compiled CLI, examples, docs, scripts, no generated benchmark results | PASS |
 
@@ -35,11 +38,12 @@ requires Node.js 20 or newer.
 
 ```text
 npm run check     PASS
-npm test          PASS — 106 tests
+npm test          PASS — 182 tests
 npm run build     PASS
 ```
 
-The tests cover schema rejection, question construction, official-client
+The tests cover JevSift/Probe/Decide plus JevLoop schema rejection, scope and
+budget gates, question construction, official-client
 transport, local response mapping, SemIf option-logit normalization, policy
 invariants, replay-order rejection, empty-result actions, workflow schemas,
 evidence references, artifact references, sample statistics, hard-gate ranking
@@ -149,8 +153,10 @@ and is not stored in this repository.
 - A Sift `selected` candidate is a routing decision, not proof of correctness.
 - `review` candidates remain unresolved; `shortlist` makes them visible to the
   host agent without silently approving them.
-- Evidence is imported in v0.2.0. Candidate/campaign hashes and reference checks
-  prevent accidental misattachment, but a trusted command recorder is deferred.
+- Sift evidence is recorded through the trusted command/metric/artifact tools;
+  JevLoop uses a separate bound round-evidence envelope. The
+  `loop evidence-template` command creates it, while the host agent fills in
+  recorder facts and preserves its round/head hashes.
 - JevRev does not create worktrees, run arbitrary commands, or merge code. The
   host agent executes work orders and stops before merge.
 - `merge` requests a combined probe; it is not permission to integrate two

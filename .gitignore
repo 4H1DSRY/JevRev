@@ -6,3 +6,4 @@ coverage/
 *.tgz
 benchmarks/results/
 pack-smoke-final/
+.tmp-cli-audit-*/

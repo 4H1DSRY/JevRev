@@ -1,0 +1,18 @@
+{
+  "model": "jev-offline-replay",
+  "candidate_order": ["maintainability"],
+  "answers": {
+    "finalist_0_criterion": {
+      "type": "score",
+      "score": 2,
+      "confidence": 0.9,
+      "legend": {
+        "0": "Hard to maintain",
+        "1": "Acceptable",
+        "2": "Clear and maintainable"
+      },
+      "probabilities": { "0": 0, "1": 0.1, "2": 0.9 }
+    }
+  },
+  "usage": { "input_tokens": 40, "output_tokens": 8 }
+}

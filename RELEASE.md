@@ -38,6 +38,10 @@ live API key, local model, or `benchmarks/results/` output.
   installer (`jevrev-skill-install`).
 - Sift campaigns, bounded probe work orders, evidence packets, and evidence-backed
   Decide outcomes.
+- JevLoop round protocol with `create`, `evidence-template`, `next`, `audit`,
+  `status`, `resume`, `abort`, and human-approved `approve` commands.
+- Hash-chained loop state, fresh completion proofs, metric aggregation,
+  protected-surface checks, and explicit local/replay provider paths.
 - deterministic ranking-reversal workflow demo (`npm run demo:workflow`).
 
 See [`docs/ACCEPTANCE.md`](docs/ACCEPTANCE.md) for the recorded checks and

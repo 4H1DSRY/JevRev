@@ -1,0 +1,19 @@
+{
+  "kind": "jevrev.round-plan",
+  "schema_version": "1",
+  "round_goal": "Measure the parser hot path and implement the smallest credible speedup",
+  "focus_criteria": ["throughput", "maintainability"],
+  "hypothesis": "Temporary allocations dominate common-input parsing",
+  "allowed_scope": ["src/parser.ts", "tests/parser.test.ts", "benchmarks/parser.ts"],
+  "do_not_change": ["public-api"],
+  "required_evidence": [
+    { "id": "test-suite", "description": "Fresh full test command", "kind": "command" },
+    { "id": "throughput-samples", "description": "At least five raw benchmark samples", "kind": "metric" },
+    { "id": "diff", "description": "Content-addressed diff for Jev review", "kind": "artifact" }
+  ],
+  "stop_conditions": [
+    "Stop if the public API changes",
+    "Stop if correctness tests fail",
+    "Stop if the benchmark does not improve"
+  ]
+}
