@@ -129,3 +129,13 @@
 - Consequences: The PR includes the upstream JevLoop implementation and preserves the completed visual case. README still labels JevLoop as roadmap until the requested follow-up; reviewers can see this known limitation in governance state. JevLong remains deferred.
 - Affected systems: jevloop, documentation, agent-integration, packaging-release
 - Supersedes: D-20260922-04 only for the product status of JevLoop
+
+## D-20260923-14 Integrate the post-publication Sift hardening into the same PR
+
+- Date: 2026-09-23
+- Status: accepted
+- Context: After pull request 3 was opened, upstream main advanced again from `a15eb51` to `7cbe68a` with bounded reconsideration, JSON input hardening, evidence resume hints, and related tests. The user requested immediate integration of the author's update without another README pass.
+- Decision: Merge the new upstream head into the existing feature branch and update pull request 3. Preserve the flagship README exactly, accept the technical implementation and documentation changes, and verify the combined tree after rebuilding the new dist input helpers.
+- Consequences: The PR remains the single review surface for the flagship showcase plus the latest Sift and JevLoop baseline. Public README reconciliation remains explicit follow-up debt. The final verification order builds before tests so the new script-side `dist/io/json.js` dependency is present in a previously built workspace.
+- Affected systems: candidate-funnel, evidence-capture, providers-protocol, documentation, packaging-release
+- Supersedes: none

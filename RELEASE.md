@@ -38,6 +38,8 @@ live API key, local model, or `benchmarks/results/` output.
   installer (`jevrev-skill-install`).
 - Sift campaigns, bounded probe work orders, evidence packets, and evidence-backed
   Decide outcomes.
+- UTF-8/UTF-16 JSON input, `evidence status --next`, and bounded `reconsider`
+  promotion for Sift review candidates.
 - JevLoop round protocol with `create`, `evidence-template`, `next`, `audit`,
   `status`, `resume`, `abort`, and human-approved `approve` commands.
 - Hash-chained loop state, fresh completion proofs, metric aggregation,

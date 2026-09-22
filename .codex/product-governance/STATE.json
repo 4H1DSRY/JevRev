@@ -29,7 +29,8 @@
       "Final product-governance audit returned Valid=true, zero errors, zero warnings. Final npm pack dry run passed with 130 files, approximately 144.5 kB; final git diff --check passed and the index remains empty.",
       "2026-09-22 follow-up narrative pass: README now derives four visual-route tradeoffs from the committed Sift input and interleaves three existing captures with their causal decisions. GitHub-like rendering at 900 and 328 CSS pixels in light and dark had zero overflow, all images loaded, and the narrow single-column sequence remained readable. Check, 106 tests, build, demos, one-shot validation, a 130-file npm pack dry run at approximately 145.0 kB, local-link and public-copy scans, git diff check, and the product-governance audit passed.",
       "2026-09-23 publication integration: origin/main advanced to a15eb51 with the shipped JevLoop round protocol. The implementation and technical documentation were merged; the flagship README was intentionally preserved at the user's request and its JevLoop roadmap label is tracked as open documentation debt. The merged branch passed check, 18 test files with 182 tests, build, all demos, one-shot validation, and a 158-file npm pack dry run at approximately 183.6 kB.",
-      "Publication completed through https://github.com/Alex314618-create/JevRev/pull/3 from DuaNapic:codex/docs-flagship-case to Alex314618-create/JevRev:main."
+      "Publication completed through https://github.com/Alex314618-create/JevRev/pull/3 from DuaNapic:codex/docs-flagship-case to Alex314618-create/JevRev:main.",
+      "After PR creation, origin/main advanced again to 7cbe68a with Sift reconsideration, UTF-8/UTF-16 JSON handling, and evidence resume hints. The new head was merged with README preserved; check, build, 20 test files with 195 tests, all demos, one-shot validation, and a 170-file npm pack dry run at approximately 193.2 kB passed."
     ]
   },
   "active_work": {
@@ -39,13 +40,13 @@
       "jevloop",
       "packaging-release"
     ],
-    "objective": "Integrate origin/main at a15eb51, preserve the completed flagship README without a new JevLoop copy pass, verify the combined JevLoop and showcase branch, and publish it as a pull request from the user fork.",
+    "objective": "Integrate the post-publication origin/main head at 7cbe68a, preserve the completed flagship README without a follow-up copy pass, verify the combined Sift, JevLoop, and showcase branch, and update pull request 3 from the user fork.",
     "acceptance": [
-      "All upstream JevLoop implementation, tests, examples, and protocol documentation are present without losing the flagship showcase files.",
+      "All upstream JevLoop and Sift hardening implementation, tests, examples, and protocol documentation are present without losing the flagship showcase files.",
       "README remains the completed flagship version from bdaff77; its now-stale JevLoop roadmap label is recorded as explicit follow-up debt rather than silently changed.",
-      "Merge conflicts in shared technical files preserve both Sift evidence tooling and the separate JevLoop round-evidence boundary.",
-      "Check, tests, build, demos, packaging, diff, and governance verification pass on the merged branch.",
-      "The branch is pushed to the DuaNapic fork and a pull request targets Alex314618-create/JevRev main."
+      "Shared technical files preserve bounded Sift reconsideration, trusted evidence tooling, and the separate JevLoop round-evidence boundary.",
+      "Check, build, 195 tests, demos, packaging, diff, and governance verification pass on the merged branch.",
+      "The updated branch is pushed to the DuaNapic fork and pull request 3 targets Alex314618-create/JevRev main."
     ],
     "status": "completed"
   },
@@ -66,10 +67,12 @@
         "providers-protocol"
       ],
       "acceptance": [
-        "Sift remains schema-valid, policy-gated, deterministic under replay, and backward compatible with run and rank."
+        "Sift remains schema-valid, policy-gated, deterministic under replay, and backward compatible with run and rank.",
+        "A review candidate can receive one bounded reconsideration without bypassing hard constraints or authorizing integration."
       ],
       "evidence": [
         "tests/policy.test.ts",
+        "tests/reconsider.test.ts",
         "tests/workflow-schemas.test.ts",
         "docs/ACCEPTANCE.md"
       ],
@@ -132,6 +135,7 @@
       ],
       "evidence": [
         "tests/cli.test.ts",
+        "tests/json-io.test.ts",
         "docs/PROTOCOL.md",
         "docs/ACCEPTANCE.md"
       ],
@@ -258,7 +262,8 @@
         "docs/ACCEPTANCE.md",
         "RELEASE.md",
         "2026-09-22 final check, 106 tests, build, demos and npm pack dry run passed.",
-        "2026-09-23 upstream integration check, 182 tests, build, demos and 158-file npm pack dry run passed."
+        "2026-09-23 upstream integration check, 182 tests, build, demos and 158-file npm pack dry run passed.",
+        "2026-09-23 post-publication integration check, build, 195 tests, demos and 170-file npm pack dry run passed."
       ],
       "next_gate": "Release authorization and remaining product-level gates; no commit or push requested."
     },
@@ -436,7 +441,7 @@
       "id": "risk-upstream-drift",
       "severity": "high",
       "status": "closed",
-      "text": "The branch merged origin/main a15eb51 on 2026-09-23. The combined Sift, evidence, JevLoop, showcase, build, demo, test, and package paths passed; the intentionally deferred README JevLoop status is tracked separately as documentation debt."
+      "text": "The branch merged the later origin/main head 7cbe68a on 2026-09-23. The combined Sift reconsideration, evidence, JevLoop, showcase, build, demo, test, and package paths passed; the intentionally deferred README JevLoop status is tracked separately as documentation debt."
     },
     {
       "id": "risk-case-overclaim",

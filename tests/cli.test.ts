@@ -2,6 +2,8 @@ import { spawnSync } from "node:child_process";
 import { readFileSync, rmSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
+import { buildQuestionPlan } from "../src/questions.js";
+import { makeResponse, minimalRequest } from "./fixtures.js";
 
 const root = resolve(import.meta.dirname, "..");
 const tsx = resolve(root, "node_modules", "tsx", "dist", "cli.mjs");
@@ -260,6 +262,69 @@ describe("jevrev CLI", () => {
     });
   });
 
+  it("reconsiders a review candidate and emits one bounded probe order", () => {
+    const requestPath = resolve(root, "tests", "tmp-reconsider-request.json");
+    const siftReplayPath = resolve(root, "tests", "tmp-reconsider-sift-replay.json");
+    const campaignPath = resolve(root, "tests", "tmp-reconsider-campaign.json");
+    const reconsiderReplayPath = resolve(root, "tests", "tmp-reconsider-replay.json");
+    const promotedCampaignPath = resolve(root, "tests", "tmp-promoted-campaign.json");
+    const plan = buildQuestionPlan(minimalRequest, { canonicalize: true });
+    const siftReplay = {
+      ...makeResponse(plan, [
+        { goal: 2.5, goalConfidence: 0.1, constraint: 0.9, value: 0.9 },
+        { goal: 3, constraint: 0.9, value: 0.9 },
+      ]),
+      candidate_order: plan.candidateIds,
+    };
+    const reviewAnswers = Object.fromEntries([
+      ["reconsider_candidate_goal_fit", { type: "score", score: 3, confidence: 0.9, legend: { "0": "bad", "1": "weak", "2": "good", "3": "strong" }, probabilities: { "0": 0, "1": 0, "2": 0, "3": 1 } }],
+      ["reconsider_candidate_constraint_fit", { type: "noul", noul: 0.9 }],
+      ["reconsider_candidate_feasibility", { type: "score", score: 3, confidence: 0.9, legend: { "0": "bad", "1": "weak", "2": "good", "3": "strong" }, probabilities: { "0": 0, "1": 0, "2": 0, "3": 1 } }],
+      ["reconsider_candidate_validation_quality", { type: "score", score: 3, confidence: 0.9, legend: { "0": "bad", "1": "weak", "2": "good", "3": "strong" }, probabilities: { "0": 0, "1": 0, "2": 0, "3": 1 } }],
+      ["reconsider_candidate_execution_value", { type: "score", score: 3, confidence: 0.9, legend: { "0": "bad", "1": "weak", "2": "good", "3": "strong" }, probabilities: { "0": 0, "1": 0, "2": 0, "3": 1 } }],
+    ]);
+    writeFileSync(requestPath, JSON.stringify(minimalRequest));
+    writeFileSync(siftReplayPath, JSON.stringify(siftReplay));
+    try {
+      const sift = run(["sift", "--input", requestPath, "--replay", siftReplayPath]);
+      expect(sift.status).toBe(0);
+      writeFileSync(campaignPath, sift.stdout);
+      writeFileSync(reconsiderReplayPath, JSON.stringify({
+        model: "jev-reconsider-cli", candidate_order: ["allocation-cut"],
+        answers: reviewAnswers, usage: { input_tokens: 20, output_tokens: 5 },
+      }));
+      const reconsider = run([
+        "reconsider", "--campaign", campaignPath, "--candidate", "allocation-cut",
+        "--replay", reconsiderReplayPath, "--format", "json", "--promoted-campaign-output", promotedCampaignPath,
+      ]);
+      expect(reconsider.status).toBe(0);
+      expect(JSON.parse(reconsider.stdout)).toMatchObject({
+        decision: "promote_to_probe",
+        work_order: { candidate_id: "allocation-cut" },
+      });
+      expect(JSON.parse(readFileSync(promotedCampaignPath, "utf8"))).toMatchObject({
+        review_work_orders: [{ candidate_id: "allocation-cut" }],
+      });
+    } finally {
+      for (const path of [requestPath, siftReplayPath, campaignPath, reconsiderReplayPath, promotedCampaignPath]) rmSync(path, { force: true });
+    }
+  });
+
+  it("accepts a PowerShell-style UTF-16LE input file", () => {
+    const input = resolve(root, "tests", "tmp-utf16-request.json");
+    writeFileSync(input, Buffer.concat([
+      Buffer.from([0xff, 0xfe]),
+      Buffer.from(readFileSync(request, "utf8"), "utf16le"),
+    ]));
+    try {
+      const result = run(["rank", "--input", input, "--replay", replay, "--format", "json"]);
+      expect(result.status).toBe(0);
+      expect(JSON.parse(result.stdout).selected).toEqual(["allocation-cut", "byte-fast-path"]);
+    } finally {
+      rmSync(input, { force: true });
+    }
+  });
+
   it("rejects replay against a differently ordered request", () => {
     const reorderedRequest = resolve(root, "tests", "tmp-reordered-request.json");
     const parsed = JSON.parse(readFileSync(request, "utf8")) as {
@@ -289,6 +354,9 @@ describe("jevrev CLI", () => {
 
     expect(result.status).toBe(2);
     expect(result.stderr).toContain("Invalid rank request");
+    expect(result.stderr).toContain("input:");
+    expect(result.stderr).toContain("See examples/parser-speedup.json");
+    expect(result.stderr).not.toContain("[{\"code\"");
     expect(result.stdout).toBe("");
   });
 

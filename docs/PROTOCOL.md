@@ -162,6 +162,11 @@ the wrong candidate.
 `work_orders` contains one entry for each strict survivor. Candidate SHA-256
 digests bind later evidence to the exact proposal.
 
+`jevrev reconsider` accepts exactly one candidate whose Sift decision is
+`review`. It returns `promote_to_probe`, `keep_review`, or `reject`. Promotion
+adds one explicitly bounded review work order; it is permission to collect one
+probe, never permission to integrate.
+
 `jevrev decide` accepts two files:
 
 ```bash

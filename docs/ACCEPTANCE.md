@@ -38,7 +38,7 @@ requires Node.js 20 or newer.
 
 ```text
 npm run check     PASS
-npm test          PASS — 182 tests
+npm test          PASS — 195 tests
 npm run build     PASS
 ```
 

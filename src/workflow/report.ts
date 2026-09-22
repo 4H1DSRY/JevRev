@@ -3,7 +3,7 @@ import type { Campaign, DecideResult } from "./schemas.js";
 export function renderCampaignHuman(campaign: Campaign): string {
   const lines = [
     `JevRev campaign ${campaign.campaign_id}`,
-    `Sifted ${campaign.sift.summary.evaluated} ideas into ${campaign.work_orders.length} probe work order(s).`,
+    `Sifted ${campaign.sift.summary.evaluated} ideas into ${campaign.work_orders.length} strict probe work order(s).`,
     "",
   ];
   for (const workOrder of campaign.work_orders) {
@@ -19,7 +19,10 @@ export function renderCampaignHuman(campaign: Campaign): string {
       "",
     );
   }
-  if (campaign.work_orders.length === 0) {
+  if (campaign.review_work_orders.length > 0) {
+    lines.push(`Review probes explicitly promoted: ${campaign.review_work_orders.map((order) => order.candidate_id).join(", ")}.`);
+  }
+  if (campaign.work_orders.length === 0 && campaign.review_work_orders.length === 0) {
     lines.push(`No probe work orders. Next action: ${campaign.sift.next_action}.`);
   } else {
     lines.push("Run the probes in isolation, then pass an evidence bundle to `jevrev decide`.");

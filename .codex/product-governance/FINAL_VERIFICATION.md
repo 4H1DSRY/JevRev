@@ -194,3 +194,21 @@ The synchronized branch was pushed to
 the intentionally deferred README JevLoop status reconciliation. The final
 governance-only publication record does not change packaged or user-visible
 product files.
+
+## Post-publication upstream synchronization
+
+After the PR opened, `origin/main` advanced again to `7cbe68a` with bounded
+Sift reconsideration, UTF-8 and UTF-16 JSON input support, evidence resume
+hints, and the accompanying protocol and test changes. That head was merged
+into the same branch. The only conflict was README, which retained the
+completed flagship version exactly as requested; no new public copy pass was
+performed.
+
+The new JSON helper is consumed from `dist` by the evidence-template script.
+An initial test run against the previous build output therefore failed two
+template entry-point tests. After rebuilding, both focused tests passed, then
+the full final sequence passed: `npm run check`, `npm run build`, 20 test files
+with 195 tests, `npm run demo:all`, `npm run demo:workflow`, `npm run
+demo:oneshot`, and `npm pack --dry-run --ignore-scripts`. The package dry run
+contained 170 files at approximately 193.2 kB. This was a stale local build
+artifact issue, not a source correction; no runtime patch was added.

@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { recordArtifact } from "../src/evidence/artifact.js";
 import { recordMetric } from "../src/evidence/metric.js";
-import { evidenceStatus, renderEvidenceStatus } from "../src/evidence/status.js";
+import { evidenceNext, evidenceStatus, renderEvidenceStatus } from "../src/evidence/status.js";
 import { buildCampaign } from "../src/workflow/campaign.js";
 import { evidenceBundleSchema, type EvidenceBundle } from "../src/workflow/schemas.js";
 import { buildQuestionPlan } from "../src/questions.js";
@@ -160,5 +160,10 @@ describe("evidence metric, artifact, and status tools", () => {
     expect(human).toContain("success:speed — unknown");
     expect(human).toContain("probe-1 — unknown");
     expect(human).toContain("next: collect_evidence");
+    expect(evidenceNext(status)).toMatchObject({
+      candidate_id: status.candidates[0]?.candidate_id,
+      action: "collect_evidence",
+      item: { kind: "requirement", id: "success:speed" },
+    });
   });
 });

@@ -6,9 +6,10 @@
  * as `unknown`, and Decide will refuse to treat the template as a winner.
  */
 
-import { readFile, writeFile } from "node:fs/promises";
+import { writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { campaignSchema } from "../dist/workflow/schemas.js";
+import { readJsonFile } from "../dist/io/json.js";
 
 function usage() {
   return [
@@ -39,7 +40,7 @@ function parseArgs(argv) {
 }
 
 const options = parseArgs(process.argv.slice(2));
-const campaign = campaignSchema.parse(JSON.parse(await readFile(resolve(options.campaign), "utf8")));
+const campaign = campaignSchema.parse(await readJsonFile(resolve(options.campaign)));
 const successRequirements = campaign.request.task.success.map((criterion) => ({
   criterion_id: criterion.id,
   kind: "success",
@@ -61,7 +62,7 @@ const bundle = {
   kind: "jevrev.evidence-bundle",
   schema_version: "1",
   campaign_id: campaign.campaign_id,
-  packets: campaign.work_orders.map((workOrder) => ({
+  packets: [...campaign.work_orders, ...campaign.review_work_orders].map((workOrder) => ({
     kind: "jevrev.evidence-packet",
     schema_version: "1",
     campaign_id: campaign.campaign_id,
