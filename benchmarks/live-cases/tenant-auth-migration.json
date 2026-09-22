@@ -1,0 +1,85 @@
+{
+  "version": "1",
+  "task": {
+    "goal": "Migrate a multi-tenant SaaS API from shared API keys to short-lived OAuth2 service tokens without an outage or cross-tenant authorization regression.",
+    "context": "The API serves 1,800 tenants across three regions. Existing clients send X-Api-Key to an API gateway and 14 internal services. Traffic peaks at 18k requests per second. Tenants can rotate keys independently. The gateway is Node.js, downstream services are Go and Java, and deployment uses Kubernetes with blue/green releases. The current audit log stores tenant_id, key_id, route, status, and request_id but not token claims. Some partner integrations cannot upgrade for 90 days.",
+    "constraints": [
+      { "id": "no-outage", "text": "There must be no planned downtime and no more than 30 seconds of elevated 5xx during rollout.", "kind": "hard" },
+      { "id": "tenant-isolation", "text": "A token or credential for tenant A must never authorize a request for tenant B.", "kind": "hard" },
+      { "id": "partner-window", "text": "Legacy partner API keys must continue to work for at least 90 days with an explicit deprecation path.", "kind": "hard" },
+      { "id": "auditability", "text": "Every authenticated request must remain traceable to tenant, credential identity, and request_id.", "kind": "hard" },
+      { "id": "backend-contract", "text": "Do not require a breaking change to business-service APIs during the first rollout.", "kind": "hard" },
+      { "id": "ops-capacity", "text": "The migration must be operable by the existing platform team without a new always-on control plane.", "kind": "soft" }
+    ],
+    "success": [
+      { "id": "token-adoption", "text": "At least 95 percent of eligible first-party traffic uses service tokens within 30 days." },
+      { "id": "auth-latency", "text": "Gateway authentication adds no more than 5 ms P95 at peak load." },
+      { "id": "rollback", "text": "A failed rollout can be rolled back to the previous credential path in under 15 minutes." },
+      { "id": "security-tests", "text": "Negative authorization, replay, expiry, rotation, and cross-tenant tests pass in CI." },
+      { "id": "partner-visibility", "text": "Operators can see legacy usage by partner and tenant before deprecation enforcement." }
+    ]
+  },
+  "budget": { "max_survivors": 3 },
+  "candidates": [
+    {
+      "id": "gateway-dual-verify",
+      "title": "Dual verification at the gateway",
+      "summary": "Accept legacy keys and OAuth2 tokens at the gateway, then forward a normalized identity envelope.",
+      "mechanism": "Add a gateway authentication module that validates JWTs locally against rotated JWKS keys and falls back to the existing API-key lookup. Emit tenant_id, credential_id, auth_method, scopes, and request_id in signed internal headers. Roll out by tenant cohort behind a feature flag.",
+      "assumptions": ["All downstream services already trust gateway-authenticated traffic", "JWKS rotation can be cached safely for short periods", "The identity envelope can be added without changing business handlers"],
+      "risks": ["A header-forwarding mistake could create a confused-deputy path", "Gateway CPU may rise during JWT verification", "Legacy fallback may mask clients that never migrate"],
+      "validation": ["Run cross-tenant negative authorization tests through the gateway", "Load-test JWT and API-key mix at peak rate", "Perform a blue/green rollback drill", "Publish per-tenant adoption and legacy-use metrics"],
+      "effort": "medium"
+    },
+    {
+      "id": "sidecar-token-introspection",
+      "title": "Sidecar token introspection",
+      "summary": "Put token validation beside every service while the gateway remains unchanged.",
+      "mechanism": "Deploy an Envoy or language sidecar that validates tokens and injects identity metadata before requests reach each service. Keep API-key validation in the gateway and let sidecars call a regional introspection endpoint for unknown tokens.",
+      "assumptions": ["Every workload can adopt the sidecar without startup regressions", "The introspection endpoint can sustain regional peak traffic", "Sidecars can agree on identical tenant and scope semantics"],
+      "risks": ["A sidecar rollout touches 14 services and multiplies configuration drift", "Introspection outages could become a global auth outage", "Identity context may differ between gateway and service"],
+      "validation": ["Run fail-closed and fail-open matrix tests", "Measure introspection cache hit rate and P95 latency", "Canary two services with independent rollback", "Audit identity equivalence across gateway and sidecar"],
+      "effort": "large"
+    },
+    {
+      "id": "auth-broker-exchange",
+      "title": "Credential exchange broker",
+      "summary": "Exchange either legacy keys or OAuth tokens for a short-lived internal credential.",
+      "mechanism": "Introduce a stateless broker endpoint that authenticates the external credential and returns a five-minute signed internal token. The gateway calls the broker once per cache window and forwards the internal token to unchanged services. Partner keys remain accepted at the broker during the compatibility window.",
+      "assumptions": ["A broker cache can keep authentication overhead below the latency budget", "Internal services can validate one new token format", "The broker can be deployed statelessly across regions"],
+      "risks": ["The broker becomes a new high-value attack surface", "Cache invalidation after key rotation may be subtle", "Internal token claims could outlive a revoked partner key"],
+      "validation": ["Exercise immediate revocation and cache expiry", "Run regional broker failure tests", "Verify internal token audience and tenant claims", "Measure broker cache hit and auth latency"],
+      "effort": "large"
+    },
+    {
+      "id": "database-credential-mapping",
+      "title": "Database-backed credential mapping",
+      "summary": "Store token-to-tenant mappings next to the existing API-key table and resolve identity in the gateway.",
+      "mechanism": "Extend the credential database with token subject, tenant, scopes, expiry, and status. The gateway resolves both key_id and token subject through a read replica with a short cache, then uses the existing audit pipeline.",
+      "assumptions": ["The credential database can handle peak read volume", "Read replica lag is acceptable for token issuance and revocation", "Schema migration can be backward compatible"],
+      "risks": ["Database latency or lag can affect every authenticated request", "A stale cache may allow revoked credentials briefly", "Regional replication may leak tenant mappings"],
+      "validation": ["Benchmark database and cache behavior under peak traffic", "Test revoke/rotate behavior across regions", "Run schema backfill and rollback in staging", "Verify audit records for both credential types"],
+      "effort": "medium"
+    },
+    {
+      "id": "signed-identity-envelope",
+      "title": "Signed identity envelope at ingress",
+      "summary": "Keep authentication at ingress and sign a canonical identity envelope for all downstream services.",
+      "mechanism": "Normalize API keys and OAuth tokens into a canonical envelope, sign it with an ingress key, and require services to verify the signature before trusting tenant metadata. Add a versioned envelope schema and dual-key rotation.",
+      "assumptions": ["Services can add a small verification middleware without business API changes", "Ingress signing keys can rotate safely", "Canonical claim normalization can be specified before rollout"],
+      "risks": ["Services that forget verification could remain vulnerable", "Envelope version skew may be hard to debug", "Key rotation mistakes could reject all traffic"],
+      "validation": ["Static-scan all services for verification middleware", "Run forged-header and cross-tenant tests", "Rotate signing keys during live canary", "Verify envelope version telemetry"],
+      "effort": "medium"
+    },
+    {
+      "id": "region-local-jwks",
+      "title": "Region-local JWT validation",
+      "summary": "Validate OAuth tokens entirely at the gateway with regional JWKS and keep legacy key lookup unchanged.",
+      "mechanism": "Provision regional JWKS caches, use issuer/audience/tenant claim validation at the gateway, and preserve the existing API-key path. Add a token migration dashboard and cohort feature flags.",
+      "assumptions": ["OAuth claims already contain stable tenant identity", "JWKS endpoints are reliable and cacheable", "The gateway has enough CPU headroom"],
+      "risks": ["A bad issuer or audience check can authorize the wrong tenant", "JWKS staleness affects revocation response", "Regional config drift can create inconsistent policy"],
+      "validation": ["Run claim mutation and key-rotation tests", "Load-test regional gateways", "Compare auth decisions across regions", "Run rollback with JWKS disabled"],
+      "effort": "small"
+    }
+  ]
+}

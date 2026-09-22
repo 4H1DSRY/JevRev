@@ -29,6 +29,7 @@
     "docs/WORKFLOW.md",
     "examples",
     "benchmarks/README.md",
+    "benchmarks/live-cases",
     "benchmarks/workflow-fixture",
     "scripts",
     "skills/jevrev",

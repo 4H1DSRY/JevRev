@@ -1,0 +1,85 @@
+{
+  "version": "1",
+  "task": {
+    "goal": "Make a payment-event ingestion pipeline safely retryable and idempotent while reducing duplicate downstream notifications.",
+    "context": "The pipeline consumes at-least-once events from Kafka, writes payment state to PostgreSQL, and publishes email/webhook notifications. A worker crash after the database commit but before the acknowledgment currently causes duplicate notifications. Traffic is 3,000 events per second with occasional partition rebalances. Downstream webhooks can be slow or unavailable. The team cannot pause ingestion for more than one minute.",
+    "constraints": [
+      { "id": "no-loss", "text": "A valid payment event must not be silently lost during retries, rebalances, or worker restarts.", "kind": "hard" },
+      { "id": "no-duplicate-payment", "text": "The same payment event must not create two state transitions.", "kind": "hard" },
+      { "id": "api-compatibility", "text": "Existing webhook payload shape and consumer contracts must remain compatible.", "kind": "hard" },
+      { "id": "throughput", "text": "Steady-state ingestion throughput must remain at least 90 percent of the current baseline.", "kind": "hard" },
+      { "id": "operability", "text": "The solution must work with PostgreSQL and Kafka already operated by the team.", "kind": "hard" },
+      { "id": "replayability", "text": "Operators should be able to replay a bounded time window safely.", "kind": "soft" }
+    ],
+    "success": [
+      { "id": "exactly-once-state", "text": "Repeated delivery of the same event produces one and only one payment state transition." },
+      { "id": "notification-dedup", "text": "Retries do not produce duplicate webhook or email notifications." },
+      { "id": "failure-recovery", "text": "A crash at every commit/ack boundary recovers without loss or duplicate state." },
+      { "id": "throughput-target", "text": "Benchmark throughput remains at least 90 percent of baseline at 3,000 events per second." },
+      { "id": "replay", "text": "A bounded replay can be executed twice without changing final payment state." }
+    ]
+  },
+  "budget": { "max_survivors": 3 },
+  "candidates": [
+    {
+      "id": "inbox-outbox",
+      "title": "Transactional inbox and outbox",
+      "summary": "Record event identity and outgoing notifications in PostgreSQL within one transaction.",
+      "mechanism": "Add an inbox table keyed by event_id and an outbox table keyed by notification id. Consume an event, insert the inbox row and payment transition, insert pending notifications, commit, then acknowledge Kafka. A separate dispatcher retries outbox delivery with stable idempotency keys.",
+      "assumptions": ["PostgreSQL write capacity can absorb two additional indexed writes", "Webhook consumers tolerate an idempotency key or existing payload identity"],
+      "risks": ["Outbox growth requires retention and monitoring", "Dispatcher backpressure can delay notifications"],
+      "validation": ["Inject crashes before and after commit/ack", "Replay duplicate Kafka events", "Measure outbox dispatch duplicates and throughput", "Run bounded replay twice"],
+      "effort": "medium"
+    },
+    {
+      "id": "kafka-transactions",
+      "title": "Kafka transactions and read-process-write",
+      "summary": "Use Kafka transactional semantics to atomically publish processing results and offsets.",
+      "mechanism": "Move notification events to Kafka, process input partitions in read-process-write transactions, commit offsets transactionally, and let downstream notification workers own delivery retries.",
+      "assumptions": ["All required topics and consumers can use Kafka transactions", "PostgreSQL state can be reconciled with transactional Kafka output"],
+      "risks": ["Database and Kafka commits are still separate", "Transaction timeouts under webhook pressure", "Operational complexity increases sharply"],
+      "validation": ["Run broker and worker failure injection", "Verify database/output reconciliation", "Measure transaction abort rate", "Load-test rebalances and slow consumers"],
+      "effort": "large"
+    },
+    {
+      "id": "unique-event-index",
+      "title": "Unique event index with retry-safe writes",
+      "summary": "Use a unique database constraint to make payment transitions idempotent.",
+      "mechanism": "Add a unique event_id index and perform insert-on-conflict handling for payment transitions. Keep notifications in the current transaction path and suppress duplicate transition work when the insert conflicts.",
+      "assumptions": ["Every event has a stable globally unique event_id", "Notification emission can be safely tied to insert success"],
+      "risks": ["A crash after notification but before acknowledgment can still duplicate notifications", "Changing notification ordering may affect consumers"],
+      "validation": ["Crash between state commit and notification send", "Replay duplicates and inspect notifications", "Run schema migration under load", "Measure throughput impact"],
+      "effort": "small"
+    },
+    {
+      "id": "distributed-lock",
+      "title": "Distributed lock per payment",
+      "summary": "Serialize processing for a payment key with a Redis or PostgreSQL advisory lock.",
+      "mechanism": "Acquire a short-lived lock keyed by payment_id before processing, renew while handling the event, and release after acknowledgment. Keep the existing state and notification writes.",
+      "assumptions": ["Lock service remains available and latency is bounded", "Payment keys distribute well enough to avoid hot locks"],
+      "risks": ["Locks do not make external notification sends idempotent", "Lease expiry can create concurrent processors", "Throughput degrades on hot payments"],
+      "validation": ["Kill workers while holding locks", "Simulate lock service failure", "Replay duplicate events", "Measure lock contention and notification duplicates"],
+      "effort": "medium"
+    },
+    {
+      "id": "notification-dedup-store",
+      "title": "Dedicated notification deduplication store",
+      "summary": "Keep payment writes unchanged and deduplicate outgoing notifications by stable message id.",
+      "mechanism": "Generate a deterministic notification_id from event_id and notification type, write it to a durable store before sending, and suppress repeats when the id already exists. Retry pending sends from the store.",
+      "assumptions": ["Notification identity can be derived without changing payload shape", "A durable store can be operated independently"],
+      "risks": ["State transition itself remains vulnerable to duplicate processing", "Store and database can disagree", "The new store becomes another operational dependency"],
+      "validation": ["Crash at every send/store boundary", "Replay event windows", "Verify payment state and notification counts separately", "Load-test store latency"],
+      "effort": "medium"
+    },
+    {
+      "id": "consumer-dedup-cache",
+      "title": "In-memory consumer dedup cache",
+      "summary": "Suppress recent duplicate event IDs in each worker process.",
+      "mechanism": "Keep a bounded TTL cache of processed event IDs in memory and skip events seen recently before entering the transaction.",
+      "assumptions": ["Duplicates arrive within the TTL window", "Worker restarts are rare enough for memory loss to be acceptable"],
+      "risks": ["Restart or rebalance loses the cache", "Memory limits and eviction can reintroduce duplicates", "It cannot guarantee no-loss or exactly-once state"],
+      "validation": ["Restart workers during replay", "Run duplicates after TTL expiry", "Stress cache eviction", "Compare final state and notifications"],
+      "effort": "small"
+    }
+  ]
+}

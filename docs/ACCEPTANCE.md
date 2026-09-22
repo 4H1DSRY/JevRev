@@ -61,6 +61,9 @@ npm run demo:all  PASS — parser-speedup, api-boundary-hardening,
 npm run demo:workflow PASS — executes two implementations, five correctness
                          cases and seven benchmark samples per candidate;
                          paper favorite fails and runner-up wins
+live long cases PASS — tenant auth, checkout performance, and payment
+                       idempotency requests ran against Jev; results are
+                       recorded in the task handoff, not committed as fixtures
 ```
 
 The original demos prove deterministic protocol and policy behavior. The

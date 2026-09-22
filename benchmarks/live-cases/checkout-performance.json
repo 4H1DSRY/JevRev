@@ -1,0 +1,84 @@
+{
+  "version": "1",
+  "task": {
+    "goal": "Reduce mobile checkout LCP P75 from 4.2s to 2.5s or below on 4G without breaking checkout interaction or URL stability.",
+    "context": "A React 16 application has 340 class components, webpack 4, a 2.8MB entry bundle (890KB gzip), three unused dependencies, an uncompressed 1.6MB hero image, and a four-weight Chinese font. Checkout routes must keep their current URLs and client-side navigation. The team has four engineers and two active feature commitments.",
+    "constraints": [
+      { "id": "url-stability", "text": "All existing checkout and marketing URLs must remain unchanged.", "kind": "hard" },
+      { "id": "interaction", "text": "Checkout controls and client-side navigation must remain interactive; no delayed hydration that drops clicks.", "kind": "hard" },
+      { "id": "delivery-window", "text": "The change must be safely deployable within two weeks without freezing other work.", "kind": "hard" },
+      { "id": "backend-stability", "text": "No backend API contract changes are allowed.", "kind": "hard" },
+      { "id": "observability", "text": "The result must be measurable in real-user monitoring, not only a lab score.", "kind": "hard" },
+      { "id": "visual-fidelity", "text": "Checkout visual layout should remain materially unchanged.", "kind": "soft" }
+    ],
+    "success": [
+      { "id": "lcp", "text": "Mobile 4G LCP P75 is at or below 2.5 seconds in real-user monitoring." },
+      { "id": "e2e", "text": "Existing E2E tests remain green and client-side route transitions still occur." },
+      { "id": "bundle", "text": "Initial route JavaScript gzip size decreases by at least 40 percent." },
+      { "id": "regression", "text": "No material increase in checkout conversion errors or CLS." }
+    ]
+  },
+  "budget": { "max_survivors": 3 },
+  "candidates": [
+    {
+      "id": "dependency-split",
+      "title": "Remove unused dependencies and split routes",
+      "summary": "Cut known dead weight and lazy-load non-checkout routes without changing route definitions.",
+      "mechanism": "Remove unused moment and full lodash imports, dynamically import chart.js only on reporting pages, enable webpack splitChunks, and use route-level React.lazy for non-checkout screens while preserving existing paths.",
+      "assumptions": ["Static analysis has found no dynamic references to the removed dependencies", "Checkout does not import reporting code indirectly"],
+      "risks": ["A dynamic import boundary could alter loading order", "A missed dynamic reference could fail a rarely used route"],
+      "validation": ["Run bundle analyzer and gzip-size gate", "Run full E2E including client-side navigation", "Compare RUM LCP and checkout errors by cohort", "Run rollback drill"],
+      "effort": "small"
+    },
+    {
+      "id": "image-font-pipeline",
+      "title": "Optimize LCP image and font delivery",
+      "summary": "Reduce blocking image and font bytes while preserving responsive fallbacks.",
+      "mechanism": "Generate AVIF/WebP and responsive srcset variants for the LCP image, preload only the selected source, subset the Chinese font to the actual glyph set, reduce unused weights, and preserve format fallbacks.",
+      "assumptions": ["The hero image is the LCP element for the target cohort", "Two font weights are sufficient for checkout"],
+      "risks": ["Wrong LCP attribution would make the optimization irrelevant", "Font subsetting can create missing-glyph regressions"],
+      "validation": ["Verify LCP element attribution in RUM", "Run visual and glyph regression tests", "Measure transfer bytes and CLS on low-end Android", "Compare real-user LCP P75"],
+      "effort": "small"
+    },
+    {
+      "id": "server-prerender-shell",
+      "title": "Prerender a checkout shell",
+      "summary": "Send a static shell early while preserving client-side checkout hydration.",
+      "mechanism": "Add a route-specific prerendered shell containing stable layout and loading placeholders, then hydrate the existing checkout components as data arrives. Keep all existing URLs and API calls.",
+      "assumptions": ["The shell can be generated without user-specific data", "Hydration boundaries can be introduced around class components"],
+      "risks": ["Shell and hydrated DOM can diverge", "Users may see placeholders too long on slow networks"],
+      "validation": ["Run hydration mismatch detection", "Run checkout interaction E2E under throttled 4G", "Compare LCP and conversion errors", "Test rollback to the current renderer"],
+      "effort": "medium"
+    },
+    {
+      "id": "service-worker-precache",
+      "title": "Precache checkout assets with a service worker",
+      "summary": "Make repeat checkout visits fast by caching the route bundle and fonts.",
+      "mechanism": "Install a versioned service worker that precaches stable checkout assets after first load and uses stale-while-revalidate for static resources.",
+      "assumptions": ["The target cohort has repeat visits", "Service-worker lifecycle can be introduced without stale checkout code"],
+      "risks": ["Stale assets can create mixed-version checkout behavior", "First-visit LCP may not improve"],
+      "validation": ["Run first-visit and repeat-visit RUM separately", "Test cache invalidation across deploys", "Run offline/online transition E2E", "Measure conversion and error regressions"],
+      "effort": "medium"
+    },
+    {
+      "id": "edge-rendering-migration",
+      "title": "Move checkout rendering to edge SSR",
+      "summary": "Replace the existing webpack rendering path with an edge-rendered application.",
+      "mechanism": "Migrate checkout routes to a modern server-rendered framework with edge caching and streaming data, then preserve URLs through rewrites.",
+      "assumptions": ["The team can migrate class components without freezing parallel work", "All checkout dependencies support the target runtime"],
+      "risks": ["Large migration surface", "Runtime incompatibilities", "Rollback complexity within two weeks"],
+      "validation": ["Run route parity and full E2E", "Run edge failure and rollback drills", "Compare RUM LCP and conversion", "Audit URL and SEO parity"],
+      "effort": "large"
+    },
+    {
+      "id": "idle-hydration",
+      "title": "Delay hydration until idle",
+      "summary": "Paint static HTML immediately and hydrate React after the browser is idle.",
+      "mechanism": "Render a prerendered page and call hydration from requestIdleCallback after the first paint, with a fallback timeout.",
+      "assumptions": ["Users rarely interact during the initial idle window"],
+      "risks": ["Clicks can be lost or ignored", "The page can appear interactive while it is not", "SEO and accessibility behavior can diverge"],
+      "validation": ["Run click-at-first-paint interaction tests", "Measure lost-event rate", "Run keyboard/accessibility checks", "Compare conversion errors"],
+      "effort": "medium"
+    }
+  ]
+}

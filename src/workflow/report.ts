@@ -12,7 +12,9 @@ export function renderCampaignHuman(campaign: Campaign): string {
       `  hypothesis: ${workOrder.hypothesis}`,
       `  probe: ${workOrder.probe_instruction}`,
       `  budget: ${Math.round(workOrder.budget.max_wall_ms / 1_000)}s / ${workOrder.budget.max_changed_files} changed files`,
-      `  evidence: ${workOrder.required_evidence.join("; ")}`,
+      `  evidence: ${workOrder.required_evidence
+        .map(({ id, description }) => `${id}: ${description}`)
+        .join("; ")}`,
       "",
     );
   }
