@@ -1,8 +1,8 @@
 # JevLong: long-running session observer
 
-Status: design baseline. This document defines the first implementable JevLong
-slice. It does not change JevLoop and it does not authorize a background agent
-runner.
+Status: implementation baseline. This document defines the shipped JevLong
+read-only slice and its reserved follow-up contracts. It does not change
+JevLoop and it does not authorize a background agent runner.
 
 ## 1. Boundary
 
@@ -45,32 +45,28 @@ agent/harness -> JSONL stdout or file -> JevLong -> human stderr / JSON report
 ```
 
 There is no daemon requirement in the first release. A host may call `ingest`
-after every event, after a bounded batch, or at a heartbeat interval. A future
-TUI can read the same snapshot and alert files without changing the reducer.
+after every event, after a bounded batch, or at a heartbeat interval. The
+shipped `watch` command reads the same verified store as a read-only cockpit.
 Without a host heartbeat or an explicit `watch`, a silent process cannot
 produce a new alert by itself; this is an explicit limitation, not hidden
 background behavior.
 
-### MVP hard limits
+### Shipped ingest limits
 
-The first implementation must make its cost envelope explicit:
+The current implementation makes its ingest cost envelope explicit:
 
 ```text
 max_event_bytes: 64 KiB
 max_batch_events: 256
 max_batch_bytes: 1 MiB
 max_open_tool_calls: 512
-max_recent_events: 2,048
-max_open_alerts: 64
-max_alert_history: 10,000
-max_session_bytes: 256 MiB before segment rotation
+max_session_bytes: 256 MiB (ingest stops; segment rotation is not shipped)
 ```
 
 One batch gets one journal append, one reducer pass, and one snapshot checkpoint.
-Normal status reads only the verified snapshot. Startup/recovery may validate
-the journal tail; it must not replay the complete history on every ingest.
-Long sessions use immutable 64 MiB/100k-event segments plus a compacted
-checkpoint. Reports default to summaries and require an explicit history limit.
+Status reconstructs signals from the verified journal in the current release;
+it does not execute commands or contact a provider. Segment rotation,
+compacted history, and bounded report cursors remain future storage work.
 
 ## 3. Frozen session specification
 
@@ -84,7 +80,7 @@ revision: positive integer
 session_id: jvlng_<16 lowercase hex>
 title, goal, context?
 workspace: relative path
-allowed_scope: relative paths/globs
+allowed_scope: relative path prefixes
 protected_surfaces: stable IDs and descriptions
 milestones: ordered IDs, descriptions, optional evidence tags
 budget:
@@ -99,10 +95,11 @@ thresholds:
   drift_warning_score
   budget_warning_fraction
 alert_policy:
-  cooldown_ms
-  max_open_alerts
-  severity_escalation_window
-observer_budget:
+  max_alert_history (current release)
+  cooldown_ms (reserved)
+  max_open_alerts (reserved)
+  severity_escalation_window (reserved)
+observer_budget (reserved contract; provider calls are not shipped yet):
   provider: none | jev | local
   max_calls
   max_tokens
@@ -281,7 +278,7 @@ events, not secrets or full transcripts. Jev may raise confidence or request
 human attention; it cannot clear a deterministic hard failure or close a Long
 session.
 
-If enabled, `observer_budget` must freeze `provider`, `max_calls`,
+When the optional observer is implemented, `observer_budget` must freeze `provider`, `max_calls`,
 `max_tokens`, `max_wall_ms`, `timeout_ms`, `min_interval_ms`, and
 `max_context_bytes`. Default provider is `none` and max calls is zero. Jev runs
 after the deterministic append, outside the mutation lock; timeout, malformed
@@ -289,9 +286,9 @@ output, outage, or budget exhaustion falls back to the deterministic snapshot.
 
 ### Module F: alert policy (`src/long/policy.ts`)
 
-Turn indicators into debounced alerts. Alerts are append-only decisions with
-severity, kind, reason codes, evidence references, confidence, and a human
-recommendation.
+Turn indicators into deterministic, coalesced alerts. The current release
+keeps alert state in the caller's watch cycle; it does not persist alert
+acknowledgements or invoke a provider.
 
 Initial alert kinds:
 
@@ -304,11 +301,14 @@ Initial alert kinds:
 - `budget_risk`: projected wall time/tokens/tool calls exceed the warning level;
 - `human_attention`: deterministic signals and optional Jev both indicate review.
 
-Policy uses hysteresis and cooldown. An alert is closed only by a later event
-that proves recovery or by explicit human acknowledgement. Repeated identical
-alerts must update a counter, not flood the terminal.
+Repeated evaluations of the same journal do not create new alert occurrences.
+Repeated identical alerts update a counter only when a new event supplies
+evidence; they must not flood the terminal. The current release emits `open`
+and `recovered` states during a caller's watch cycle. Acknowledgement, close,
+cooldown, and active-alert caps remain reserved protocol fields until their
+durable commands and replay rules ship.
 
-Alert lifecycle is explicit and replayable:
+The planned alert lifecycle is explicit and replayable:
 
 ```text
 open -> acknowledged -> recovered -> closed
@@ -316,10 +316,11 @@ open -> acknowledged -> recovered -> closed
 ```
 
 `acknowledged` means seen by a human; it does not hide an unresolved alert.
-`recovered` requires a matching recovery signal. `alert_raised`,
-`alert_acknowledged`, `alert_recovered`, and `alert_closed` are journal events,
-not snapshot-only fields. A heartbeat can recover `silent`; it cannot by itself
-recover `stall` or `failure_loop`.
+`recovered` requires a matching recovery signal. The current CLI does not emit
+acknowledgement or close events. When those commands ship,
+`alert_raised`, `alert_acknowledged`, `alert_recovered`, and `alert_closed`
+will be journal events, not snapshot-only fields. A heartbeat can recover
+`silent`; it cannot by itself recover `stall` or `failure_loop`.
 
 ### Module G: snapshot and dashboard (`src/long/store.ts`, `src/long/tui.ts`)
 
@@ -360,10 +361,11 @@ long close        explicitly end or abort the observation
 `long ingest` must be idempotent for an adapter event ID. It must never execute
 the command represented by an event.
 
-The MVP implementation order is A-D, F-G, then H. Module E (Jev observer) and
-the Loop bridge come only after the deterministic path has passed performance,
-security, and replay tests. This is what keeps ordinary healthy events local,
-cheap, and timely.
+The shipped path is A-D, F-G, and H: deterministic normalization, storage,
+signals, policy, rendering, and JSONL CLI. Module E (Jev observer), retention
+segments, alert acknowledgement/close commands, and the Loop bridge remain
+explicit follow-up work. This keeps ordinary healthy events local, cheap, and
+timely.
 
 ## 6. Loop bridge
 
@@ -398,7 +400,8 @@ new lifecycle state; simultaneous `budget_risk` and `drift` are normal. An
 2. Normalizer/redactor with secret and path tests.
 3. Hash-chained store with crash/concurrency tests.
 4. Deterministic signal reducers.
-5. Alert policy with cooldown/hysteresis and persisted alert events.
+5. Alert policy with deterministic coalescing; cooldown, acknowledgement, and
+   persisted alert events are follow-up work.
 6. Snapshot/report rendering.
 7. CLI JSONL adapter and end-to-end fixtures.
 8. Performance/retention gate for 100k+ events.
@@ -444,22 +447,20 @@ without an API key.
 - out-of-scope and protected-path changes raise drift regardless of prose;
 - no milestones means progress is `unknown`, not zero and not complete;
 - budget risk includes both prior burn and projected recent burn rate.
-- open calls, event windows, fingerprints, and alerts have bounded cardinality;
+- open calls and ingest batches have bounded cardinality; failure windows and
+  alert history are deterministic; retention segments remain future work;
 - replay with a fixed evaluation clock is deterministic;
 - a future or rolled-back producer clock cannot manufacture progress or silence.
 
 ### Policy and UX
 
-- cooldown prevents alert floods;
+- repeated reads of one journal do not increment alert occurrences;
+- cooldown, acknowledgement, and close commands are not in the current CLI;
 - recovery closes only the matching alert;
-- acknowledgement does not erase evidence or hide an unresolved condition;
 - JSON stdout contains only protocol output; diagnostics go to stderr;
 - invalid format/output/provider options do not mutate the event store;
-- close is explicit and cannot be triggered by an assistant message;
-- provider outage falls back to deterministic indicators and records the outage.
-- acknowledgement is distinct from recovery and does not hide open risk;
-- `close` is explicit human input; self-reported `session_finished` cannot end a
-  session or admit post-close mutations.
+- session lifecycle close/abort and provider observer fallback are future
+  extensions; the current Long store is append-only and read-only.
 
 ### End-to-end scenarios
 
@@ -479,9 +480,9 @@ without an API key.
    subsequent work, but never issues the next round.
 
 8. **Cost gate:** 100k healthy heartbeat/tool events produce zero Jev calls,
-   stay within the event/window caps, and keep status reads snapshot-only. A
-   repeated failure storm produces one debounced Jev opportunity at most within
-   the configured cooldown and never blocks deterministic ingest.
+   stay within the event/window caps, and keep deterministic status reads free
+   of provider calls. A future provider observer must remain outside the ingest
+   mutation path and bounded by its frozen observer budget.
 
 ## 10. Non-goals for the first Long release
 

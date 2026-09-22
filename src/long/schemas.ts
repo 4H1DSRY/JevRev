@@ -98,6 +98,16 @@ export type LongSpec = z.infer<typeof longSpecSchema>;
 export const longSourceSchema = z.enum(["recorded", "imported", "self_reported"]);
 export type LongSource = z.infer<typeof longSourceSchema>;
 
+export const LONG_KNOWN_EVENT_TYPES = [
+  "session_started", "heartbeat", "assistant_turn", "tool_started", "tool_finished",
+  "file_change", "test_result", "milestone", "provider_error", "human_input",
+  "session_finished", "loop_audit", "unknown_event",
+] as const;
+
+export function isKnownLongEventType(value: string): boolean {
+  return (LONG_KNOWN_EVENT_TYPES as readonly string[]).includes(value);
+}
+
 const eventBaseSchema = z.object({
   kind: z.literal("jevrev.long-event"),
   schema_version: z.literal("1"),

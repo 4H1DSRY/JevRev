@@ -98,6 +98,7 @@ interface EvidenceRunOptions {
   complete: boolean;
   replace: boolean;
   quiet: boolean;
+  echo: boolean;
   probe: string[];
   requirement: string[];
 }
@@ -894,7 +895,8 @@ function createProgram(): Command {
     .option("--optional", "record the command as optional", false)
     .option("--complete", "mark candidate development completed after recording", false)
     .option("--replace", "replace an observation with the same ID", false)
-    .option("--quiet", "do not echo child stdout/stderr", false)
+    .option("--quiet", "compatibility flag; child output is quiet by default", false)
+    .option("--echo", "echo child stdout/stderr to the terminal (may expose secrets)", false)
     .option("--probe <id>", "link exit status to a required probe ID; repeatable", collectValue, [])
     .option(
       "--requirement <kind:id>",
@@ -917,7 +919,7 @@ function createProgram(): Command {
         replace: rawOptions.replace,
         probeIds: rawOptions.probe,
         requirementRefs: rawOptions.requirement,
-        echo: !rawOptions.quiet,
+        echo: rawOptions.echo,
       });
       stderr.write(
         `jevrev: recorded ${recorded.observation_id} for ${recorded.candidate_id}: exit ${recorded.exit_code}, ${recorded.duration_ms}ms, ${recorded.termination}\n`,

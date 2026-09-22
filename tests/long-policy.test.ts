@@ -30,6 +30,15 @@ describe("JevLong alert policy", () => {
     const heartbeat = evaluateLongPolicy(spec, signal({ activity: "active", stall_score: 1 }), [event("b")], { alerts: raised.alerts }, new Date(evaluatedAt.getTime() + 100));
     expect(heartbeat.alerts.find((alert) => alert.kind === "stall")?.status).toBe("open");
   });
+  it("does not increment an alert when the same journal is merely re-read", () => {
+    const raised = evaluateLongPolicy(spec, signal({ failure_score: 1, evidence_event_ids: { failure: ["a"] } }), [event("a")], { alerts: [] }, evaluatedAt);
+    const reread = evaluateLongPolicy(spec, signal({ failure_score: 1, evidence_event_ids: { failure: ["a"] } }), [event("a")], { alerts: raised.alerts }, new Date(evaluatedAt.getTime() + 100));
+    expect(reread.alerts[0]?.occurrence_count).toBe(1);
+  });
+  it("raises a protocol alert for an unknown event", () => {
+    const result = evaluateLongPolicy(spec, signal({ evidence_event_ids: { protocol: ["unknown"] } }), [event("unknown")], { alerts: [] }, evaluatedAt);
+    expect(result.raised.some((alert) => alert.kind === "protocol")).toBe(true);
+  });
   it("limits retained alert history", () => {
     const limited = { ...spec, alert_policy: { ...spec.alert_policy, max_alert_history: 1 } };
     const result = evaluateLongPolicy(limited, signal({ drift_score: 1, evidence_event_ids: { drift: ["x"] } }), [event("x")], { alerts: [] }, evaluatedAt);

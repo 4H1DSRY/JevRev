@@ -6,6 +6,10 @@
   report path-based validation errors.
 - Add `jevrev reconsider` for a bounded second pass on one Sift review
   candidate, plus `jevrev evidence status --next` as a read-only resume hint.
+- Harden Long protocol and journal boundaries: unknown or malformed measurements
+  raise protocol evidence, dedupe indexes are checked against the verified
+  journal, root scopes are handled explicitly, and recorder output is quiet by
+  default with opt-in `--echo`.
 
 ## 0.2.0 — 2026-09-21
 
@@ -31,6 +35,8 @@
 - Add JevLong: a read-only JSONL observer with deterministic `long create`,
   `long ingest`, `long status`, and `long watch` commands. It reports session
   health to a human and never drives the agent.
+- Document the authority model across the human operator, host agent, Jev,
+  and deterministic JevRev core.
 - Harden JevLoop revision boundaries so old audits cannot carry into a new
   frozen contract; require explicit human confirmation and an attestation for
   resume; expose artifact summaries/excerpts to Jev; and support explicit

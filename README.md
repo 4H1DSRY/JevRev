@@ -376,6 +376,7 @@ ranking-reversal demo above because it exercises the complete current workflow.
 | What has actually been tested? | [`docs/ACCEPTANCE.md`](docs/ACCEPTANCE.md) |
 | How do I run the local provider? | [`docs/SEMIF_LOCAL.md`](docs/SEMIF_LOCAL.md) |
 | What are the Loop and Long contracts? | [`docs/JEVLOOP_DESIGN.md`](docs/JEVLOOP_DESIGN.md), [`docs/JEVLONG_DESIGN.md`](docs/JEVLONG_DESIGN.md) |
+| Who is allowed to do what? | [`docs/AUTHORITY.md`](docs/AUTHORITY.md) |
 | What are the design boundaries? | [`docs/DESIGN.md`](docs/DESIGN.md) |
 
 ## Development

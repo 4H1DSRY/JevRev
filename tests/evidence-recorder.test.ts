@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { readFileSync, rmSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { recordCommand } from "../src/evidence/recorder.js";
 import { buildCampaign } from "../src/workflow/campaign.js";
 import { evidenceBundleSchema, type EvidenceBundle } from "../src/workflow/schemas.js";
@@ -125,6 +125,32 @@ describe("trusted evidence command recorder", () => {
     } finally {
       if (previous === undefined) delete process.env.JEVREV_JEV_API_KEY;
       else process.env.JEVREV_JEV_API_KEY = previous;
+    }
+  });
+
+  it("keeps child output quiet unless echo is explicitly enabled", async () => {
+    const { workOrder, path } = fixture();
+    const writeSpy = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+    try {
+      await recordCommand({
+        evidencePath: path,
+        candidateId: workOrder.candidate_id,
+        observationId: "quiet-default",
+        argv: [process.execPath, "-e", "process.stdout.write('secret-value')"],
+        workspace: root,
+      });
+      expect(writeSpy).not.toHaveBeenCalledWith(expect.stringContaining("secret-value"));
+      await recordCommand({
+        evidencePath: path,
+        candidateId: workOrder.candidate_id,
+        observationId: "explicit-echo",
+        argv: [process.execPath, "-e", "process.stdout.write('debug-value')"],
+        workspace: root,
+        echo: true,
+      });
+      expect(writeSpy.mock.calls.some(([value]) => Buffer.isBuffer(value) && value.toString("utf8") === "debug-value")).toBe(true);
+    } finally {
+      writeSpy.mockRestore();
     }
   });
 

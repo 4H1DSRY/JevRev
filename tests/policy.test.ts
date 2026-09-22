@@ -208,6 +208,13 @@ describe("rankCandidates", () => {
     expect(result.empty_reason).toBe("all_rejected");
   });
 
+  it("rejects a duplicated or out-of-range provider order", () => {
+    const plan = buildQuestionPlan(minimalRequest);
+    const response = makeResponse(plan);
+    expect(() => rankCandidates(minimalRequest, response, [0, 0])).toThrow("permutation");
+    expect(() => rankCandidates(minimalRequest, response, [0, 2])).toThrow("permutation");
+  });
+
   it("marks an empty all-review result for human review", () => {
     const request = structuredClone(minimalRequest);
     request.budget.max_survivors = 2;

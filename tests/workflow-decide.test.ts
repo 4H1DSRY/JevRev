@@ -152,6 +152,15 @@ function decideResponse(
 }
 
 describe("evidence-backed decide policy", () => {
+  it("rejects a duplicated or out-of-range finalist order", () => {
+    const campaign = campaignFixture();
+    const prepared = prepareDecision(campaign, bundleFixture(campaign));
+    const plan = buildDecidePlan(prepared);
+    const response = decideResponse(plan);
+    expect(() => decideCampaign(prepared, response, [0, 0])).toThrow("permutation");
+    expect(() => decideCampaign(prepared, response, [0, 2])).toThrow("permutation");
+  });
+
   it("represents an empty sift as no winner without calling a judge", () => {
     const request = structuredClone(minimalRequest);
     const plan = buildQuestionPlan(request);

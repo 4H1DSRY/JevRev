@@ -140,7 +140,9 @@ export async function recordCommand(options: RecordCommandOptions): Promise<Reco
   const stderrBuffer = errorText.length === 0
     ? childStderr
     : Buffer.concat([childStderr, Buffer.from(`${childStderr.length > 0 ? "\n" : ""}${errorText}`)]);
-  if (options.echo ?? true) {
+  // Command output is hashed for evidence but is not safe to print by default.
+  // Callers can opt in for interactive debugging with `echo: true`.
+  if (options.echo ?? false) {
     if (stdout.length > 0) process.stdout.write(stdout);
     if (stderrBuffer.length > 0) process.stderr.write(stderrBuffer);
   }

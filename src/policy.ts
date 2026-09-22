@@ -266,6 +266,10 @@ export function rankCandidates(
   if (candidateOrder.length !== request.candidates.length) {
     throw new ProtocolError("Candidate order does not match request length");
   }
+  const expectedIndexes = request.candidates.map((_candidate, index) => index);
+  if ([...candidateOrder].sort((left, right) => left - right).some((value, index) => value !== expectedIndexes[index])) {
+    throw new ProtocolError("Candidate order must be a permutation of request indexes");
+  }
   const decisions = candidateOrder.map((originalIndex, canonicalIndex) =>
     initialDecision(request, response, canonicalIndex, originalIndex),
   );

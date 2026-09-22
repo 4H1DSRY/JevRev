@@ -72,9 +72,11 @@ unchanged template deterministically routes to `probe_more`.
 `jevrev evidence run --evidence evidence.json --candidate <id> --id <id> --
 <argv...>` is the first trusted recorder. It executes argv directly without a
 shell, enforces a workspace-relative cwd, strips Jev credentials, hashes output,
-atomically updates the packet, and returns the child exit code after persisting
-the observation. Repeated `--probe` and `--requirement` flags bind the real exit
-status to frozen evidence slots.
+keeps child output quiet by default, atomically updates the packet, and returns
+the child exit code after persisting the observation. Use `--echo` only for an
+interactive debugging run because command output may contain secrets. Repeated
+`--probe` and `--requirement` flags bind the real exit status to frozen evidence
+slots.
 
 `jevrev evidence metric` appends raw baseline/candidate samples and links them
 to frozen slots only with an explicit result. `jevrev evidence artifact`
@@ -178,3 +180,8 @@ Decide does not repeat those scores. It asks:
 
 JevLoop reuses the same evidence-first trust model, but does not silently turn
 the stateless Sift recorder into a long-running agent controller.
+
+The authority split is normative: the host agent executes work, Jev judges
+only the questions it is given, JevRev enforces deterministic contracts, and a
+human owns contract changes, resumption, abortion, and integration. See
+[`AUTHORITY.md`](AUTHORITY.md).

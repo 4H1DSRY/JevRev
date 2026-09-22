@@ -30,6 +30,12 @@ describe("JevLong external normalizer", () => {
     expect(JSON.stringify(headers.payload)).not.toContain("dXNlcjpwYXNz");
   });
 
+  it("maps an unknown adapter event to a protocol-visible unknown_event", () => {
+    const result = normalizeExternalEvent({ adapter_id: "jsonl", adapter_event_id: "mystery", event_type: "agent_magic", payload: {} }, { spec, receivedAt: now });
+    expect(result.event_type).toBe("unknown_event");
+    expect(result.payload.data).toMatchObject({ original_event_type: "agent_magic" });
+  });
+
   it("rejects future timestamps beyond the frozen skew", () => {
     expect(() => normalizeExternalEvent({ adapter_id: "jsonl", adapter_event_id: "1", event_type: "heartbeat", occurred_at: "2026-09-22T12:00:02.000Z", payload: {} }, { spec, receivedAt: now })).toThrow("future");
   });

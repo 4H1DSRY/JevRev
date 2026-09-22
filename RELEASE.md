@@ -47,6 +47,8 @@ live API key, local model, or `benchmarks/results/` output.
 - JevLong read-only observer with JSONL `create`, `ingest`, `status`, and
   `watch` commands, deterministic snapshots, bounded event ingestion, and no
   hidden agent control.
+- Explicit authority model covering human approval, host-agent execution, Jev
+  judgement, and deterministic JevRev enforcement (`docs/AUTHORITY.md`).
 - deterministic ranking-reversal workflow demo (`npm run demo:workflow`).
 
 See [`docs/ACCEPTANCE.md`](docs/ACCEPTANCE.md) for the recorded checks and

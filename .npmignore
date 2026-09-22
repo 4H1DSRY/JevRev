@@ -1,7 +1,15 @@
-/benchmarks/results
-/benchmarks/results/**
+# Local benchmark output and private acceptance artifacts.
+benchmarks/results/
+benchmarks/live-cases/
 dist/**/*.map
 dist/**/*.d.ts.map
-node_modules
-runtime/__pycache__
-runtime/**/__pycache__
+node_modules/
+runtime/__pycache__/
+runtime/**/__pycache__/
+coverage/
+tests/
+.env
+*.log
+*.tgz
+.jevrev/
+.tmp-cli-audit-*/

@@ -1,4 +1,4 @@
-import { longExternalEventSchema, longHash, longSourceSchema, type LongEvent, type LongSpec, type LongSource } from "./schemas.js";
+import { isKnownLongEventType, longExternalEventSchema, longHash, longSourceSchema, type LongEvent, type LongSpec, type LongSource } from "./schemas.js";
 import { InputError } from "../domain/errors.js";
 import { z } from "zod";
 
@@ -63,7 +63,11 @@ export function normalizeExternalEvent(
   const receivedAt = options.receivedAt ?? new Date();
   if (!Number.isFinite(receivedAt.getTime())) throw new InputError("Long event receivedAt is invalid");
   const payloadData = redact(parsed.data.payload, 0, new WeakSet<object>()) as LongEvent["payload"]["data"];
-  const payload = { data: payloadData } as LongEvent["payload"];
+  const eventType = isKnownLongEventType(parsed.data.event_type) ? parsed.data.event_type : "unknown_event";
+  const normalizedData = eventType === "unknown_event"
+    ? { ...payloadData, original_event_type: parsed.data.event_type }
+    : payloadData;
+  const payload = { data: normalizedData } as LongEvent["payload"];
   const serialized = JSON.stringify(payload);
   if (Buffer.byteLength(serialized, "utf8") > MAX_PAYLOAD_BYTES) throw new InputError("Long event payload exceeds 60 KiB after redaction");
   const canonicalAdapterId = canonicalId(parsed.data.adapter_id);
@@ -81,7 +85,7 @@ export function normalizeExternalEvent(
     spec_revision: options.spec.revision,
     spec_sha256: longHash(options.spec),
     source: options.source ?? "imported",
-    event_type: parsed.data.event_type,
+    event_type: eventType,
     payload_sha256: longHash(payload),
     payload,
   } satisfies LongEventDraft;

@@ -67,6 +67,28 @@ describe("JevLong event store", () => {
     await expect(loadLongStore(directory)).rejects.toThrow("rolled back");
   });
 
+  it("rejects a tampered dedupe index even when its byte length is unchanged", async () => {
+    const directory = await fixture();
+    await ingestLongBatch(directory, [draft("dedupe-tamper")]);
+    const path = join(directory, "dedupe.jsonl");
+    const original = readFileSync(path, "utf8");
+    writeFileSync(path, original.replace(/event_id":"[^"]+/, 'event_id":"evt-tampered'), "utf8");
+    await expect(ingestLongBatch(directory, [draft("next")])).rejects.toThrow("dedupe index");
+  });
+
+  it("rejects duplicate event IDs in a tampered journal", async () => {
+    const directory = await fixture();
+    await ingestLongBatch(directory, [draft("event-one"), draft("event-two")]);
+    const path = join(directory, "events.jsonl");
+    const lines = readFileSync(path, "utf8").trimEnd().split("\n");
+    const second = JSON.parse(lines[1]!) as { sequence: number; previous_event_sha256: string; event_sha256: string; payload: { event_id: string } };
+    const first = JSON.parse(lines[0]!) as { payload: { event_id: string } };
+    second.payload.event_id = first.payload.event_id;
+    second.event_sha256 = longHash({ sequence: second.sequence, previous_event_sha256: second.previous_event_sha256, payload: second.payload });
+    writeFileSync(path, `${lines[0]}\n${JSON.stringify(second)}\n`, "utf8");
+    await expect(loadLongStore(directory)).rejects.toThrow("event ID is duplicated");
+  });
+
   it("rejects an event bound to another spec revision or digest", async () => {
     const directory = await fixture();
     await expect(ingestLongBatch(directory, [{ ...draft("wrong-spec"), spec_revision: 2 }])).rejects.toThrow("frozen spec");
@@ -75,6 +97,13 @@ describe("JevLong event store", () => {
   it("recovers a missing snapshot from the journal", async () => {
     const directory = await fixture(); await ingestLongBatch(directory, [draft("recover")]); rmSync(join(directory, "snapshot.json"));
     const loaded = await loadLongStore(directory); expect(loaded.events).toHaveLength(1); expect(loaded.snapshot.sequence).toBe(1);
+  });
+
+  it("rebuilds a missing dedupe index from the verified journal", async () => {
+    const directory = await fixture();
+    await ingestLongBatch(directory, [draft("dedupe-rebuild")]);
+    rmSync(join(directory, "dedupe.jsonl"));
+    await expect(ingestLongBatch(directory, [draft("dedupe-next")])).resolves.toMatchObject({ accepted: [{ sequence: 2 }] });
   });
 
   it("rebuilds a stale or malformed snapshot from the verified journal", async () => {

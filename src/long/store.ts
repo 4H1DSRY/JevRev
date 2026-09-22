@@ -28,8 +28,6 @@ const pendingSchema = z.object({ old_head: headSchema, new_head: headSchema, jou
 export type LongJournalEvent = z.infer<typeof journalEventSchema>;
 export type LongJournalHead = z.infer<typeof headSchema>;
 export interface LoadedLongStore { directory: string; spec: LongSpec; events: LongJournalEvent[]; snapshot: LongJournalHead }
-const dedupeCaches = new Map<string, { sequence: number; entries: Map<string, z.infer<typeof dedupeEntrySchema>> }>();
-
 function eventHash(sequence: number, previous: string, payload: LongEvent): string { return longHash({ sequence, previous_event_sha256: previous, payload }); }
 function eventEnvelope(sequence: number, previous: string, payload: LongEvent): LongJournalEvent {
   const envelope = journalEventSchema.parse({ sequence, previous_event_sha256: previous, event_sha256: eventHash(sequence, previous, payload), payload });
@@ -73,13 +71,13 @@ export async function createLongStore(directoryInput: string, specInput: LongSpe
   await writeFile(join(directory, "events.jsonl"), "", { encoding: "utf8", flag: "wx" });
   await writeFile(join(directory, "dedupe.jsonl"), "", { encoding: "utf8", flag: "wx" });
   await atomicWrite(join(directory, "snapshot.json"), head);
-  dedupeCaches.set(directory, { sequence: 0, entries: new Map() });
   return { directory, spec, events: [], snapshot: head };
 }
 
 function verifyJournal(raw: string, spec: LongSpec): { events: LongJournalEvent[]; head: LongJournalHead } {
   if (raw.length > 0 && !raw.endsWith("\n")) throw new ProtocolError("Long event log has an incomplete trailing event");
   const events: LongJournalEvent[] = [];
+  const eventIds = new Set<string>();
   let previous = ZERO_HASH;
   for (const [index, line] of raw.trimEnd() === "" ? [] : raw.trimEnd().split("\n").entries()) {
     let event: LongJournalEvent;
@@ -87,6 +85,8 @@ function verifyJournal(raw: string, spec: LongSpec): { events: LongJournalEvent[
     catch (error) { throw new ProtocolError(`Invalid Long event at sequence ${index + 1}`, { cause: error }); }
     if (event.sequence !== index + 1 || event.payload.sequence !== event.sequence || event.previous_event_sha256 !== previous || event.event_sha256 !== eventHash(event.sequence, previous, event.payload)) throw new ProtocolError(`Long event chain is invalid at sequence ${index + 1}`);
     if (event.payload.session_id !== spec.session_id || event.payload.spec_revision !== spec.revision || event.payload.spec_sha256 !== longHash(spec)) throw new ProtocolError(`Long event ${event.sequence} is not bound to the frozen spec`);
+    if (eventIds.has(event.payload.event_id)) throw new ProtocolError(`Long event ID is duplicated at sequence ${index + 1}`);
+    eventIds.add(event.payload.event_id);
     const priorReceived = events.at(-1)?.payload.received_at;
     if (priorReceived !== undefined && Date.parse(event.payload.received_at) < Date.parse(priorReceived)) throw new ProtocolError(`Long event ${event.sequence} received_at moves backwards`);
     previous = event.event_sha256;
@@ -111,35 +111,18 @@ export async function loadLongStore(directoryInput: string): Promise<LoadedLongS
   return { directory, spec, events: verified.events, snapshot: verified.head };
 }
 
-async function readHeadFast(directory: string, spec: LongSpec): Promise<LongJournalHead> {
-  try {
-    const head = headSchema.parse(JSON.parse(await readFile(join(directory, "snapshot.json"), "utf8")) as unknown);
-    const [size, dedupeSize] = await Promise.all([stat(join(directory, "events.jsonl")).then((value) => value.size), stat(join(directory, "dedupe.jsonl")).then((value) => value.size)]);
-    if (head.session_id !== spec.session_id || head.spec_revision !== spec.revision || head.spec_sha256 !== longHash(spec) || head.journal_bytes !== size || head.dedupe_bytes !== dedupeSize) throw new ProtocolError("Long checkpoint is invalid");
-    return head;
-  } catch {
-    const loaded = await loadLongStore(directory);
-    const rebuilt = await rebuildDedupe(directory, loaded.events, loaded.snapshot);
-    await atomicWrite(join(directory, "snapshot.json"), rebuilt).catch(() => undefined);
-    return rebuilt;
-  }
-}
-
-async function rebuildDedupe(directory: string, events: readonly LongJournalEvent[], head: LongJournalHead): Promise<LongJournalHead> {
-  const entries = new Map<string, z.infer<typeof dedupeEntrySchema>>();
-  for (const event of events) entries.set(`${event.payload.adapter_id}:${event.payload.adapter_event_id}`, { fingerprint: dedupeFingerprint(event.payload), event_id: event.payload.event_id });
-  const text = entries.size === 0 ? "" : `${[...entries].map(([key, value]) => JSON.stringify({ key, ...value })).join("\n")}\n`;
-  await writeFile(join(directory, "dedupe.jsonl"), text, "utf8");
-  dedupeCaches.set(directory, { sequence: head.sequence, entries });
-  return headSchema.parse({ ...head, dedupe_bytes: Buffer.byteLength(text, "utf8") });
-}
-
-async function loadDedupe(directory: string, head: LongJournalHead): Promise<Map<string, z.infer<typeof dedupeEntrySchema>>> {
-  const cached = dedupeCaches.get(directory);
-  if (cached?.sequence === head.sequence) return new Map(cached.entries);
+async function loadDedupe(directory: string, head: LongJournalHead, events: readonly LongJournalEvent[]): Promise<Map<string, z.infer<typeof dedupeEntrySchema>>> {
+  const expected = new Map<string, z.infer<typeof dedupeEntrySchema>>();
+  for (const event of events) expected.set(`${event.payload.adapter_id}:${event.payload.adapter_event_id}`, { fingerprint: dedupeFingerprint(event.payload), event_id: event.payload.event_id });
   let raw: string;
   try { raw = await readFile(join(directory, "dedupe.jsonl"), "utf8"); }
-  catch (error) { throw new ProtocolError("Long dedupe index is missing", { cause: error }); }
+  catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw new ProtocolError("Long dedupe index cannot be read", { cause: error });
+    const rebuilt = expected.size === 0 ? "" : `${[...expected].map(([key, value]) => JSON.stringify({ key, ...value })).join("\n")}\n`;
+    await writeFile(join(directory, "dedupe.jsonl"), rebuilt, "utf8");
+    head.dedupe_bytes = Buffer.byteLength(rebuilt, "utf8");
+    return new Map(expected);
+  }
   if (Buffer.byteLength(raw, "utf8") !== head.dedupe_bytes || (raw.length > 0 && !raw.endsWith("\n"))) throw new ProtocolError("Long dedupe index is inconsistent");
   const entries = new Map<string, z.infer<typeof dedupeEntrySchema>>();
   for (const line of raw.trimEnd() === "" ? [] : raw.trimEnd().split("\n")) {
@@ -147,7 +130,9 @@ async function loadDedupe(directory: string, head: LongJournalHead): Promise<Map
     if (entries.has(parsed.key)) throw new ProtocolError(`Duplicate key in Long dedupe index: ${parsed.key}`);
     entries.set(parsed.key, { fingerprint: parsed.fingerprint, event_id: parsed.event_id });
   }
-  dedupeCaches.set(directory, { sequence: head.sequence, entries });
+  if (entries.size !== expected.size || [...expected].some(([key, value]) => entries.get(key)?.fingerprint !== value.fingerprint || entries.get(key)?.event_id !== value.event_id)) {
+    throw new ProtocolError("Long dedupe index does not match the verified journal");
+  }
   return new Map(entries);
 }
 
@@ -171,7 +156,6 @@ async function recoverPending(directory: string): Promise<void> {
     await Promise.all([truncate(journalPath, pending.old_head.journal_bytes), truncate(dedupePath, pending.old_head.dedupe_bytes)]);
     await atomicWrite(join(directory, "snapshot.json"), pending.old_head);
   }
-  dedupeCaches.delete(directory);
   await unlink(path).catch(() => undefined);
 }
 
@@ -213,11 +197,12 @@ export async function ingestLongBatch(directoryInput: string, drafts: readonly L
   try {
     await recoverPending(directory);
     const spec = await readIdentityAndSpec(directory);
-    const head = await readHeadFast(directory, spec);
+    const loaded = await loadLongStore(directory);
+    const head = loaded.snapshot;
     const batchKeys = new Set<string>();
     const accepted: LongJournalEvent[] = [];
     const duplicate_event_ids: string[] = [];
-    const dedupe = await loadDedupe(directory, head);
+    const dedupe = await loadDedupe(directory, head, loaded.events);
     const eventIds = new Set([...dedupe.values()].map((entry) => entry.event_id));
     const dedupeLines: Array<z.infer<typeof dedupeLineSchema>> = [];
     let previous = head.last_event_sha256;
@@ -274,7 +259,6 @@ export async function ingestLongBatch(directoryInput: string, drafts: readonly L
       // The journal append is durable. Leave pending.json so the next locked
       // mutation can replay cache/index updates without duplicating the batch.
     }
-    dedupeCaches.set(directory, { sequence: nextHead.sequence, entries: dedupe });
     return { snapshot: nextHead, accepted, duplicate_event_ids };
   } finally {
     await lock.close();

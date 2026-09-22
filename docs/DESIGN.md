@@ -40,7 +40,8 @@ Deferred:
 - Generating candidates. The host agent already does this well.
 - Implementing candidates or managing worktrees.
 - Running tests, benchmarks, screenshots, or merging a winner.
-- Long-running agent audits and completion scoring.
+- Autonomous long-running completion scoring; JevLong observation and JevLoop
+  round audits are separate explicit command-line layers.
 - A web UI, hosted service, or persistent run database.
 
 This separation is intentional. Candidate pruning must prove useful before it

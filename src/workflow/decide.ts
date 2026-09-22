@@ -166,6 +166,10 @@ export function decideCampaign(
   if (candidateOrder.length !== prepared.viable.length) {
     throw new ProtocolError("Decide candidate order does not match viable finalists");
   }
+  const expectedIndexes = prepared.viable.map((_evaluation, index) => index);
+  if ([...candidateOrder].sort((left, right) => left - right).some((value, index) => value !== expectedIndexes[index])) {
+    throw new ProtocolError("Decide candidate order must be a permutation of viable finalist indexes");
+  }
 
   const semantic = new Map<string, SemanticEvaluation>();
   if (response !== undefined) {

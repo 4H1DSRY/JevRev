@@ -46,7 +46,21 @@ async function runInteractiveLongWatch(directory: string, options: LongWatchOpti
     if (rendering || stopped) return; rendering = true;
     try {
       const records: SessionRecord[] = [];
-      for (const sessionDirectory of directories) { try { const prior = previousAlerts.get(sessionDirectory) ?? []; const result = await longStatusCommand(sessionDirectory, options.now?.() ?? new Date(), prior); records.push({ directory: sessionDirectory, result }); const ids = previousAlertIds.get(sessionDirectory) ?? new Set<string>(); const raised = result.policy.raised.filter((alert) => !ids.has(alert.id)); if (options.notifier !== undefined) await options.notifier.notify(raised); previousAlerts.set(sessionDirectory, result.policy.alerts); previousAlertIds.set(sessionDirectory, new Set(result.policy.alerts.filter((alert) => alert.status === "open" || alert.status === "acknowledged").map((alert) => alert.id))); } catch { /* a rotated sibling must not kill the cockpit */ } }
+      for (const sessionDirectory of directories) {
+        try {
+          const prior = previousAlerts.get(sessionDirectory) ?? [];
+          const result = await longStatusCommand(sessionDirectory, options.now?.() ?? new Date(), prior);
+          records.push({ directory: sessionDirectory, result });
+          const ids = previousAlertIds.get(sessionDirectory) ?? new Set<string>();
+          const raised = result.policy.raised.filter((alert) => !ids.has(alert.id));
+          if (options.notifier !== undefined) await options.notifier.notify(raised);
+          previousAlerts.set(sessionDirectory, result.policy.alerts);
+          previousAlertIds.set(sessionDirectory, new Set(result.policy.alerts.filter((alert) => alert.status === "open" || alert.status === "acknowledged").map((alert) => alert.id)));
+        } catch (error) {
+          if (sessionDirectory === resolve(directory)) throw error;
+          // A rotated sibling may disappear while the cockpit is refreshing.
+        }
+      }
       if (records.length === 0) throw new Error("No readable Long sessions are available"); selectedSession = clampIndex(selectedSession, records.length); const model = modelFor(records, selectedSession, tab, focus, selectedItem); selectedItem = clampIndex(selectedItem, itemCount(model));
       const width = Math.max(40, Math.min(options.width ?? output.columns ?? 100, output.columns ?? options.width ?? 100)); const height = Math.max(12, Math.min(options.height ?? output.rows ?? 24, output.rows ?? options.height ?? 24)); output.write(`\u001b[H\u001b[2J${renderLongTui(model, { width, height, color: options.color ?? true })}`);
     } finally { rendering = false; }
