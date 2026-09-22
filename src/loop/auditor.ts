@@ -201,7 +201,9 @@ async function assessJudged(
       [...artifacts.values()].find((artifact) => artifact.artifact_id === artifactId && claim.artifact_evaluation_ids.includes(artifact.id)),
     );
     if (claim.status === "fail") return { id: criterion.id, status: "fail", score: scoreValue.score, confidence: scoreValue.confidence, source: "jev", freshness: "fresh", current: true };
-    const failed = required.some((artifact) => artifact === undefined || artifact.status === "fail" || artifact.head_revision !== evidence.head_revision);
+    // A missing artifact is an evidence gap, not a regression. Only an
+    // explicitly failed or stale artifact can route the round to repair.
+    const failed = required.some((artifact) => artifact !== undefined && (artifact.status === "fail" || artifact.head_revision !== evidence.head_revision));
     const incomplete = required.some((artifact) => artifact === undefined || artifact.status === "unknown");
     const status = failed ? "fail" : incomplete ? "unknown" : scoreValue.score >= criterion.target && scoreValue.confidence >= criterion.required_confidence ? "pass" : "unknown";
     return { id: criterion.id, status, score: scoreValue.score, confidence: scoreValue.confidence, source: "jev", freshness: "fresh", current: true };

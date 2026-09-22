@@ -247,3 +247,7 @@ resolved addresses without making an authenticated Jev request.
 | 3 | Judge provider/authentication/network failure |
 | 4 | Judge response violated the expected protocol |
 | 1 | Unexpected internal failure |
+
+`jevrev doctor --check` uses code `3` when the selected local (`local` or
+`semif`) endpoint is unreachable or returns a 4xx/5xx response. The hosted Jev
+endpoint is reported as configured without making an authenticated request.

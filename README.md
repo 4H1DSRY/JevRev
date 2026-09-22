@@ -100,6 +100,9 @@ jevrev loop evidence-template \
   --output round-evidence.json
 ```
 
+The template is JSON by default. Use `--format human` when inspecting the
+active round and its still-unknown evidence slots at a terminal.
+
 The existing `jevrev evidence run/metric/artifact` recorders currently target
 the Sift/Probe evidence bundle, not this Loop envelope. A host agent may use
 their captured facts to fill the template, but must preserve the Loop IDs,
@@ -398,7 +401,9 @@ Default request: `POST http://127.0.0.1:4878/v1/chat/completions`
 
 The legacy reranker remains available at `http://127.0.0.1:4877/v1/score` with
 `--provider local`. Run `jevrev doctor --format json --check` to inspect the
-configured endpoints. Local setup is documented in
+configured endpoints. When `--provider local` or `--provider semif` is selected,
+an unreachable or 4xx/5xx health endpoint returns exit code `3`, which makes
+the check usable in scripts. Local setup is documented in
 [`docs/SEMIF_LOCAL.md`](docs/SEMIF_LOCAL.md).
 
 All four modes—Jev, SemIf, legacy local, and replay—support both Sift and Decide.

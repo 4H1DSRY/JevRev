@@ -88,6 +88,21 @@ describe("JevLoop evidence auditor", () => {
     expect(result.criteria.find((criterion) => criterion.id === "quality")).toMatchObject({ status: "unknown", source: "jev" });
     expect(result.next_action.focus_criteria).toContain("quality");
   });
+  it("treats a missing required judged artifact as an evidence gap, not a regression", async () => {
+    const { order } = await fixture();
+    const incomplete = evidence(order, {
+      artifact_evaluations: [],
+      criterion_results: [
+        { id: "tests", status: "pass", freshness: "fresh", source_round: order.round_number, head_revision: "head", observation_ids: ["test"], metric_ids: [], artifact_evaluation_ids: [] },
+        { id: "speed", status: "pass", freshness: "fresh", source_round: order.round_number, head_revision: "head", observation_ids: [], metric_ids: ["speed-sample"], artifact_evaluation_ids: [] },
+        { id: "quality", status: "unknown", freshness: "fresh", source_round: order.round_number, head_revision: "head", observation_ids: [], metric_ids: [], artifact_evaluation_ids: [] },
+      ],
+    });
+    const result = await auditRound(baseSpec, order, incomplete, { judge: fakeJudge });
+    expect(result.criteria.find((criterion) => criterion.id === "quality")).toMatchObject({ status: "unknown" });
+    expect(result.outcome).toBe("continue");
+    expect(result.blocking_criteria).not.toContain("quality");
+  });
   it("routes a recorded command failure to fix_regression", async () => {
     const { order } = await fixture();
     const failed = evidence(order, {

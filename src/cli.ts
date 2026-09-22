@@ -140,7 +140,7 @@ interface EvidenceStatusOptions {
 interface LoopFormatOptions { format: OutputFormat; output?: string }
 interface LoopCreateOptions extends LoopFormatOptions { directory: string; spec: string; baseRevision: string }
 interface LoopNextOptions extends LoopFormatOptions { directory: string; plan?: string }
-interface LoopEvidenceTemplateOptions { directory: string; headRevision: string; output?: string }
+interface LoopEvidenceTemplateOptions extends LoopFormatOptions { directory: string; headRevision: string }
 interface LoopAuditOptions extends LoopFormatOptions { directory: string; evidence: string; replay?: string; provider: string; jevUrl?: string; localUrl?: string; semifUrl?: string; semifModel?: string; model: string }
 interface LoopDirectoryOptions extends LoopFormatOptions { directory: string }
 interface LoopApproveOptions extends LoopFormatOptions { directory: string; spec: string; approvedBy: string; reason: string; yes: boolean }
@@ -458,11 +458,16 @@ async function checkEndpoint(url: string): Promise<string> {
   }
 }
 
+function endpointCheckFailed(state: string): boolean {
+  return state.startsWith("unreachable:") || /^[45]\d\d(?:\s|$)/.test(state);
+}
+
 async function runDoctor(options: DoctorOptions): Promise<void> {
+  const provider = normalizedProvider(parseProvider(String(options.provider)));
   const data: Record<string, unknown> = {
     product: "JevRev",
     version: VERSION,
-    provider: normalizedProvider(parseProvider(String(options.provider))),
+    provider,
     credentials: { configured: envValue("JEVREV_JEV_API_KEY", "TYPESAFE_API_KEY") !== undefined },
     endpoints: {
       jev: {
@@ -483,6 +488,11 @@ async function runDoctor(options: DoctorOptions): Promise<void> {
     },
   };
   await emit(options.format === "json" ? `${JSON.stringify(data, null, 2)}\n` : doctorHuman(data), undefined);
+  if (options.check && (provider === "local" || provider === "semif")) {
+    const endpointData = data.endpoints as Record<string, { state: string }>;
+    const selectedEndpoint = endpointData[provider];
+    if (selectedEndpoint !== undefined && endpointCheckFailed(selectedEndpoint.state)) commandExitCode = 3;
+  }
 }
 
 function addRankCommand(program: Command, name: "run" | "rank" | "sift"): void {
@@ -600,10 +610,21 @@ async function runLoopNext(options: LoopNextOptions): Promise<void> {
 }
 
 async function runLoopEvidenceTemplate(options: LoopEvidenceTemplateOptions): Promise<void> {
+  validateFormat(options.format);
   await validateOutputTarget(options.output);
   const loop = await loadLoop(options.directory);
   const template = loopEvidenceTemplate(loop, options.headRevision);
-  await emit(`${JSON.stringify(template, null, 2)}\n`, options.output);
+  const rendered = options.format === "json" ? `${JSON.stringify(template, null, 2)}\n` : [
+    `round ${template.round_number}  evidence template`,
+    `loop: ${template.loop_id}`,
+    `base: ${template.base_revision}`,
+    `head: ${template.head_revision}`,
+    `criteria: ${template.criterion_results.map((item) => `${item.id}=${item.status}`).join(", ") || "none"}`,
+    `protected surfaces: ${template.protected_surface_results.map((item) => `${item.id}=${item.status}`).join(", ") || "none"}`,
+    "The template is incomplete; record observations and submit it to `jevrev loop audit`.",
+    "",
+  ].join("\n");
+  await emit(rendered, options.output);
 }
 
 async function runLoopAudit(options: LoopAuditOptions): Promise<void> {
@@ -674,6 +695,7 @@ function addLoopCommand(program: Command): void {
     .description("Create an incomplete round-evidence envelope for the active work order")
     .requiredOption("--directory <path>", "loop directory")
     .requiredOption("--head-revision <revision>", "current artifact revision")
+    .option("--format <format>", "human or json", "json")
     .option("-o, --output <path>", "write evidence JSON to a file")
     .action(async (raw: LoopEvidenceTemplateOptions) => runLoopEvidenceTemplate(raw));
   loop.command("audit")

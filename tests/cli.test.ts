@@ -433,6 +433,26 @@ describe("jevrev CLI", () => {
     });
   });
 
+  it("returns a failing health-check status for an unreachable selected local provider", () => {
+    const result = run([
+      "doctor",
+      "--provider",
+      "local",
+      "--check",
+      "--format",
+      "json",
+      "--local-url",
+      "http://127.0.0.1:1",
+    ]);
+
+    expect(result.status).toBe(3);
+    expect(result.stderr).toBe("");
+    expect(JSON.parse(result.stdout)).toMatchObject({
+      provider: "local",
+      endpoints: { local: { state: expect.stringMatching(/^unreachable:/) } },
+    });
+  });
+
   it("normalizes local provider URLs that already include /v1", () => {
     const result = run([
       "doctor",

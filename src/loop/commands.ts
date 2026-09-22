@@ -118,6 +118,10 @@ export async function approveLoopSpecCommand(directory: string, spec: LoopSpec, 
 }
 
 export function loopStatusData(loop: LoadedLoop): Record<string, unknown> {
+  const lastAudit = loop.state.last_audit;
+  const resumedFrom = loop.state.status === "ready" && loop.events.at(-1)?.payload.type === "LOOP_RESUMED"
+    ? lastAudit?.outcome ?? null
+    : null;
   return {
     loop_id: loop.state.loop_id,
     status: loop.state.status,
@@ -130,8 +134,9 @@ export function loopStatusData(loop: LoadedLoop): Record<string, unknown> {
     cumulative_provider_tokens: loop.state.cumulative_provider_tokens,
     consecutive_stalled: loop.state.consecutive_stalled,
     plateau_replans: loop.state.plateau_replans,
-    last_outcome: loop.state.last_audit?.outcome ?? null,
-    next_action: loop.state.last_audit?.next_action ?? null,
+    resumed_from: resumedFrom,
+    last_outcome: lastAudit?.outcome ?? null,
+    next_action: resumedFrom === null ? lastAudit?.next_action ?? null : null,
   };
 }
 
@@ -143,6 +148,7 @@ export function renderLoopHuman(loop: LoadedLoop): string {
     `spec: r${String(data.spec_revision)}  round: ${String(data.round)}  head: ${String(data.head_revision)}`,
     `budget: ${String(data.cumulative_wall_ms)}ms / ${String(data.cumulative_provider_tokens)} provider tokens`,
   ];
+  if (data.resumed_from !== null) lines.push(`resumed after: ${String(data.resumed_from)}`);
   if (data.active_mode !== null) lines.push(`active: ${String(data.active_mode)}`);
   if (data.last_outcome !== null) lines.push(`last audit: ${String(data.last_outcome)}`);
   const action = data.next_action as { type?: string; focus_criteria?: string[] } | null;

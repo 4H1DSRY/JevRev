@@ -3,6 +3,7 @@ import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
+import { loopStatusData, renderLoopHuman } from "../src/loop/commands.js";
 import { loopHash, type LoopSpec } from "../src/loop/schemas.js";
 
 const root = resolve(import.meta.dirname, "..");
@@ -128,5 +129,30 @@ describe("JevLoop CLI workflow", () => {
     const template = run(["loop", "evidence-template", "--directory", directory, "--head-revision", "head-1"]);
     expect(template.status).toBe(0);
     expect(JSON.parse(template.stdout)).toMatchObject({ kind: "jevrev.round-evidence", round_number: 1, head_revision: "head-1", criterion_results: [{ id: "tests", status: "unknown" }, { id: "quality", status: "unknown" }] });
+
+    const humanTemplate = run(["loop", "evidence-template", "--directory", directory, "--head-revision", "head-1", "--format", "human"]);
+    expect(humanTemplate.status).toBe(0);
+    expect(humanTemplate.stdout).toContain("round 1  evidence template");
+    expect(humanTemplate.stdout).toContain("criteria: tests=unknown, quality=unknown");
+  });
+
+  it("does not present a paused action as current after a human resume", () => {
+    const loop = {
+      spec: { goal: "Make parser faster" },
+      state: {
+        loop_id: "jvl_0000000000000000", status: "ready", spec_revision: 1,
+        last_round: 1, head_revision: "head", active_order: null,
+        cumulative_wall_ms: 10, cumulative_provider_tokens: 20,
+        consecutive_stalled: 0, plateau_replans: 0, spec_sha256: "a".repeat(64),
+        last_audit: {
+          outcome: "waiting_human",
+          next_action: { type: "ask_human", focus_criteria: ["quality"], reason: "Needs review" },
+        },
+      },
+      events: [{ payload: { type: "LOOP_RESUMED" } }],
+    } as unknown as Parameters<typeof loopStatusData>[0];
+    expect(loopStatusData(loop)).toMatchObject({ status: "ready", resumed_from: "waiting_human", next_action: null });
+    expect(renderLoopHuman(loop)).toContain("resumed after: waiting_human");
+    expect(renderLoopHuman(loop)).not.toContain("next: ask_human");
   });
 });
