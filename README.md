@@ -303,7 +303,7 @@ advances a Loop.
 ```bash
 jevrev long create --directory .jevrev/long \
   --spec examples/long-session-spec.json --format json
-jevrev long ingest --directory .jevrev/long --input events.jsonl
+jevrev long ingest --directory .jevrev/long --input examples/long-events.jsonl
 jevrev long status --directory .jevrev/long --format json
 jevrev long watch --directory .jevrev/long --interval-ms 1000
 ```

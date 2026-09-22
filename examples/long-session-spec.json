@@ -1,0 +1,45 @@
+{
+  "kind": "jevrev.long-spec",
+  "schema_version": "1",
+  "revision": 1,
+  "session_id": "jvlng_6666666666666666",
+  "title": "Local coding session",
+  "goal": "Observe a coding agent without driving it",
+  "workspace": ".",
+  "allowed_scope": ["src", "tests", "docs"],
+  "protected_surfaces": [
+    { "id": "public-api", "description": "Public API", "paths": ["src/index.ts"] }
+  ],
+  "milestones": [
+    { "id": "tests-green", "description": "Tests pass", "evidence_tags": ["test"] }
+  ],
+  "budget": {
+    "max_wall_ms": 7200000,
+    "max_provider_tokens": 100000,
+    "max_tool_calls": 10000
+  },
+  "thresholds": {
+    "stall_after_ms": 300000,
+    "heartbeat_after_ms": 30000,
+    "repeated_failure_window": 600000,
+    "repeated_failure_count": 3,
+    "drift_warning_score": 0.5,
+    "budget_warning_fraction": 0.8,
+    "max_clock_skew_ms": 30000
+  },
+  "alert_policy": {
+    "cooldown_ms": 30000,
+    "max_open_alerts": 64,
+    "max_alert_history": 10000,
+    "severity_escalation_window": 300000
+  },
+  "observer_budget": {
+    "provider": "none",
+    "max_calls": 0,
+    "max_tokens": 0,
+    "max_wall_ms": 0,
+    "timeout_ms": 10000,
+    "min_interval_ms": 30000,
+    "max_context_bytes": 32000
+  }
+}

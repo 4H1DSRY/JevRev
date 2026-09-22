@@ -35,6 +35,8 @@ import {
   resumeLoopCommand, loopStatusData, loopEvidenceTemplate, buildLoopJudge,
 } from "./loop/commands.js";
 import { loadLoop } from "./loop/store.js";
+import { createLongCommand, ingestLongJsonlCommand, longStatusCommand, readLongSpec, renderLongHuman } from "./long/commands.js";
+import { watchLong } from "./long/watch.js";
 import { parseJsonBytes, readJsonFile } from "./io/json.js";
 import { formatZodError } from "./io/validation.js";
 import { reconsiderCandidate, renderReconsiderHuman } from "./reconsider.js";
@@ -145,6 +147,7 @@ interface LoopAuditOptions extends LoopFormatOptions { directory: string; eviden
 interface LoopDirectoryOptions extends LoopFormatOptions { directory: string }
 interface LoopApproveOptions extends LoopFormatOptions { directory: string; spec: string; approvedBy: string; reason: string; yes: boolean }
 interface LoopResumeOptions extends LoopDirectoryOptions { approvedBy: string; reason: string; yes: boolean }
+interface LongFormatOptions { format: OutputFormat; output?: string; directory: string }
 interface ReconsiderOptions extends LoopFormatOptions {
   campaign: string;
   candidate: string;
@@ -190,6 +193,30 @@ function parsePositiveNumber(value: string): number {
   const parsed = Number(value);
   if (!Number.isInteger(parsed) || parsed < 1) {
     throw new InvalidArgumentError("must be a positive integer");
+  }
+  return parsed;
+}
+
+function parseLongWatchInterval(value: string): number {
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed < 100) {
+    throw new InvalidArgumentError("must be an integer of at least 100 milliseconds");
+  }
+  return parsed;
+}
+
+function parseLongWatchIterations(value: string): number {
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed < 1) {
+    throw new InvalidArgumentError("must be a positive integer");
+  }
+  return parsed;
+}
+
+function parseLongWatchWidth(value: string): number {
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed < 40) {
+    throw new InvalidArgumentError("must be an integer of at least 40 columns");
   }
   return parsed;
 }
@@ -745,6 +772,58 @@ function addLoopCommand(program: Command): void {
     .action(async (raw: LoopApproveOptions) => runLoopApprove(raw));
 }
 
+function addLongCommand(program: Command): void {
+  const long = program.command("long").description("Observe a long-running agent session without driving it");
+  long.command("create").description("Create a frozen Long observer session")
+    .requiredOption("--directory <path>", "Long store directory")
+    .requiredOption("--spec <path>", "Long spec JSON")
+    .option("--format <format>", "human or json", "human")
+    .action(async (raw: { directory: string; spec: string; format: OutputFormat }) => {
+      validateFormat(raw.format);
+      const store = await createLongCommand(raw.directory, await readLongSpec(raw.spec));
+      stdout.write(raw.format === "json" ? `${JSON.stringify(store.snapshot, null, 2)}\n` : `created ${store.spec.session_id}\n`);
+    });
+  long.command("ingest").description("Normalize and append one bounded JSONL event batch")
+    .requiredOption("--directory <path>", "Long store directory")
+    .requiredOption("--input <path>", "JSONL event file")
+    .option("--format <format>", "human or json", "human")
+    .action(async (raw: { directory: string; input: string; format: OutputFormat }) => {
+      validateFormat(raw.format);
+      const result = await ingestLongJsonlCommand(raw.directory, raw.input);
+      stdout.write(raw.format === "json"
+        ? `${JSON.stringify({ accepted: result.accepted.length, duplicates: result.duplicate_event_ids.length, snapshot: result.snapshot }, null, 2)}\n`
+        : `accepted ${result.accepted.length}, duplicates ${result.duplicate_event_ids.length}\n`);
+    });
+  long.command("status").description("Read the current deterministic observer snapshot")
+    .requiredOption("--directory <path>", "Long store directory")
+    .option("--format <format>", "human or json", "human")
+    .action(async (raw: LongFormatOptions) => {
+      validateFormat(raw.format);
+      const result = await longStatusCommand(raw.directory);
+      stdout.write(raw.format === "json"
+        ? `${JSON.stringify({ snapshot: result.store.snapshot, signals: result.signals, alerts: result.policy.alerts }, null, 2)}\n`
+        : renderLongHuman(result));
+    });
+  long.command("watch").description("Render the external JevLong dashboard without driving the agent")
+    .requiredOption("--directory <path>", "Long store directory")
+    .option("--root <path>", "browse sibling Long sessions in this root")
+    .option("--interval-ms <n>", "refresh interval in milliseconds", parseLongWatchInterval, 1000)
+    .option("--iterations <n>", "stop after N frames; useful for scripts", parseLongWatchIterations)
+    .option("--width <n>", "dashboard width", parseLongWatchWidth, 100)
+    .option("--no-color", "disable ANSI colors")
+    .option("--no-clear", "append frames instead of clearing the terminal")
+    .action(async (raw: { directory: string; root?: string; intervalMs: number; iterations?: number; width: number; color: boolean; clear: boolean }) => {
+      await watchLong(raw.directory, {
+        intervalMs: raw.intervalMs,
+        ...(raw.iterations === undefined ? {} : { iterations: raw.iterations }),
+        ...(raw.root === undefined ? {} : { root: raw.root }),
+        width: raw.width,
+        color: raw.color,
+        clear: raw.clear,
+      });
+    });
+}
+
 function createProgram(): Command {
   const program = new Command()
     .name("jevrev")
@@ -773,6 +852,7 @@ function createProgram(): Command {
     .option("-o, --output <path>", "write the rendered result to a file")
     .action(async (raw: ReconsiderOptions) => runReconsider(raw));
   addLoopCommand(program);
+  addLongCommand(program);
 
   program
     .command("decide")

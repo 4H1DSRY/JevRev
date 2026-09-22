@@ -6,6 +6,8 @@ coverage/
 *.tgz
 benchmarks/results/
 pack-smoke-final/
+.jevrev/
+.jevrev-demo-events*.jsonl
 /output/
 /.playwright-cli/
 .tmp-cli-audit-*/

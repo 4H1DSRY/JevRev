@@ -30,6 +30,7 @@
     "docs/WORKFLOW.md",
     "docs/EXTREME_TESTS.md",
     "docs/JEVLOOP_DESIGN.md",
+    "docs/JEVLONG_DESIGN.md",
     "examples",
     "benchmarks/README.md",
     "benchmarks/live-cases",

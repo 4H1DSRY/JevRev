@@ -1,0 +1,3 @@
+{"adapter_id":"demo","adapter_event_id":"heartbeat-1","event_type":"heartbeat","payload":{"state":"active"}}
+{"adapter_id":"demo","adapter_event_id":"tool-1","event_type":"tool_call","payload":{"tool":"tests","status":"completed"}}
+{"adapter_id":"demo","adapter_event_id":"milestone-1","event_type":"milestone","payload":{"milestone_id":"tests-green","status":"passed"}}
