@@ -28,7 +28,8 @@
       "Final verification details, exact README line ranges, local evidence locations, and the supplemental Lighthouse limitation are in .codex/product-governance/FINAL_VERIFICATION.md.",
       "Final product-governance audit returned Valid=true, zero errors, zero warnings. Final npm pack dry run passed with 130 files, approximately 144.5 kB; final git diff --check passed and the index remains empty.",
       "2026-09-22 follow-up narrative pass: README now derives four visual-route tradeoffs from the committed Sift input and interleaves three existing captures with their causal decisions. GitHub-like rendering at 900 and 328 CSS pixels in light and dark had zero overflow, all images loaded, and the narrow single-column sequence remained readable. Check, 106 tests, build, demos, one-shot validation, a 130-file npm pack dry run at approximately 145.0 kB, local-link and public-copy scans, git diff check, and the product-governance audit passed.",
-      "2026-09-23 publication integration: origin/main advanced to a15eb51 with the shipped JevLoop round protocol. The implementation and technical documentation were merged; the flagship README was intentionally preserved at the user's request and its JevLoop roadmap label is tracked as open documentation debt. The merged branch passed check, 18 test files with 182 tests, build, all demos, one-shot validation, and a 158-file npm pack dry run at approximately 183.6 kB."
+      "2026-09-23 publication integration: origin/main advanced to a15eb51 with the shipped JevLoop round protocol. The implementation and technical documentation were merged; the flagship README was intentionally preserved at the user's request and its JevLoop roadmap label is tracked as open documentation debt. The merged branch passed check, 18 test files with 182 tests, build, all demos, one-shot validation, and a 158-file npm pack dry run at approximately 183.6 kB.",
+      "Publication completed through https://github.com/Alex314618-create/JevRev/pull/3 from DuaNapic:codex/docs-flagship-case to Alex314618-create/JevRev:main."
     ]
   },
   "active_work": {
@@ -46,7 +47,7 @@
       "Check, tests, build, demos, packaging, diff, and governance verification pass on the merged branch.",
       "The branch is pushed to the DuaNapic fork and a pull request targets Alex314618-create/JevRev main."
     ],
-    "status": "in_progress"
+    "status": "completed"
   },
   "balance_policy": {
     "maximum_must_have_spread": 2,

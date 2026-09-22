@@ -184,3 +184,13 @@ build`, `npm run demo:all`, `npm run demo:workflow`, `npm run demo:oneshot`, and
 at approximately 183.6 kB. The workflow demo again rejected the faster regex on
 correctness and selected the indexed state machine. No new visual asset or
 public design claim was introduced during the upstream merge.
+
+## Publication result
+
+The synchronized branch was pushed to
+`DuaNapic/JevRev:codex/docs-flagship-case`, and pull request
+<https://github.com/Alex314618-create/JevRev/pull/3> was opened against
+`Alex314618-create/JevRev:main`. The PR records the full verification matrix and
+the intentionally deferred README JevLoop status reconciliation. The final
+governance-only publication record does not change packaged or user-visible
+product files.
