@@ -12,6 +12,8 @@
   <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/License-MIT-F4C430?style=flat-square" /></a>
 </p>
 
+> Shortlist the options. Score in a loop. Watch the run.
+
 Your LLM can imagine, write, test, and revise. It should not have to make every
 cheap routing decision by itself.
 
