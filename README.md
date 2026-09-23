@@ -1,5 +1,5 @@
 <p align="center">
-  <img src=".github/assets/jevrev-banner.png" alt="JevRev banner" width="100%" />
+  <img src=".github/assets/jevrev-banner.png" alt="JevRev" width="100%" />
 </p>
 
 <h1 align="center">JevRev</h1>
@@ -7,36 +7,44 @@
 <p align="center"><strong>Explore wide. Prove cheap. Commit once.</strong></p>
 
 <p align="center">
-  <a href="https://github.com/Alex314618-create/JevRev/releases"><img alt="Release" src="https://img.shields.io/github/v/release/Alex314618-create/JevRev?style=flat-square" /></a>
+  <a href="https://github.com/Alex314618-create/JevRev/releases"><img alt="Latest release" src="https://img.shields.io/github/v/release/Alex314618-create/JevRev?style=flat-square" /></a>
+  <a href="https://www.npmjs.com/package/jevrev"><img alt="npm version" src="https://img.shields.io/npm/v/jevrev?style=flat-square" /></a>
   <a href="package.json"><img alt="Node.js 20 or newer" src="https://img.shields.io/badge/Node.js-%3E%3D20-339933?style=flat-square&amp;logo=nodedotjs&amp;logoColor=white" /></a>
   <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/License-MIT-F4C430?style=flat-square" /></a>
 </p>
 
-JevRev is a tiered decision system for coding agents. It keeps the capable,
-open-ended model focused on exploration and implementation, while Jev handles a
-small surface of typed routing decisions.
+An agent can generate ten plausible ways to solve a problem. It should not spend
+the same implementation budget on all ten.
 
-Think brain and spinal cord, not one giant pipe. The coding agent proposes and
-builds. JevRev freezes the brief, narrows the plausible paths, asks for
-comparable evidence, and makes the next route explicit. Hosted Jev and local
-models fit behind the same workflow, so the decision layer can match the cost,
-latency, and privacy needs of the project.
+JevRev is an open-source runtime for composing, executing, verifying, and
+observing intelligent workflows. JevSift, Probe/Decide, JevLoop, and JevLong
+are the four layers of the current release.
 
-## A faster shortcut lost
+JevRev gives the expensive model room to think and build, then puts a smaller,
+cheaper decision layer in front of the irreversible work. Jev filters the
+search. Commands, tests, benchmarks, hashes, and budgets decide what is true.
 
-A small CSV scanner needed more throughput without changing quoted-field
-behavior. Two implementations survived Sift and received the same correctness
-checks and repeated benchmark protocol.
+```text
+agent proposes  ->  JevRev narrows  ->  host agent probes  ->  evidence decides
+                                                                  |
+                                             Loop keeps one artifact moving
+                                             Long watches the session
+```
 
-![Two equally probed delimiter-counter candidates diverge on correctness, reversing the Sift ranking at Decide.](.github/assets/jevrev-decision-gate.svg)
+JevRev is not another coding agent. It does not quietly take over a terminal,
+create a worktree, merge a branch, or keep running after the host agent stops.
+It is a set of explicit workflows that an agent can call from the command line.
 
-The regex was faster and wrong. The state machine was fast enough and preserved
-the required behavior. Sift controlled what was worth testing; evidence
-controlled what was worth integrating.
+## The useful failure
 
-<a id="run-the-case"></a>
+The included workflow demo starts with a tempting shortcut: a regex parser that
+looks much faster on paper. The same candidate then runs correctness checks and
+repeated benchmark samples. The shortcut fails correctness. A slower state
+machine survives the checks and becomes the only integration candidate.
 
-Reproduce the complete case locally:
+![JevRev sends a paper favorite through an evidence gate and leaves the verified implementation standing.](.github/assets/jevrev-decision-gate.svg)
+
+Run the case yourself:
 
 ```bash
 git clone https://github.com/Alex314618-create/JevRev.git
@@ -45,339 +53,278 @@ npm install
 npm run demo:workflow
 ```
 
-The demo executes both implementations, including correctness probes and seven
-benchmark samples per implementation. Only the Jev answers are replayed to keep
-routing deterministic. Throughput varies by machine; the pass/fail reversal does
-not. Inspect the generated campaign, raw evidence, hashes, and final decision in
-`benchmarks/results/workflow-demo/`.
+The demo executes both implementations. Jev answers are replayed so the route
+is deterministic; command exits, correctness results, raw samples, output
+digests, and the final decision are real. Throughput is machine-dependent. The
+important result is the reversal: the fastest-looking plan is rejected by its
+own evidence.
 
-## Use it from an agent
+## A small proof, stated honestly
 
-Install the CLI and its file-based agent skill:
+The included candidate-coverage benchmark rotates the input order. A naive
+workflow that takes the first idea is therefore easy to move around; the Sift
+shortlist is evaluated against the same predeclared scenario rubric.
+
+| Scenario | First idea quality, mean ± sample σ | Sift shortlist quality, mean | Cards not sent to implementation |
+| --- | ---: | ---: | ---: |
+| Parser speedup | `0.550 ± 0.382` | `0.975` | `5 / 7` |
+| API boundary hardening | `0.412 ± 0.385` | `0.850` | `4 / 6` |
+| Flaky CI concurrency | `0.433 ± 0.448` | `0.975` | `4 / 6` |
+
+The σ column is the sample standard deviation (`n - 1`) across candidate-order
+rotations. These are declared scenario labels, not a claim about production
+defect rates, engineering hours, or universal model stability. The point is
+smaller and more useful: a first guess is sensitive to ordering, while a
+shortlist gives the host agent a repeatable set of things worth probing.
+
+## What ships
+
+| Layer | What it does | Command |
+| --- | --- | --- |
+| **JevSift** | Prunes materially different proposals and emits bounded work orders | `jevrev sift` |
+| **Probe + Decide** | Records commands, metrics, artifacts, and revisions, then chooses the next route | `jevrev evidence`, `jevrev decide` |
+| **JevLoop** | Audits one evolving artifact after each host-agent round | `jevrev loop` |
+| **JevLong** | Observes a long-running session for stalls, failures, drift, budget risk, and progress | `jevrev long` |
+
+The layers share schemas, provider adapters, budgets, and evidence rules, but
+they do not share authority. Sift does not claim that a proposal works. Decide
+does not run arbitrary code. Loop returns the next action but does not drive the
+agent. Long raises attention but never stops or steers the session.
+
+## Quick start
+
+Install the CLI:
 
 ```bash
 npm install -g jevrev
+```
+
+Then install the agent skill for Codex or another supported host:
+
+```bash
 jevrev-skill-install --target codex
 ```
 
-Then give the coding agent one instruction:
+Give the host agent one instruction:
 
 ```text
-Use JevRev for this task: generate materially different hypotheses, sift them, run only the bounded probes, record raw evidence, decide from that evidence, and stop before merging.
+Use JevRev for this task. Propose materially different approaches, sift them,
+run only the bounded probes, record raw evidence, decide from that evidence,
+and stop before merging.
 ```
 
-The skill handles the JSON workflow and teaches the agent when a direct edit is
-cheaper than a multi-path probe.
-
-### Hosted Jev
+For a no-network smoke test, use the checked-in replay fixtures:
 
 ```bash
-export JEVREV_JEV_API_KEY="..."
-jevrev sift --input proposals.json --provider jev
+jevrev run \
+  --input examples/parser-speedup.json \
+  --replay examples/parser-jev-response.json \
+  --format human
 ```
 
-The default endpoint is `https://api.typesafe.ai/v1/systemone`. Credentials are
-read from the environment and are never accepted as CLI arguments.
+## The normal workflow
 
-<a id="local-semif"></a>
+### 1. Propose a few real alternatives
 
-### Local model
+The host agent creates 3-7 candidate cards. Each card has a mechanism,
+assumptions, risks, and a way to falsify it. Simple fixes should skip JevRev.
 
-The tested local path runs Qwen3.5-4B GGUF behind llama.cpp:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts/start-semif.ps1 -Background
-jevrev sift --input proposals.json --provider semif
-```
-
-Local inference can remove API spend from the decision layer, but it does not
-make hardware or electricity free. See [`docs/SEMIF_LOCAL.md`](docs/SEMIF_LOCAL.md)
-for setup and sizing notes.
-
-Or hand setup back to the agent:
-
-```text
-Install JevRev, configure hosted Jev if JEVREV_JEV_API_KEY is available or the documented local SemIf provider otherwise, run jevrev doctor, and show me the configuration without exposing secrets.
-```
-
-## One brief, two one-shot pages
-
-One content and behavior contract produced two committed pages. The direct path
-keeps its first conventional rounded SaaS direction and removes imagery. The
-JevRev path compares four mechanisms, selects a painterly evidence dossier, and
-lets that mechanism control structure and evidence behavior.
-
-<table>
-  <tr>
-    <th width="50%">Direct: first direction</th>
-    <th width="50%">JevRev: selected direction</th>
-  </tr>
-  <tr>
-    <td><img src=".github/assets/one-shot-showcase/direct-hero.png" alt="Direct landing page using a centered system-sans hero, rounded controls, green actions, and a restrained purple-black ambient field." /></td>
-    <td><img src=".github/assets/one-shot-showcase/routed-hero.png" alt="JevRev-routed landing page using an asymmetric evidence dossier and a negative skull illustration." /></td>
-  </tr>
-  <tr>
-    <td><sub>Centered hierarchy, soft elevation, static proof.</sub></td>
-    <td><sub>Asymmetric case file, hard evidence grid, functional decision states.</sub></td>
-  </tr>
-</table>
-
-The skull on the right is not a decorative import. It is the existing JevRev
-illustration converted to transparent negative linework, so it shares the page
-surface instead of sitting in a mismatched image box. The faint rust field stays
-behind its upper-right edge. One asset decision establishes identity without
-adding a new source image.
-
-**Why the dossier won**
-
-The four candidates were different page mechanisms, not palette variations.
-The selection asked which mechanism could make identity, evidence, and route
-changes legible under the same static-page constraints.
-
-- `black-violet-interface-grid`: familiar scan and small implementation scope,
-  but repeated equal frames could make the evidence reversal visually flat and
-  interchangeable.
-- `terminal-proof-stack`: command density could strengthen inspectability, but
-  a transcript could look like simulated product output and make the skull
-  incidental.
-- `minimal-docs-masthead`: installation would be immediate, but the decision
-  model could read as ordinary documentation and the route reversal could
-  become secondary.
-- `painterly-evidence-dossier`: **selected at 0.9149.** It could bind the
-  existing skull, a semantic stage path, and an evidence lens into one
-  inspectable page without a runtime dependency.
-
-The controlled advantage in this case is not that one palette is universally
-better. It is that a recorded route governs the asset, hierarchy, and behavior
-together, and leaves those choices open to inspection.
-
-<details>
-<summary><strong>Inspect three decisions in the rendered pages</strong></summary>
-
-**Keep the baseline honest.** The direct condition keeps its approved system
-sans, rounded surfaces, green actions, equal modules, and centered narrow
-layout. It omits imagery instead of being deliberately degraded for contrast.
-
-<p align="center"><img src=".github/assets/one-shot-showcase/direct-structure.png" alt="Direct page workflow rendered as three equal rounded modules." width="88%" /></p>
-
-<sub>Decision surfaces: direction route, hierarchy, and narrow-width behavior.</sub>
-
-<p align="center"><img src=".github/assets/one-shot-showcase/routed-workflow.png" alt="Probe stage showing the connected Sift, Probe, and Decide path, active P state, equal-check question, and three evidence facts." width="100%" /></p>
-
-**Make sequence carry meaning.** The same three workflow steps become a
-connected Sift, Probe, and Decide path. Selecting Probe changes the state mark,
-question, body, and evidence facts as one readable state change.
-
-<sub>Decision surfaces: information hierarchy, type, material, and motion.</sub>
-
-**Let evidence change the composition.** The proposal lens starts with the regex
-favorite. The evidence lens moves the passing state machine to the first DOM and
-visual position, changes both candidate routes, and exposes the final decision
-stamp.
-
-<p align="center"><img src=".github/assets/one-shot-showcase/routed-decision.png" alt="JevRev evidence lens showing the passing state machine first and the proposal favorite rejected after correctness checks." width="94%" /></p>
-
-<sub>Decision surfaces: proof behavior, reading order, and final route.</sub>
-
-**Interaction contract**
-
-| Surface | Input and information change |
-| --- | --- |
-| Decision rail | Tab to focus; click or arrow keys to select Sift, Probe, or Decide and read its question and facts. |
-| Evidence lens | Click or keyboard activation replaces proposal readings with correctness results, reorders the candidates, and shows the final route. |
-| Source trail | The native summary control reveals the executable case and validation record. |
-
-With reduced motion, stage and evidence states update immediately without
-animated travel. Native disclosure remains available.
-
-</details>
-
-Trace the [`contract`](benchmarks/one-shot-showcase/input.json),
-[`direction set`](benchmarks/one-shot-showcase/sift-input.json),
-[`deterministic replay`](benchmarks/one-shot-showcase/sift-replay.json), and
-[`browser record`](benchmarks/one-shot-showcase/VALIDATION.md). Both pages are
-real responsive fixtures. Inspect the
-[`direct`](benchmarks/one-shot-showcase/direct/index.html) and
-[`routed`](benchmarks/one-shot-showcase/routed/index.html) outputs, or reproduce
-the four-direction selection and contract checks with `npm run demo:oneshot`.
-This controlled showcase does not measure cost, generation time, business
-lift, or universal design quality.
-
-## The part that matters
-
-A plan score is not proof. JevRev separates two decisions:
-
-1. **Sift** asks whether a proposed mechanism is plausible, distinct, feasible,
-   testable, and worth a bounded probe.
-2. **Decide** starts with command exits, requirement results, raw metric samples,
-   revision identity, and budgets. Jev then judges evidence coverage, residual
-   risk, and shipping value.
-
-```text
-frozen brief -> 2-12 ideas -> Sift -> bounded probes -> evidence -> Decide
-                                                                  |
-                  integrate winner <- explicit next action <------+
-```
-
-A failed required test cannot be rescued by a high model score. Decide returns
-`winner`, `merge`, `probe_more`, `no_winner`, or `human_review`.
-
-## CLI
-
-### 1. Sift the ideas
+### 2. Sift before spending implementation budget
 
 ```bash
 jevrev sift --input proposals.json --provider jev > campaign.json
 ```
 
-Each survivor receives a work order with a hypothesis, smallest useful probe,
-required evidence, budgets, and stop conditions. See
-[`examples/parser-speedup.json`](examples/parser-speedup.json) for a complete
-input. The original one-pass `run` and `rank` commands remain supported.
+Each survivor gets a hypothesis, the smallest useful probe, required evidence,
+a budget, and stop conditions. The default policy removes hard-constraint
+violations, low-confidence paths, duplicates, and candidates that do not merit
+an implementation slot.
 
-<a id="2-probe-in-isolation"></a>
+### 3. Execute only the bounded probes
 
-### 2. Record the probes
-
-The host agent implements work orders in isolated branches or worktrees. JevRev
-records explicitly requested commands without a shell and keeps measurements,
-artifacts, requirements, and revision identity bound to the correct candidate.
+The host agent owns the worktree and the commands. JevRev records exactly what
+ran without invoking a shell:
 
 ```bash
 jevrev-evidence-template --campaign campaign.json --output evidence.json
-jevrev evidence run --evidence evidence.json --candidate candidate-id --id tests -- npm test
-jevrev evidence metric --evidence evidence.json --candidate candidate-id --input throughput.json
-jevrev evidence artifact --evidence evidence.json --candidate candidate-id --id screenshot --file artifacts/home.png
+jevrev evidence run \
+  --evidence evidence.json \
+  --candidate candidate-id \
+  --id tests \
+  -- npm test
+jevrev evidence metric \
+  --evidence evidence.json \
+  --candidate candidate-id \
+  --input throughput.json
 jevrev evidence status --campaign campaign.json --evidence evidence.json
 ```
 
-Incomplete templates cannot produce a winner. Metric summaries are recomputed
-from raw samples, artifact paths are workspace-bound and stored by hash, and a
-failed recorded command remains visible to both the agent and Decide.
+Recorded exit codes, raw samples, workspace-bound artifacts, candidate hashes,
+and revision identity are stronger evidence than builder notes. Recorder output
+is quiet by default; link the observation to the exact probe or requirement IDs
+from `campaign.json` when you have them. Use `--echo` only when you intentionally
+want child output in the terminal.
 
-### 3. Decide from evidence
+### 4. Decide from evidence
 
 ```bash
-jevrev decide --campaign campaign.json --evidence evidence.json --provider jev
+jevrev decide \
+  --campaign campaign.json \
+  --evidence evidence.json \
+  --provider jev
 ```
 
-The policy applies schema and hash checks, required commands, hard constraints,
-and recomputed metrics before Jev reviews evidence sufficiency. Use `--replay`
-for deterministic offline runs.
+Deterministic gates run first. A failed required command or hard constraint
+cannot be rescued by a high Jev score. The result is one of:
 
-The full workflow is in [`docs/WORKFLOW.md`](docs/WORKFLOW.md). Wire formats and
-exit codes are in [`docs/PROTOCOL.md`](docs/PROTOCOL.md).
+```text
+winner       ready for human review before integration
+merge        two candidates deserve one combined probe
+probe_more   evidence is missing or the leaders are too close
+no_winner    every candidate failed a deterministic or semantic gate
+human_review the trade-off needs a person
+```
 
-## JevLoop: keep one artifact moving
+## Loop: one artifact, no fake finish line
 
-JevLoop is the round boundary for a host agent that is already editing one
-artifact. It does not launch the agent, merge code, or run in the background:
-the host submits one evidence envelope, and JevRev returns a typed route.
+JevLoop is for a host agent that is already editing one artifact. It has no
+fixed round count and no score threshold that can declare success. Only fresh,
+current-head evidence can complete a frozen contract.
 
 ```bash
-jevrev loop create --directory .jevrev/parser-loop \
+jevrev loop create \
+  --directory .jevrev/parser-loop \
   --spec examples/loop-parser-spec.json \
   --base-revision "$(git rev-parse HEAD)"
-jevrev loop next --directory .jevrev/parser-loop \
-  --plan examples/loop-parser-plan.json --format json > round-work-order.json
-jevrev loop evidence-template --directory .jevrev/parser-loop \
-  --head-revision "$(git rev-parse HEAD)" --output round-evidence.json
-jevrev loop audit --directory .jevrev/parser-loop \
-  --evidence round-evidence.json --replay examples/loop-parser-replay.json
+jevrev loop next \
+  --directory .jevrev/parser-loop \
+  --plan examples/loop-parser-plan.json \
+  --format json
+jevrev loop audit \
+  --directory .jevrev/parser-loop \
+  --evidence round-evidence.json \
+  --replay examples/loop-parser-replay.json
 ```
 
-The template is JSON by default; pass `--format human` to inspect its unknown
-slots at a terminal. Progress never claims completion. A completion audit needs
-fresh evidence for every criterion and protected surface on the same head.
-`loop resume`, `loop abort`, and `loop approve --yes` are explicit human
-boundaries. See [`docs/JEVLOOP_DESIGN.md`](docs/JEVLOOP_DESIGN.md).
+The host agent performs the work. The human owns contract changes, resume,
+abort, and integration.
 
-## JevLong: observe a long session
+## Long: watch the session, do not drive it
 
-JevLong is a local, deterministic observer for a long-running agent session.
-It consumes bounded JSONL events, keeps a hash-chained journal, and reports
-stalls, repeated failures, drift, budget risk, and evidence-backed progress.
-Healthy events do not call Jev, and `watch` never retries, stops, edits, or
-advances a Loop.
+JevLong consumes bounded JSONL events and keeps a local hash-chained journal. It
+reports stalls, repeated failures, drift, budget risk, and evidence-backed
+progress. It is an observer, not a hidden daemon or a control panel.
 
 ```bash
-jevrev long create --directory .jevrev/long \
-  --spec examples/long-session-spec.json --format json
-jevrev long ingest --directory .jevrev/long --input examples/long-events.jsonl
+jevrev long create \
+  --directory .jevrev/long \
+  --spec examples/long-session-spec.json \
+  --format json
+jevrev long ingest \
+  --directory .jevrev/long \
+  --input examples/long-events.jsonl
 jevrev long status --directory .jevrev/long --format json
 jevrev long watch --directory .jevrev/long --interval-ms 1000
 ```
 
-The watch command is a keyboard cockpit for the observer state, not an agent
-control panel. Use `1`-`4` for panes, `Tab` to move focus, `r` to refresh, and
-`q` to leave. See [`docs/JEVLONG_DESIGN.md`](docs/JEVLONG_DESIGN.md).
+The watch cockpit shows overview, activity, alerts, and evidence. It never
+retries, stops, edits, kills, or advances the observed agent.
 
-## Product layers
+## Jev providers
 
-JevRev is the umbrella for a layered agent control system. Today it ships the
-decision spine that later layers can reuse.
+The same typed decision boundary works with a hosted Jev, a local SemIf model,
+the legacy local scorer, or a replay file:
 
-| Layer | Role | Status |
+| Provider | Use it when | Endpoint |
 | --- | --- | --- |
-| **JevSift** | Filter proposal cards and issue bounded work orders | Shipped as `jevrev sift` |
-| **Probe + Decide** | Validate recorded evidence and return the next route | Shipped as `jevrev decide` |
-| **JevLoop** | Audit a completed agent round and choose continue, revise, stop, or ask | Shipped as `jevrev loop` |
-| **JevLong** | Watch long sessions for drift, stalls, repeated failures, and budget risk | Shipped as `jevrev long` |
+| Hosted Jev | You want the managed decision layer | `https://api.typesafe.ai/v1/systemone` |
+| Local SemIf | You want local inference through llama.cpp | `http://127.0.0.1:4878/v1/chat/completions` |
+| Legacy local | You already run the compatible reranker | `http://127.0.0.1:4877/v1/score` |
+| Replay | You need deterministic offline development | local response JSON |
 
-Both layers remain explicit command-line workflows. There is no hidden always-on
-loop, agent controller, or monitoring daemon.
+Hosted credentials are read from the environment, never from command-line
+arguments:
 
-## Providers
+```bash
+export JEVREV_JEV_API_KEY="..."
+jevrev doctor --format json
+jevrev sift --input proposals.json --provider jev
+```
 
-| Mode | Best for | Endpoint |
-| --- | --- | --- |
-| Hosted Jev | Managed typed decisions | `https://api.typesafe.ai/v1/systemone` |
-| Local SemIf | Local inference through llama.cpp | `http://127.0.0.1:4878/v1/chat/completions` |
-| Legacy local | Existing reranker deployments | `http://127.0.0.1:4877/v1/score` |
-| Replay | Offline, deterministic development | Local response file |
+For the local path, the tested setup uses Qwen3.5-4B GGUF behind llama.cpp:
 
-All four modes support both Sift and Decide. Override hosted and local roots with
-the documented flags or environment variables, and use
-`jevrev doctor --format json --check` to inspect configured endpoints. When
-`--provider local` or `--provider semif` is selected, an unreachable or 4xx/5xx
-health endpoint returns exit code `3` for scripts.
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/start-semif.ps1 -Background
+jevrev doctor --provider semif --format json --check
+jevrev sift --input proposals.json --provider semif
+```
 
-## What JevRev does not do
+See [`docs/SEMIF_LOCAL.md`](docs/SEMIF_LOCAL.md) for model setup and sizing.
 
-JevRev does not:
+## Same brief, different result
 
-- force several ideas onto an obvious one-line fix;
-- build complete products just to compare them;
-- treat a model probability or builder note as ground truth;
-- choose or execute arbitrary shell commands;
-- create worktrees, merge branches, or modify the user's repository;
-- force a winner when every probe fails.
+JevRev can route a whole artifact, not just a line of code. The repository
+includes a four-direction one-shot showcase: a conventional first pass and a
+JevRev-routed evidence dossier from the same frozen brief.
 
-Use it when wrong-path regret is larger than the cost of two small probes. Skip
-it when the solution is obvious or cheap to reverse.
+<table>
+  <tr>
+    <th width="50%">Direct path</th>
+    <th width="50%">JevRev path</th>
+  </tr>
+  <tr>
+    <td><img src=".github/assets/one-shot-showcase/direct-hero.png" alt="Direct first-pass page" /></td>
+    <td><img src=".github/assets/one-shot-showcase/routed-hero.png" alt="JevRev-routed page" /></td>
+  </tr>
+</table>
 
-## One-pass benchmark record
+This is a controlled showcase, not a claim of universal design quality or
+business lift. Reproduce its checks with:
 
-Before the evidence workflow existed, JevSift was tested on three local
-Qwen3.5-4B scenarios with rotated candidate order. The returned shortlist's best
-utility stayed unchanged across those rotations. This is an order-sensitivity
-record, not a claim about production quality, time, or cost.
+```bash
+npm run demo:oneshot
+```
 
-The method, samples, and limitations are preserved in
-[`docs/ACCEPTANCE.md`](docs/ACCEPTANCE.md). New users should start with the
-ranking-reversal demo above because it exercises the complete current workflow.
+## Why the split matters
+
+The expensive model is good at generating possibilities and doing difficult
+implementation work. It is a poor use of that budget to ask it to make every
+cheap routing decision, inspect every repeated event, or keep choosing between
+the same failed paths.
+
+JevRev puts those decisions behind small typed contracts:
+
+- the host agent proposes and executes;
+- Jev gives narrow semantic judgements;
+- commands, tests, measurements, hashes, and budgets provide facts;
+- JevRev enforces state transitions;
+- a human changes the contract and decides what gets integrated.
+
+That is the whole idea: not one giant pipe, but a system with a fast lower
+layer and an expensive upper layer used where it earns its cost.
+
+## Project status
+
+| Area | Status |
+| --- | --- |
+| JevSift and replay workflow | Shipped |
+| Evidence recorder, metrics, artifacts, and Decide | Shipped |
+| JevLoop single-artifact protocol | Shipped |
+| JevLong local observer and watch cockpit | Shipped |
+| Automatic worktrees, merge automation, hidden daemon | Not part of the product |
+| Durable Long acknowledgement/close commands and optional Jev observer | Reserved follow-up contracts |
 
 ## Documentation
 
-| Question | Read |
+| Question | Document |
 | --- | --- |
-| How does the evidence workflow operate? | [`docs/WORKFLOW.md`](docs/WORKFLOW.md) |
-| What are the schemas, outputs, and exit codes? | [`docs/PROTOCOL.md`](docs/PROTOCOL.md) |
-| What has actually been tested? | [`docs/ACCEPTANCE.md`](docs/ACCEPTANCE.md) |
-| How do I run the local provider? | [`docs/SEMIF_LOCAL.md`](docs/SEMIF_LOCAL.md) |
-| What are the Loop and Long contracts? | [`docs/JEVLOOP_DESIGN.md`](docs/JEVLOOP_DESIGN.md), [`docs/JEVLONG_DESIGN.md`](docs/JEVLONG_DESIGN.md) |
-| Who is allowed to do what? | [`docs/AUTHORITY.md`](docs/AUTHORITY.md) |
-| What are the design boundaries? | [`docs/DESIGN.md`](docs/DESIGN.md) |
+| How does the end-to-end workflow work? | [`docs/WORKFLOW.md`](docs/WORKFLOW.md) |
+| What are the JSON schemas and exit codes? | [`docs/PROTOCOL.md`](docs/PROTOCOL.md) |
+| How are permissions divided? | [`docs/AUTHORITY.md`](docs/AUTHORITY.md) |
+| What is the JevLoop contract? | [`docs/JEVLOOP_DESIGN.md`](docs/JEVLOOP_DESIGN.md) |
+| What is the JevLong contract? | [`docs/JEVLONG_DESIGN.md`](docs/JEVLONG_DESIGN.md) |
+| What has been tested? | [`docs/ACCEPTANCE.md`](docs/ACCEPTANCE.md) |
+| How does local SemIf setup work? | [`docs/SEMIF_LOCAL.md`](docs/SEMIF_LOCAL.md) |
 
 ## Development
 
@@ -391,7 +338,7 @@ npm run demo:workflow
 npm pack --dry-run
 ```
 
-Node.js 20 or newer is required. Generated benchmark artifacts and credentials
+Node.js 20 or newer is required. Generated benchmark results and credentials
 are excluded from the package.
 
 ## License
