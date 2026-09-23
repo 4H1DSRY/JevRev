@@ -118,6 +118,44 @@ evidence files, and Loop's verified event log there. The
 [automated test](tests/readme-loop-demo.test.ts) use the recorded command outcomes;
 neither infers completion from a model score.
 
+## Engineering case: a webhook under repair
+
+Picture an AI coding agent implementing a multi-tenant invoice webhook. A local
+replay workbench makes the failure visible: the baseline returns North's result
+to South for the same event ID, and two concurrent deliveries execute the
+handler twice. The repaired version isolates tenants and shares in-flight work.
+The captured panels come from actual fixture code, using the same scenarios as
+the recorded command checks.
+
+<picture>
+  <source media="(max-width: 600px)" srcset=".github/assets/engineering-showcase/webhook-mobile.png">
+  <img src=".github/assets/engineering-showcase/webhook-tenant.png" alt="Actual local webhook replay: the baseline returns north:accepted to South, while the repaired ledger returns south:accepted for the same event ID.">
+</picture>
+
+The concurrency tab shows the second failure: the same two deliveries cause
+**two** handler executions before the repair and **one** after it. [See the
+concurrency capture](.github/assets/engineering-showcase/webhook-race.png).
+
+```bash
+npm run demo:engineering
+npm run showcase:engineering
+```
+
+Open the printed local URL to replay all three scenarios. The CLI run prints a
+directory containing command reports, evidence files, and verified journals.
+The [captured run](benchmarks/engineering-showcase/capture/trace.json) records
+`fix_regression → verify → completed`: Loop cannot finish until the unchanged
+repair passes fresh commands in a full completion audit. Long then imports each
+audit only after checking its Loop ID, work order, outcome, and evidence hash.
+It rejects a wrong digest and deduplicates a repeated event.
+
+This shows the layers an AI coding developer can use: the host writes code;
+Evidence records what ran on which revision; Loop turns those facts into the
+next bounded action; Long watches the verified session without changing it.
+Sift can select the upstream approach, but this case begins after that choice.
+See the [case source and architecture](benchmarks/engineering-showcase/README.md)
+for replay steps, source revisions, and interpretation limits.
+
 ## Use it from Codex
 
 Build the CLI and install the bundled skill into Codex:
@@ -217,6 +255,7 @@ npm run build
 npm run demo:all
 npm run demo:workflow
 npm run demo:loop
+npm run demo:engineering
 ```
 
 Node.js 20 or newer is required. JevRev is MIT licensed.

@@ -1,0 +1,12 @@
+{
+  "case": "retry",
+  "event": {
+    "tenant": "north",
+    "eventId": "invoice-42"
+  },
+  "firstFailed": true,
+  "second": "accepted",
+  "calls": 2,
+  "expectedCalls": 2,
+  "passed": true
+}

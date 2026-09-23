@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Webhook replay workbench · JevRev</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/workbench.css">
+  <script type="module" src="/workbench.js"></script>
+</head>
+<body>
+  <header class="appbar">
+    <div class="brand"><span class="brand-mark">J</span><strong>JevRev</strong><span class="brand-divider"></span><span>Engineering workbench</span></div>
+    <div class="appbar-right"><span class="local-indicator"></span>Local fixture <span class="appbar-divider">/</span> Case 01</div>
+  </header>
+  <main>
+    <div class="crumb">DEVELOPMENT CASE <span>/</span> WEBHOOK IDEMPOTENCY <span>/</span> INVOICE-42</div>
+    <div class="heading-row">
+      <div><h1>Webhook replay</h1><p>Inspect the visible failure before an AI coding agent's repair, then replay the same contract against the repaired ledger.</p></div>
+      <button id="replay" class="replay-button" type="button">↻ &nbsp; Run live replay</button>
+    </div>
+    <div class="scope-line"><span>PROJECT</span> Multi-tenant invoice webhook <span class="scope-separator">·</span> <span>ARTIFACT</span> ledger.mjs <span class="scope-separator">·</span> <span>CONTRACT</span> 3 invariants</div>
+    <section id="summary" class="summary" aria-label="Replay summary"></section>
+    <section class="section scenario-section" aria-labelledby="scenario-heading">
+      <div class="section-head"><div><span class="section-index">01</span><h2 id="scenario-heading">Live behavior</h2><p>Responses below come from the executable baseline and repair modules.</p></div><div id="live-state" class="state-label">Loading replay…</div></div>
+      <div class="tabs" role="tablist" aria-label="Webhook scenario">
+        <button class="tab selected" role="tab" type="button" aria-selected="true" data-case="tenant">Tenant boundary <span>01</span></button>
+        <button class="tab" role="tab" type="button" aria-selected="false" data-case="race">Concurrent delivery <span>02</span></button>
+        <button class="tab" role="tab" type="button" aria-selected="false" data-case="retry">Failure retry <span>03</span></button>
+      </div>
+      <div id="comparison" class="comparison" role="tabpanel"></div>
+    </section>
+    <section class="section audit-section" aria-labelledby="audit-heading">
+      <div class="section-head"><div><span class="section-index">02</span><h2 id="audit-heading">What the coding loop did</h2><p>Captured run · one source edit · independent completion check</p></div><span class="archive-tag">VERIFIED ARCHIVE</span></div>
+      <div id="audit-route" class="audit-route"></div>
+      <div class="architecture">
+        <div><strong>Host agent</strong><span>Applies the repair to one working file</span></div>
+        <div><strong>Evidence</strong><span>Records exits, source SHA-256 and command output digests</span></div>
+        <div><strong>JevLoop</strong><span>Routes failure, requests verification, then checks fresh evidence</span></div>
+        <div><strong>JevLong</strong><span>Observes 3 verified audits; cannot edit or approve</span></div>
+      </div>
+    </section>
+    <div class="footnote">Sift is the upstream route selector; this case starts after an approach is chosen. The ledger is an in-memory fixture, so this display makes no durability or distributed exactly-once claim.</div>
+  </main>
+</body>
+</html>

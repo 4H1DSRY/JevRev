@@ -1,0 +1,20 @@
+{
+  "case": "tenant",
+  "deliveries": [
+    {
+      "tenant": "north",
+      "eventId": "invoice-42",
+      "expected": "north:accepted",
+      "observed": "north:accepted",
+      "passed": true
+    },
+    {
+      "tenant": "south",
+      "eventId": "invoice-42",
+      "expected": "south:accepted",
+      "observed": "south:accepted",
+      "passed": true
+    }
+  ],
+  "passed": true
+}

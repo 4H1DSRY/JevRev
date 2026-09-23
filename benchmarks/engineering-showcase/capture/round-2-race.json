@@ -1,0 +1,14 @@
+{
+  "case": "race",
+  "event": {
+    "tenant": "north",
+    "eventId": "invoice-42"
+  },
+  "results": [
+    "accepted",
+    "accepted"
+  ],
+  "calls": 1,
+  "expectedCalls": 1,
+  "passed": true
+}
