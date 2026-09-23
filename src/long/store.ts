@@ -1,8 +1,9 @@
 import { randomUUID } from "node:crypto";
-import { mkdir, open, readFile, rename, stat, truncate, unlink, writeFile } from "node:fs/promises";
+import { open, readFile, rename, stat, truncate, unlink, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { z } from "zod";
 import { InputError, ProtocolError } from "../domain/errors.js";
+import { createFreshDirectory } from "../io/directories.js";
 import { longEventSchema, longHash, longSpecSchema, type LongEvent, type LongSpec } from "./schemas.js";
 import type { LongEventDraft } from "./normalize.js";
 
@@ -63,8 +64,7 @@ async function readIdentityAndSpec(directory: string): Promise<LongSpec> {
 export async function createLongStore(directoryInput: string, specInput: LongSpec): Promise<LoadedLongStore> {
   const spec = longSpecSchema.parse(specInput);
   const directory = resolve(directoryInput);
-  try { await mkdir(directory, { recursive: false }); }
-  catch (error) { throw new InputError(`Long store directory must not already exist: ${directory}`, { cause: error }); }
+  await createFreshDirectory(directory, "Long store");
   const head = initialHead(spec);
   await atomicWrite(join(directory, "identity.json"), { session_id: spec.session_id, spec_sha256: longHash(spec), created_at: new Date().toISOString() });
   await atomicWrite(join(directory, "spec.json"), spec);

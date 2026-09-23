@@ -94,67 +94,11 @@ JevLong observes a long-running agent session and reports stalls, repeated
 failures, drift, tool-call problems, budget risk, and progress to a human. It
 does not silently steer, retry, edit, or kill the agent.
 
-The [event fixture](examples/long-events.jsonl) and
-[signal tests](tests/long-signals.test.ts) show what it observes and reports.
+`long watch` is the live terminal cockpit. For scripts and machine-readable
+output, use `long status --format json`; `watch` does not accept `--format`.
 
-## Run a Loop trace
-
-The offline demo audits the same indexed-state-machine revision used above. It
-records actual correctness and benchmark command outcomes; Loop itself edits
-nothing.
-
-<picture>
-  <source media="(max-width: 600px)" srcset=".github/assets/jevrev-loop-trace-mobile.svg">
-  <img src=".github/assets/jevrev-loop-trace.svg" alt="A three-round Loop trace: correctness alone leads to continue; both commands lead to verify; a fresh full audit leads to completed.">
-</picture>
-
-```bash
-npm run demo:loop
-```
-
-The command prints its artifact directory. Inspect `trace.json`, the three
-evidence files, and Loop's verified event log there. The
-[demo source](scripts/run-loop-demo.mjs) and
-[automated test](tests/readme-loop-demo.test.ts) use the recorded command outcomes;
-neither infers completion from a model score.
-
-## Engineering case: a webhook under repair
-
-Picture an AI coding agent implementing a multi-tenant invoice webhook. A local
-replay workbench makes the failure visible: the baseline returns North's result
-to South for the same event ID, and two concurrent deliveries execute the
-handler twice. The repaired version isolates tenants and shares in-flight work.
-The captured panels come from actual fixture code, using the same scenarios as
-the recorded command checks.
-
-<picture>
-  <source media="(max-width: 600px)" srcset=".github/assets/engineering-showcase/webhook-mobile.png">
-  <img src=".github/assets/engineering-showcase/webhook-tenant.png" alt="Actual local webhook replay: the baseline returns north:accepted to South, while the repaired ledger returns south:accepted for the same event ID.">
-</picture>
-
-The concurrency tab shows the second failure: the same two deliveries cause
-**two** handler executions before the repair and **one** after it. [See the
-concurrency capture](.github/assets/engineering-showcase/webhook-race.png).
-
-```bash
-npm run demo:engineering
-npm run showcase:engineering
-```
-
-Open the printed local URL to replay all three scenarios. The CLI run prints a
-directory containing command reports, evidence files, and verified journals.
-The [captured run](benchmarks/engineering-showcase/capture/trace.json) records
-`fix_regression → verify → completed`: Loop cannot finish until the unchanged
-repair passes fresh commands in a full completion audit. Long then imports each
-audit only after checking its Loop ID, work order, outcome, and evidence hash.
-It rejects a wrong digest and deduplicates a repeated event.
-
-This shows the layers an AI coding developer can use: the host writes code;
-Evidence records what ran on which revision; Loop turns those facts into the
-next bounded action; Long watches the verified session without changing it.
-Sift can select the upstream approach, but this case begins after that choice.
-See the [case source and architecture](benchmarks/engineering-showcase/README.md)
-for replay steps, source revisions, and interpretation limits.
+The result is a simple split: the LLM does the expensive creative work, while
+JevRev prevents the workflow from repeatedly paying for bad directions.
 
 ## Use it from Codex
 

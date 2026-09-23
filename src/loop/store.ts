@@ -1,8 +1,9 @@
 import { randomBytes, randomUUID } from "node:crypto";
-import { mkdir, open, readFile, rename, stat, unlink, writeFile } from "node:fs/promises";
+import { open, readFile, rename, stat, unlink, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { z } from "zod";
 import { InputError, ProtocolError } from "../domain/errors.js";
+import { createFreshDirectory } from "../io/directories.js";
 import {
   loopHash, loopSpecSchema, roundAuditResultSchema, roundEvidenceSchema,
   roundWorkOrderSchema, type LoopSpec, type RoundAuditResult, type RoundEvidence,
@@ -102,11 +103,7 @@ export async function createLoop(directoryInput: string, specInput: LoopSpec, ba
     throw new InputError("A new loop needs spec revision 1 and a base revision");
   }
   const directory = resolve(directoryInput);
-  try {
-    await mkdir(directory, { recursive: false });
-  } catch (error) {
-    throw new InputError(`Loop directory must not already exist: ${directory}`, { cause: error });
-  }
+  await createFreshDirectory(directory, "Loop");
   const loopId = `jvl_${randomBytes(8).toString("hex")}`;
   const created = eventWithHash(1, ZERO_HASH, { type: "LOOP_CREATED", loop_id: loopId, spec, base_revision: baseRevision });
   const state: LoopState = {

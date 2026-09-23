@@ -153,4 +153,20 @@ describe("JevLoop event store", () => {
     await expect(createLoop(directory, spec, "base")).rejects.toThrow("must not already exist");
     expect((await loadLoop(directory)).events).toHaveLength(1);
   });
+  it("creates missing parent directories but keeps the requested loop path exclusive", async () => {
+    const root = mkdtempSync(join(tmpdir(), "jevrev-loop-nested-"));
+    roots.push(root);
+    const directory = join(root, "state", "loops", "run-1");
+    await createLoop(directory, spec, "base");
+    expect((await loadLoop(directory)).state.status).toBe("ready");
+    await expect(createLoop(directory, spec, "base")).rejects.toThrow("must not already exist");
+  });
+  it("reports a parent path that is a file instead of claiming the target exists", async () => {
+    const root = mkdtempSync(join(tmpdir(), "jevrev-loop-parent-"));
+    roots.push(root);
+    const parentFile = join(root, "not-a-directory");
+    writeFileSync(parentFile, "preserve", "utf8");
+    await expect(createLoop(join(parentFile, "run"), spec, "base")).rejects.toThrow("Could not create parent directory");
+    expect(readFileSync(parentFile, "utf8")).toBe("preserve");
+  });
 });
