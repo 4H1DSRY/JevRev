@@ -76,26 +76,13 @@
     "access": "public"
   },
   "keywords": [
-    "jev",
     "ai",
-    "artificial-intelligence",
     "agents",
-    "agent-framework",
-    "llm",
-    "llm-agents",
-    "ai-workflows",
+    "coding",
     "workflow",
-    "workflow-engine",
     "evaluation",
-    "verification",
-    "observability",
     "cli",
-    "developer-tools",
-    "typescript",
-    "nodejs",
-    "open-source",
-    "speculative-execution",
-    "evidence"
+    "typescript"
   ],
   "dependencies": {
     "@typesafe-ai/sdk": "^0.6.0",
