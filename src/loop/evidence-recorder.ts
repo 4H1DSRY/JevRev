@@ -37,6 +37,7 @@ export interface RecordLoopArtifactOptions {
   directory: string;
   evidencePath: string;
   artifactId: string;
+  evaluationId?: string;
   file: string;
   summary: string;
   status: "pass" | "fail" | "unknown";
@@ -235,7 +236,7 @@ async function recordLoopArtifactUnlocked(options: RecordLoopArtifactOptions): P
   if (relativePath.startsWith("..") || isAbsolute(relativePath)) throw new InputError("Loop artifact escapes the workspace");
   const content = await readFile(realFile).catch((error) => { throw new InputError(`Could not read Loop artifact ${options.file}`, { cause: error }); });
   const artifact = {
-    id: options.artifactId,
+    id: options.evaluationId ?? options.artifactId,
     artifact_id: options.artifactId,
     sha256: createHash("sha256").update(content).digest("hex"),
     status: options.status,

@@ -64,6 +64,13 @@ own a worktree, or merge code. A host agent calls it between bounded rounds.
    progress and errors go to stderr. Offline replay and mock providers exercise
    the complete loop end to end.
 
+For a completion round, `next` prints generated evidence-slot IDs. Use those
+IDs for the evidence record itself. For a judged artifact, the spec's
+`required_artifacts` reference is a separate value: pass it as
+`--artifact-id` and use `--id` for the evidence evaluation ID. Omitting
+`--artifact-id` keeps the short form compatible by using the same value for
+both.
+
 After each module a separate read-only agent audits its code, tests, and
 contract. Findings must be fixed before the next module. A final independent
 audit follows cross-module and clean-tarball checks.

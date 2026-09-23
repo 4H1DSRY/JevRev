@@ -135,6 +135,19 @@ describe("JevLoop CLI workflow", () => {
     expect(failed.status).toBe(9);
   });
 
+  it("keeps the completion evidence slot ID separate from the spec artifact reference", () => {
+    const rootDir = mkdtempSync(join(tmpdir(), "jevrev-loop-cli-")); roots.push(rootDir);
+    const directory = join(rootDir, "loop"); const specPath = join(rootDir, "spec.json"); writeFileSync(specPath, JSON.stringify(spec));
+    expect(run(["loop", "create", "--directory", directory, "--spec", specPath, "--base-revision", "base"]).status).toBe(0);
+    const planPath = join(rootDir, "plan.json"); writeFileSync(planPath, JSON.stringify({ kind: "jevrev.round-plan", schema_version: "1", round_goal: "Collect evidence", focus_criteria: ["quality"], hypothesis: "The artifact is understandable", allowed_scope: [], do_not_change: [], required_evidence: [{ id: "report", description: "Report", kind: "artifact" }], stop_conditions: ["Stop on failure"] }));
+    expect(run(["loop", "next", "--directory", directory, "--plan", planPath]).status).toBe(0);
+    const evidencePath = join(rootDir, "evidence.json");
+    expect(run(["loop", "evidence-template", "--directory", directory, "--head-revision", "head", "--output", evidencePath]).status).toBe(0);
+    const recorded = run(["loop", "evidence", "artifact", "--directory", directory, "--evidence", evidencePath, "--id", "artifact-slot-1", "--artifact-id", "report", "--file", "package.json", "--summary", "The package metadata is readable.", "--status", "pass", "--criterion", "quality"]);
+    expect(recorded.status).toBe(0);
+    expect(JSON.parse(recorded.stdout)).toMatchObject({ id: "artifact-slot-1", artifact_id: "report", status: "pass" });
+  });
+
   it("emits a bound incomplete evidence template for the active round", () => {
     const rootDir = mkdtempSync(join(tmpdir(), "jevrev-loop-cli-")); roots.push(rootDir);
     const directory = join(rootDir, "loop"); const specPath = join(rootDir, "spec.json"); writeFileSync(specPath, JSON.stringify(spec));

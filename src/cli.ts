@@ -152,7 +152,7 @@ interface LoopApproveOptions extends LoopFormatOptions { directory: string; spec
 interface LoopResumeOptions extends LoopDirectoryOptions { approvedBy: string; reason: string; yes: boolean }
 interface LoopEvidenceRunOptions { directory: string; evidence: string; id: string; cwd?: string; timeoutMs: number; maxOutputBytes: number; replace: boolean; echo: boolean; criterion: string[]; protectedSurface: string[] }
 interface LoopEvidenceMetricOptions { directory: string; evidence: string; input: string; criterion?: string; result?: EvidenceResultStatus; replace: boolean }
-interface LoopEvidenceArtifactOptions { directory: string; evidence: string; id: string; file: string; summary: string; status: EvidenceResultStatus; criterion?: string; replace: boolean }
+interface LoopEvidenceArtifactOptions { directory: string; evidence: string; id: string; artifactId?: string; file: string; summary: string; status: EvidenceResultStatus; criterion?: string; replace: boolean }
 interface LongFormatOptions { format: OutputFormat; output?: string; directory: string }
 interface ReconsiderOptions extends LoopFormatOptions {
   campaign: string;
@@ -704,7 +704,7 @@ async function runLoopEvidenceMetric(options: LoopEvidenceMetricOptions): Promis
 }
 
 async function runLoopEvidenceArtifact(options: LoopEvidenceArtifactOptions): Promise<void> {
-  const artifact = await recordLoopArtifact({ directory: options.directory, evidencePath: options.evidence, artifactId: options.id, file: options.file, summary: options.summary, status: options.status, ...(options.criterion === undefined ? {} : { criterionId: options.criterion }), replace: options.replace });
+  const artifact = await recordLoopArtifact({ directory: options.directory, evidencePath: options.evidence, artifactId: options.artifactId ?? options.id, ...(options.artifactId === undefined ? {} : { evaluationId: options.id }), file: options.file, summary: options.summary, status: options.status, ...(options.criterion === undefined ? {} : { criterionId: options.criterion }), replace: options.replace });
   await emit(`${JSON.stringify(artifact, null, 2)}\n`, undefined);
 }
 
@@ -795,6 +795,7 @@ function addLoopCommand(program: Command): void {
     .requiredOption("--directory <path>", "loop directory")
     .requiredOption("--evidence <path>", "round-evidence JSON")
     .requiredOption("--id <id>", "stable artifact evaluation ID")
+    .option("--artifact-id <id>", "spec artifact reference; defaults to --id")
     .requiredOption("--file <path>", "workspace-relative artifact")
     .requiredOption("--summary <text>", "human-readable evaluator summary")
     .requiredOption("--status <status>", "pass, fail, or unknown", parseEvidenceResult)
