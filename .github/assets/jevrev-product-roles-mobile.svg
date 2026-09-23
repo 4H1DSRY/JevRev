@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="498" viewBox="0 0 360 498" role="img" aria-labelledby="title desc">
+  <title id="title">JevRev roles on a narrow screen</title>
+  <desc id="desc">The host agent acts. JevSift selects paths before work, JevLoop audits one artifact between rounds, and JevLong observes the session without control. Sift and Loop share Probe, Evidence, and Decide contracts.</desc>
+  <style>
+    .paper { fill: #f4f1e9; }
+    .ink { fill: #232620; }
+    .muted { fill: #55594f; }
+    .line { stroke: #929486; stroke-width: 1.5; }
+    .strong { stroke: #232620; stroke-width: 2; }
+    text { font-family: Arial, Helvetica, sans-serif; }
+    .small { font-size: 16px; letter-spacing: 1px; font-weight: 700; }
+    .body { font-size: 20px; }
+    .role { font-size: 27px; font-weight: 700; }
+    @media (prefers-color-scheme: dark) {
+      .paper { fill: #1b1e1a; }
+      .ink { fill: #eee9dc; }
+      .muted { fill: #c0bdae; }
+      .line { stroke: #797e70; }
+      .strong { stroke: #eee9dc; }
+    }
+  </style>
+  <rect class="paper" width="360" height="498"/>
+  <text x="20" y="37" class="role ink">Host agent</text>
+  <text x="20" y="66" class="body ink">proposes · executes · records</text>
+  <path class="strong" d="M20 83H340"/>
+  <text x="20" y="112" class="small muted">BEFORE WORK</text>
+  <text x="20" y="145" class="role ink">JevSift</text>
+  <text x="20" y="171" class="body ink">select probe paths</text>
+  <path class="line" d="M20 189H340"/>
+  <text x="20" y="218" class="small muted">BETWEEN ROUNDS</text>
+  <text x="20" y="251" class="role ink">JevLoop</text>
+  <text x="20" y="277" class="body ink">audit one artifact</text>
+  <path class="line" d="M20 295H340"/>
+  <text x="20" y="324" class="small muted">ACROSS SESSION · READ ONLY</text>
+  <text x="20" y="357" class="role ink">JevLong</text>
+  <text x="20" y="383" class="body ink">observe events; alert a human</text>
+  <path class="line" d="M20 401H340"/>
+  <text x="20" y="430" class="small muted">SHARED BY SIFT + LOOP</text>
+  <text x="20" y="460" class="body ink">Probe · Evidence · Decide</text>
+  <text x="20" y="485" class="small muted">contracts, not additional agents</text>
+</svg>

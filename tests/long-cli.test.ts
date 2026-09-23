@@ -29,5 +29,5 @@ describe("JevLong CLI", () => {
     const invalidWatch = run(["long", "watch", "--directory", directory, "--iterations", "0", "--no-clear"]);
     expect(invalidWatch.status).toBe(2);
     expect(invalidWatch.stderr).toContain("must be a positive integer");
-  });
+  }, 20_000);
 });

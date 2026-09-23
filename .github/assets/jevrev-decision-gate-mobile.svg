@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="600" viewBox="0 0 360 600" role="img" aria-labelledby="title desc">
+  <title id="title">Correctness reverses the delimiter-counter ranking on a narrow screen</title>
+  <desc id="desc">The regex shortcut starts as the Sift favorite at 0.9593, ahead of the indexed state machine at 0.8773. Both receive five correctness cases and seven benchmark samples. The regex is fast locally but passes only two cases and is rejected. The state machine passes all five and wins. Decide returns winner to integrate_winner.</desc>
+  <style>
+    .paper { fill: #f4f1e9; }
+    .ink { fill: #232620; }
+    .muted { fill: #55594f; }
+    .fail { fill: #923725; }
+    .reverse { fill: #f4f1e9; }
+    .line { stroke: #929486; stroke-width: 1.5; }
+    .strong { stroke: #232620; stroke-width: 2; }
+    text { font-family: Arial, Helvetica, sans-serif; }
+    .mono { font-family: Consolas, 'Courier New', monospace; }
+    .small { font-size: 16px; letter-spacing: 1px; font-weight: 700; }
+    .body { font-size: 19px; }
+    .name { font-size: 22px; font-weight: 700; }
+    @media (prefers-color-scheme: dark) {
+      .paper { fill: #1b1e1a; }
+      .ink { fill: #eee9dc; }
+      .muted { fill: #c0bdae; }
+      .fail { fill: #ef9a83; }
+      .reverse { fill: #1b1e1a; }
+      .line { stroke: #797e70; }
+      .strong { stroke: #eee9dc; }
+    }
+  </style>
+  <rect class="paper" width="360" height="600"/>
+  <text x="20" y="36" class="name ink">CSV scanner</text>
+  <text x="20" y="65" class="body ink">faster, same quoted fields</text>
+  <path class="strong" d="M20 82H340"/>
+  <text x="20" y="111" class="small muted">SIFT RANKING</text>
+  <text x="20" y="143" class="name mono ink">regex-shortcut</text>
+  <text x="20" y="168" class="body muted">paper favorite · 0.9593</text>
+  <text x="20" y="202" class="name mono ink">indexed-state-machine</text>
+  <text x="20" y="227" class="body muted">second proposal · 0.8773</text>
+  <path class="line" d="M20 244H340"/>
+  <text x="20" y="273" class="small muted">SAME PROBE CONTRACT</text>
+  <text x="20" y="303" class="body ink">5 correctness cases</text>
+  <text x="20" y="328" class="body ink">7 benchmark samples</text>
+  <path class="line" d="M20 345H340"/>
+  <text x="20" y="375" class="name mono ink">regex-shortcut</text>
+  <text x="20" y="402" class="body ink">faster locally · 2 / 5 pass</text>
+  <text x="20" y="427" class="small fail">REJECTED</text>
+  <path class="line" d="M20 445H340"/>
+  <text x="20" y="475" class="name mono ink">indexed-state-machine</text>
+  <text x="20" y="502" class="body ink">faster locally · 5 / 5 pass</text>
+  <text x="20" y="527" class="small ink">READY → WINNER</text>
+  <text x="20" y="552" class="small muted">DECIDE</text>
+  <rect x="20" y="562" width="320" height="29" class="ink"/>
+  <text x="32" y="583" class="reverse mono" font-size="17" font-weight="700">winner → integrate_winner</text>
+</svg>

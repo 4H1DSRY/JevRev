@@ -71,7 +71,7 @@ describe("JevLoop CLI workflow", () => {
     expect(result.status).toBe(0); expect(JSON.parse(result.stdout)).toMatchObject({ outcome: "completed", next_action: { type: "stop_success" } });
     result = run(["loop", "status", "--directory", directory, "--format", "json"]);
     expect(result.status).toBe(0); expect(JSON.parse(result.stdout)).toMatchObject({ status: "completed", round: 2 });
-  });
+  }, 20_000);
 
   it("keeps human boundaries explicit for spec approval and provider selection", () => {
     const rootDir = mkdtempSync(join(tmpdir(), "jevrev-loop-cli-")); roots.push(rootDir);

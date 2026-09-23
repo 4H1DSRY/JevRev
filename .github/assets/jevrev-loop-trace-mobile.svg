@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="424" viewBox="0 0 360 424" role="img" aria-labelledby="title desc">
+  <title id="title">Three JevLoop audits on a narrow screen</title>
+  <desc id="desc">The same scanner revision receives three audits. A correctness record alone means continue. Both commands recorded means verify. Both commands rerun fresh in a full audit means completed.</desc>
+  <style>
+    .paper { fill: #f4f1e9; }
+    .ink { fill: #232620; }
+    .muted { fill: #55594f; }
+    .line { stroke: #929486; stroke-width: 1.5; }
+    .strong { stroke: #232620; stroke-width: 2; }
+    text { font-family: Arial, Helvetica, sans-serif; }
+    .mono { font-family: Consolas, 'Courier New', monospace; }
+    .small { font-size: 16px; letter-spacing: 1px; font-weight: 700; }
+    .body { font-size: 19px; }
+    .outcome { font-size: 24px; font-weight: 700; }
+    @media (prefers-color-scheme: dark) {
+      .paper { fill: #1b1e1a; }
+      .ink { fill: #eee9dc; }
+      .muted { fill: #c0bdae; }
+      .line { stroke: #797e70; }
+      .strong { stroke: #eee9dc; }
+    }
+  </style>
+  <rect class="paper" width="360" height="424"/>
+  <text x="20" y="38" class="outcome ink">One scanner revision</text>
+  <text x="20" y="64" class="body ink">Three evidence audits</text>
+  <path class="strong" d="M20 80H340"/>
+  <text x="20" y="111" class="small muted">ROUND 01</text>
+  <text x="20" y="141" class="body ink">correctness passed</text>
+  <text x="20" y="166" class="body ink">benchmark missing</text>
+  <text x="20" y="197" class="outcome ink">continue</text>
+  <path class="line" d="M20 216H340"/>
+  <text x="20" y="245" class="small muted">ROUND 02</text>
+  <text x="20" y="275" class="body ink">both commands recorded</text>
+  <text x="20" y="306" class="outcome ink">verify</text>
+  <path class="line" d="M20 325H340"/>
+  <text x="20" y="354" class="small muted">ROUND 03 · FULL AUDIT</text>
+  <text x="20" y="384" class="body ink">both commands rerun fresh</text>
+  <text x="20" y="415" class="outcome ink">completed</text>
+</svg>
