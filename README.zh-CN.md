@@ -16,13 +16,13 @@
   <a href="LICENSE"><img alt="MIT 许可" src="https://img.shields.io/badge/License-MIT-555555?style=flat-square&amp;labelColor=333333" /></a>
 </p>
 
-> 先筛方案，再一轮轮打分，最后盯着跑完。
+> 筛选方案。一轮轮打分。盯着它跑完。
 
 你的 LLM 很能干。想方案、写代码、跑测试、改错，样样都行。
 
 可“该选哪个方案”这种小事，也要它一件件拿主意？
 
-这活交给 Jev 就好。它是 TypeSafe AI 的模型，只做判断，不写文本——你丢几个候选过去，它只回你“选哪个”“打几分”“有多大可能”，又快又便宜。
+这活交给 Jev 就好。它是 TypeSafe AI 的模型，只做判断，不写文本。你丢几个候选过去，它只回你“选哪个”“打几分”“有多大可能”，又快又便宜。
 
 JevRev 干的，就是把这个判断层搬到 LLM 旁边：筛方案、盯进度，把力气留在还值得继续的事上。
 
@@ -36,7 +36,7 @@ JevRev 干的，就是把这个判断层搬到 LLM 旁边：筛方案、盯进�
 
 LLM 给了两个方案。一个用正则抄近路，省事，纸面上也好看；另一个老老实实写状态机，慢一点。
 
-纸面上，抄近路的那个先赢。可正确性检查一跑，它挂了。状态机慢是慢，同样的检查却全过——凭证据翻了盘。
+纸面上，抄近路的那个先赢。可正确性检查一跑，它挂了。状态机慢是慢，同样的检查却全过。凭证据翻了盘。
 
 <picture>
   <source media="(max-width: 600px)" srcset=".github/assets/jevrev-decision-gate-mobile.svg">
@@ -53,7 +53,7 @@ npm run build
 npm run demo:workflow
 ```
 
-为了让 demo 每次结果都一样，这里的 Jev 回答是预先录好的。除了它，别的都是真的：实现是真的，正确性检查是真的，benchmark 采样和输出摘要是真的，最后那个决定也是真的。
+为了让 demo 每次结果都一样，这里的 Jev 回答是预先录好的。除了它，别的都是真的：实现、正确性检查、benchmark 采样、输出摘要、最后的决定。
 
 ```text
 Paper favorite: regex-shortcut
@@ -65,7 +65,7 @@ Evidence winner: indexed-state-machine
 Decision: winner -> integrate_winner
 ```
 
-想深挖，这三个文件可以点开看：[真正跑过的探针](benchmarks/workflow-fixture/probe.mjs)、[demo 的驱动脚本](scripts/run-workflow-demo.mjs)、[决策测试](tests/workflow-decide.test.ts)。吞吐量的实测值每台机器都不一样。真正让排名翻盘的也不是速度——是那条必须通过的正确性检查没过。
+想深挖，这三个文件可以点开看：[真正跑过的探针](benchmarks/workflow-fixture/probe.mjs)、[demo 的驱动脚本](scripts/run-workflow-demo.mjs)、[决策测试](tests/workflow-decide.test.ts)。吞吐量的实测值每台机器都不一样。真正让排名翻盘的也不是速度，是那条必须通过的正确性检查没过。
 
 ## 三个组成部分
 
@@ -76,7 +76,7 @@ Decision: winner -> integrate_winner
 
 ### JevSift：定下做什么
 
-你的 LLM 会先给你几个方案，方向差得越远越好。JevSift 挨个过一遍，在它们占掉实现预算之前：虚的扔，跟别人重复的扔，风险太大的扔，费力不讨好的也扔。
+你的 LLM 会先给你几个方案，方向差得越远越好。JevSift 挨个过一遍，在它们占掉实现预算之前。太虚的、跟别人撞的、风险压不住的，都留不下来。
 
 剩下的，才拿到一张范围明确的任务单。
 
@@ -84,13 +84,13 @@ Decision: winner -> integrate_winner
 
 你的 agent 按任务单做完一轮，如实记下发生了什么，交给 JevLoop。
 
-Loop 先看证据。事实讲得清的，它自己就定了；讲不清的，才拿去问 Jev。然后它告诉你下一步干什么：接着做，先修，验一遍，推倒重新规划——或者干脆等人来拍板。所有标准都过了？收工。
+Loop 先看证据。事实讲得清的，它自己就定了；讲不清的，才拿去问 Jev。然后它告诉你下一步干什么：继续做，先修，验证一遍，推倒重来，或者等人拍板。所有标准都过了？收工。
 
-`Probe`、`Evidence`、`Decide` 都在这里面，是 Loop 运转用的零件——不是另外几个界面。
+`Probe`、`Evidence`、`Decide` 都在这里面，是 Loop 运转用的零件，不是另外几个界面。
 
 ### JevLong：盯着整个会话
 
-JevLong 盯的是长跑会话，只管报信。卡住了、同一个坑反复失败、方向开始跑偏、工具调用出问题、预算快见底——它都会告诉你。当然，正常跑到哪了，也会告诉你。
+JevLong 盯的是长跑会话，只管报信。卡住了、反复失败、方向跑偏、工具调用出问题、预算快见底，它都会告诉你。正常跑到哪了，也告诉你。
 
 它只报信，不动手：不悄悄给你改方向，不自动重试，不替你改文件，更不会自己把 agent 掐了。
 
