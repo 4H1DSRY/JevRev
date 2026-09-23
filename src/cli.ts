@@ -34,8 +34,10 @@ import {
   nextLoopCommand, readLoopSpec, readRoundEvidence, readRoundPlan, renderLoopHuman,
   resumeLoopCommand, loopStatusData, loopEvidenceTemplate, buildLoopJudge,
 } from "./loop/commands.js";
+import { recordLoopArtifact, recordLoopCommand, recordLoopMetric } from "./loop/evidence-recorder.js";
 import { loadLoop } from "./loop/store.js";
 import { createLongCommand, ingestLongJsonlCommand, longStatusCommand, readLongSpec, renderLongHuman } from "./long/commands.js";
+import { recordLoopAuditEvent } from "./long/bridge.js";
 import { watchLong } from "./long/watch.js";
 import { parseJsonBytes, readJsonFile } from "./io/json.js";
 import { formatZodError } from "./io/validation.js";
@@ -148,6 +150,9 @@ interface LoopAuditOptions extends LoopFormatOptions { directory: string; eviden
 interface LoopDirectoryOptions extends LoopFormatOptions { directory: string }
 interface LoopApproveOptions extends LoopFormatOptions { directory: string; spec: string; approvedBy: string; reason: string; yes: boolean }
 interface LoopResumeOptions extends LoopDirectoryOptions { approvedBy: string; reason: string; yes: boolean }
+interface LoopEvidenceRunOptions { directory: string; evidence: string; id: string; cwd?: string; timeoutMs: number; maxOutputBytes: number; replace: boolean; echo: boolean; criterion: string[]; protectedSurface: string[] }
+interface LoopEvidenceMetricOptions { directory: string; evidence: string; input: string; criterion?: string; result?: EvidenceResultStatus; replace: boolean }
+interface LoopEvidenceArtifactOptions { directory: string; evidence: string; id: string; file: string; summary: string; status: EvidenceResultStatus; criterion?: string; replace: boolean }
 interface LongFormatOptions { format: OutputFormat; output?: string; directory: string }
 interface ReconsiderOptions extends LoopFormatOptions {
   campaign: string;
@@ -681,6 +686,28 @@ async function runLoopAudit(options: LoopAuditOptions): Promise<void> {
   await emit(rendered, options.output);
 }
 
+async function runLoopEvidenceRun(options: LoopEvidenceRunOptions, command: string[]): Promise<void> {
+  const observation = await recordLoopCommand({
+    directory: options.directory, evidencePath: options.evidence, observationId: options.id, argv: command,
+    ...(options.cwd === undefined ? {} : { cwd: options.cwd }), timeoutMs: options.timeoutMs,
+    maxOutputBytes: options.maxOutputBytes, replace: options.replace, echo: options.echo,
+    criterionIds: options.criterion, protectedSurfaceIds: options.protectedSurface,
+  });
+  stderr.write(`jevrev: recorded Loop observation ${observation.id}: exit ${observation.exit_code}, ${observation.duration_ms}ms\n`);
+  commandExitCode = observation.exit_code === 0 && observation.termination === "exited" ? 0 : observation.exit_code || 1;
+  await emit(`${JSON.stringify(observation, null, 2)}\n`, undefined);
+}
+
+async function runLoopEvidenceMetric(options: LoopEvidenceMetricOptions): Promise<void> {
+  const metric = await recordLoopMetric({ directory: options.directory, evidencePath: options.evidence, metric: await readJson(options.input), ...(options.criterion === undefined ? {} : { criterionId: options.criterion }), ...(options.result === undefined ? {} : { result: options.result }), replace: options.replace });
+  await emit(`${JSON.stringify(metric, null, 2)}\n`, undefined);
+}
+
+async function runLoopEvidenceArtifact(options: LoopEvidenceArtifactOptions): Promise<void> {
+  const artifact = await recordLoopArtifact({ directory: options.directory, evidencePath: options.evidence, artifactId: options.id, file: options.file, summary: options.summary, status: options.status, ...(options.criterion === undefined ? {} : { criterionId: options.criterion }), replace: options.replace });
+  await emit(`${JSON.stringify(artifact, null, 2)}\n`, undefined);
+}
+
 async function runLoopMutation(options: LoopDirectoryOptions, mutation: (directory: string) => Promise<Awaited<ReturnType<typeof loadLoop>>>): Promise<void> {
   validateFormat(options.format);
   await validateOutputTarget(options.output);
@@ -740,6 +767,40 @@ function addLoopCommand(program: Command): void {
     .option("--format <format>", "human or json", "human")
     .option("-o, --output <path>", "write result to a file")
     .action(async (raw: LoopAuditOptions) => runLoopAudit(raw));
+  const loopEvidence = loop.command("evidence").description("Record facts into the active Loop round without advancing it");
+  loopEvidence.command("run <command...>")
+    .description("Execute argv directly and append a recorded observation to round evidence")
+    .requiredOption("--directory <path>", "loop directory")
+    .requiredOption("--evidence <path>", "round-evidence JSON")
+    .requiredOption("--id <id>", "stable observation ID")
+    .option("--cwd <path>", "command cwd relative to workspace", ".")
+    .option("--timeout-ms <n>", "command timeout", parsePositiveNumber, 120_000)
+    .option("--max-output-bytes <n>", "maximum captured bytes per stream", parsePositiveNumber, 4 * 1024 * 1024)
+    .option("--criterion <id>", "link result to a Loop criterion; repeatable", collectValue, [])
+    .option("--protected-surface <id>", "link result to a protected surface; repeatable", collectValue, [])
+    .option("--replace", "replace an observation with the same ID", false)
+    .option("--echo", "echo child output (may expose secrets)", false)
+    .action(async (command: string[], raw: LoopEvidenceRunOptions) => runLoopEvidenceRun(raw, command));
+  loopEvidence.command("metric")
+    .description("Append raw metric samples to round evidence")
+    .requiredOption("--directory <path>", "loop directory")
+    .requiredOption("--evidence <path>", "round-evidence JSON")
+    .requiredOption("--input <path>", "metric JSON")
+    .option("--criterion <id>", "criterion ID when metric JSON does not supply one")
+    .option("--result <result>", "pass, fail, or unknown", parseEvidenceResult)
+    .option("--replace", "replace a metric with the same ID", false)
+    .action(async (raw: LoopEvidenceMetricOptions) => runLoopEvidenceMetric(raw));
+  loopEvidence.command("artifact")
+    .description("Hash and attach an evaluated artifact to round evidence")
+    .requiredOption("--directory <path>", "loop directory")
+    .requiredOption("--evidence <path>", "round-evidence JSON")
+    .requiredOption("--id <id>", "stable artifact evaluation ID")
+    .requiredOption("--file <path>", "workspace-relative artifact")
+    .requiredOption("--summary <text>", "human-readable evaluator summary")
+    .requiredOption("--status <status>", "pass, fail, or unknown", parseEvidenceResult)
+    .option("--criterion <id>", "judged criterion ID")
+    .option("--replace", "replace an evaluation with the same ID", false)
+    .action(async (raw: LoopEvidenceArtifactOptions) => runLoopEvidenceArtifact(raw));
   loop.command("status")
     .description("Show the reconstructed loop state")
     .requiredOption("--directory <path>", "loop directory")
@@ -786,7 +847,7 @@ function addLongCommand(program: Command): void {
     });
   long.command("ingest").description("Normalize and append one bounded JSONL event batch")
     .requiredOption("--directory <path>", "Long store directory")
-    .requiredOption("--input <path>", "JSONL event file")
+    .requiredOption("--input <path>", "JSONL event file, or - for stdin")
     .option("--format <format>", "human or json", "human")
     .action(async (raw: { directory: string; input: string; format: OutputFormat }) => {
       validateFormat(raw.format);
@@ -794,6 +855,21 @@ function addLongCommand(program: Command): void {
       stdout.write(raw.format === "json"
         ? `${JSON.stringify({ accepted: result.accepted.length, duplicates: result.duplicate_event_ids.length, snapshot: result.snapshot }, null, 2)}\n`
         : `accepted ${result.accepted.length}, duplicates ${result.duplicate_event_ids.length}\n`);
+    });
+  long.command("loop-audit").description("Record a JevLoop audit as a trusted Long observation event")
+    .requiredOption("--directory <path>", "Long store directory")
+    .requiredOption("--loop-directory <path>", "actual JevLoop directory to verify")
+    .requiredOption("--loop-id <id>", "Loop ID")
+    .requiredOption("--round <n>", "audited round number", parsePositiveNumber)
+    .requiredOption("--work-order-sha256 <digest>", "audited work-order digest")
+    .requiredOption("--outcome <outcome>", "Loop audit outcome")
+    .requiredOption("--evidence-sha256 <digest>", "audited evidence digest")
+    .option("--occurred-at <timestamp>", "audit timestamp")
+    .option("--format <format>", "human or json", "human")
+    .action(async (raw: { directory: string; loopDirectory: string; loopId: string; round: number; workOrderSha256: string; outcome: string; evidenceSha256: string; occurredAt?: string; format: OutputFormat }) => {
+      validateFormat(raw.format);
+      const result = await recordLoopAuditEvent(raw.directory, raw.loopDirectory, { loop_id: raw.loopId, round_number: raw.round, work_order_sha256: raw.workOrderSha256, audit_outcome: raw.outcome, evidence_sha256: raw.evidenceSha256, ...(raw.occurredAt === undefined ? {} : { occurred_at: raw.occurredAt }) });
+      await emit(raw.format === "json" ? `${JSON.stringify({ accepted: result.accepted.length, duplicates: result.duplicate_event_ids.length, snapshot: result.snapshot }, null, 2)}\n` : `accepted ${result.accepted.length}, duplicates ${result.duplicate_event_ids.length}\n`, undefined);
     });
   long.command("status").description("Read the current deterministic observer snapshot")
     .requiredOption("--directory <path>", "Long store directory")

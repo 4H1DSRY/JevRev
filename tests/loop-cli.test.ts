@@ -120,6 +120,21 @@ describe("JevLoop CLI workflow", () => {
     expect(JSON.parse(audit.stdout).outcome).toBe("verify");
   });
 
+  it("returns the child command failure code from Loop evidence run", () => {
+    const rootDir = mkdtempSync(join(tmpdir(), "jevrev-loop-cli-")); roots.push(rootDir);
+    const directory = join(rootDir, "loop");
+    const hardSpec = { ...spec, criteria: [{ id: "tests", type: "hard" as const, description: "Tests", required_commands: ["test"] }], protected_surfaces: [] };
+    const specPath = join(rootDir, "spec.json"); writeFileSync(specPath, JSON.stringify(hardSpec));
+    expect(run(["loop", "create", "--directory", directory, "--spec", specPath, "--base-revision", "base"]).status).toBe(0);
+    const planPath = join(rootDir, "plan.json"); writeFileSync(planPath, JSON.stringify({ kind: "jevrev.round-plan", schema_version: "1", round_goal: "Run tests", focus_criteria: ["tests"], hypothesis: "The test command exposes regressions", allowed_scope: [], do_not_change: [], required_evidence: [{ id: "test", description: "Test command", kind: "command" }], stop_conditions: ["Stop on failure"] }));
+    expect(run(["loop", "next", "--directory", directory, "--plan", planPath]).status).toBe(0);
+    const evidencePath = join(rootDir, "evidence.json");
+    expect(run(["loop", "evidence-template", "--directory", directory, "--head-revision", "head", "--output", evidencePath]).status).toBe(0);
+    const failingScript = join(rootDir, "fail.cjs"); writeFileSync(failingScript, "process.exit(9);\n");
+    const failed = run(["loop", "evidence", "run", "--directory", directory, "--evidence", evidencePath, "--id", "test", process.execPath, failingScript]);
+    expect(failed.status).toBe(9);
+  });
+
   it("emits a bound incomplete evidence template for the active round", () => {
     const rootDir = mkdtempSync(join(tmpdir(), "jevrev-loop-cli-")); roots.push(rootDir);
     const directory = join(rootDir, "loop"); const specPath = join(rootDir, "spec.json"); writeFileSync(specPath, JSON.stringify(spec));

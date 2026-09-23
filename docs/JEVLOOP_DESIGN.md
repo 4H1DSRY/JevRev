@@ -24,12 +24,13 @@ own a worktree, or merge code. A host agent calls it between bounded rounds.
   current head; an externally imported exit-code claim cannot complete it.
 - One batched set of narrow Jev questions for the judged criteria in an audit.
   No default mesh, model-driven autonomous agent, TUI, or background daemon.
-- `loop evidence-template` creates the Loop envelope. Existing Sift command,
-  metric, and artifact recorders can supply facts for it, but do not write the
-  Loop envelope directly. Imported or self-reported evidence is identified; it
-  is not magically independently verified. Full completion may require human
-  confirmation for subjective criteria or evidence that the recorder cannot
-  authenticate.
+- `loop evidence-template` creates the Loop envelope. The Loop-specific
+  `loop evidence run/metric/artifact` commands fill it with recorded command,
+  metric, and artifact facts; they do not advance Loop state. The older Sift
+  evidence recorder remains a separate campaign protocol. Imported or
+  self-reported evidence is identified; it is not magically independently
+  verified. Full completion may require human confirmation for subjective
+  criteria or evidence that the recorder cannot authenticate.
 - Judged artifact evaluations carry a required human-readable summary and may
   carry a bounded content excerpt. The digest binds the material; the summary
   and excerpt are what Jev can actually inspect.

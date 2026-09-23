@@ -169,4 +169,17 @@ describe("trusted evidence command recorder", () => {
     await expect(recordCommand({ ...options, observationId: "escape", cwd: ".." }))
       .rejects.toThrow("escapes workspace");
   });
+
+  it("replaces command wall time by delta instead of double-counting", async () => {
+    const { workOrder, path } = fixture();
+    const options = {
+      evidencePath: path, candidateId: workOrder.candidate_id, observationId: "replace-me",
+      argv: [process.execPath, "-e", "setTimeout(() => {}, 25)"], workspace: root, echo: false,
+    };
+    const first = await recordCommand(options);
+    const second = await recordCommand({ ...options, argv: [process.execPath, "-e", "process.exit(0)"], replace: true });
+    const bundle = evidenceBundleSchema.parse(JSON.parse(readFileSync(path, "utf8")));
+    expect(bundle.packets[0]?.development.wall_ms).toBe(second.duration_ms);
+    expect(first.duration_ms).toBeGreaterThanOrEqual(0);
+  });
 });

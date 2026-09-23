@@ -1,10 +1,25 @@
-import { readFile } from "node:fs/promises";
+import { readFile, stat } from "node:fs/promises";
+import { stdin } from "node:process";
 import { InputError } from "../domain/errors.js";
 import { longSpecSchema, type LongSpec } from "./schemas.js";
 import { normalizeExternalEvent } from "./normalize.js";
 import { createLongStore, ingestLongBatch, loadLongStore } from "./store.js";
 import { reduceLongSignals } from "./signals.js";
 import { evaluateLongPolicy } from "./policy.js";
+
+const MAX_LONG_INPUT_BYTES = 1_048_576;
+
+async function readBoundedStdin(): Promise<string> {
+  const chunks: Buffer[] = [];
+  let bytes = 0;
+  for await (const chunk of stdin) {
+    const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+    bytes += buffer.byteLength;
+    if (bytes > MAX_LONG_INPUT_BYTES) throw new InputError("Long stdin input exceeds 1 MiB");
+    chunks.push(buffer);
+  }
+  return Buffer.concat(chunks).toString("utf8");
+}
 
 async function readJson(path: string): Promise<unknown> {
   try { return JSON.parse(await readFile(path, "utf8")) as unknown; }
@@ -18,7 +33,15 @@ export async function readLongSpec(path: string): Promise<LongSpec> {
 export async function createLongCommand(directory: string, spec: LongSpec) { return createLongStore(directory, spec); }
 
 export async function ingestLongJsonlCommand(directory: string, inputPath: string, receivedAt = new Date()) {
-  const raw = await readFile(inputPath, "utf8").catch((error) => { throw new InputError(`Could not read Long input ${inputPath}`, { cause: error }); });
+  let raw: string;
+  if (inputPath === "-") {
+    raw = await readBoundedStdin();
+  } else {
+    const metadata = await stat(inputPath).catch((error) => { throw new InputError(`Could not read Long input ${inputPath}`, { cause: error }); });
+    if (metadata.size > MAX_LONG_INPUT_BYTES) throw new InputError("Long input exceeds 1 MiB");
+    raw = await readFile(inputPath, "utf8").catch((error) => { throw new InputError(`Could not read Long input ${inputPath}`, { cause: error }); });
+  }
+  if (Buffer.byteLength(raw, "utf8") > MAX_LONG_INPUT_BYTES) throw new InputError("Long input exceeds 1 MiB");
   const loop = await loadLongStore(directory);
   const lines = raw.trim() === "" ? [] : raw.trimEnd().split("\n");
   if (lines.length > 256) throw new InputError("Long ingest batch exceeds 256 events");

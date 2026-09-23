@@ -39,6 +39,28 @@ export interface RecordedCommand {
   stderr_bytes: number;
 }
 
+export interface ExecuteCommandOptions {
+  argv: readonly string[];
+  workspace?: string;
+  cwd?: string;
+  timeoutMs?: number;
+  maxOutputBytes?: number;
+  echo?: boolean;
+}
+
+export interface ExecutedCommand {
+  argv: readonly string[];
+  cwd: string;
+  exit_code: number;
+  duration_ms: number;
+  termination: "exited" | "timed_out" | "spawn_error" | "buffer_exceeded";
+  signal?: string;
+  stdout_sha256: string;
+  stderr_sha256: string;
+  stdout_bytes: number;
+  stderr_bytes: number;
+}
+
 const DEFAULT_TIMEOUT_MS = 120_000;
 const DEFAULT_MAX_OUTPUT_BYTES = 4 * 1024 * 1024;
 const SECRET_ENVIRONMENT_NAMES = new Set([
@@ -107,6 +129,58 @@ function linkRequirement(
 }
 
 export async function recordCommand(options: RecordCommandOptions): Promise<RecordedCommand> {
+  const { path: evidencePath, bundle } = await readEvidenceBundle(options.evidencePath);
+  const packet = evidencePacket(bundle, options.candidateId);
+  const existingIndex = packet.observations.findIndex((item) => item.id === options.observationId);
+  if (existingIndex >= 0 && !options.replace) {
+    throw new ProtocolError(`Observation already exists: ${options.observationId}; pass --replace to overwrite it`);
+  }
+  const executed = await executeCommand(options);
+  const observation = {
+    id: options.observationId,
+    kind: "command" as const,
+    cwd: executed.cwd,
+    argv: [...options.argv],
+    exit_code: executed.exit_code,
+    duration_ms: executed.duration_ms,
+    required: !(options.optional ?? false),
+    stdout_sha256: executed.stdout_sha256,
+    stderr_sha256: executed.stderr_sha256,
+    termination: executed.termination,
+    ...(executed.signal === undefined ? {} : { signal: executed.signal }),
+    stdout_bytes: executed.stdout_bytes,
+    stderr_bytes: executed.stderr_bytes,
+  };
+  const priorDuration = existingIndex >= 0 ? packet.observations[existingIndex]!.duration_ms : 0;
+  if (existingIndex >= 0) packet.observations[existingIndex] = observation;
+  else packet.observations.push(observation);
+  packet.known_failures = packet.known_failures.filter(
+    (failure) => !failure.startsWith("TEMPLATE:"),
+  );
+  packet.development.wall_ms += executed.duration_ms - priorDuration;
+  if (options.complete) packet.development.status = "completed";
+
+  const passed = executed.exit_code === 0 && executed.termination === "exited";
+  for (const probeId of options.probeIds ?? []) {
+    linkProbe(bundle, options.candidateId, options.observationId, probeId, passed);
+  }
+  for (const reference of options.requirementRefs ?? []) {
+    linkRequirement(bundle, options.candidateId, options.observationId, reference, passed);
+  }
+
+  await writeEvidenceBundle(evidencePath, bundle);
+  return {
+    candidate_id: options.candidateId,
+    observation_id: options.observationId,
+    exit_code: executed.exit_code,
+    duration_ms: executed.duration_ms,
+    termination: executed.termination,
+    stdout_bytes: executed.stdout_bytes,
+    stderr_bytes: executed.stderr_bytes,
+  };
+}
+
+export async function executeCommand(options: ExecuteCommandOptions): Promise<ExecutedCommand> {
   if (options.argv.length === 0 || options.argv[0]?.length === 0) {
     throw new InputError("Evidence command executable cannot be empty");
   }
@@ -114,13 +188,6 @@ export async function recordCommand(options: RecordCommandOptions): Promise<Reco
   const maxOutputBytes = options.maxOutputBytes ?? DEFAULT_MAX_OUTPUT_BYTES;
   if (!Number.isInteger(timeoutMs) || timeoutMs < 1) throw new InputError("timeout must be a positive integer");
   if (!Number.isInteger(maxOutputBytes) || maxOutputBytes < 1) throw new InputError("max output bytes must be a positive integer");
-
-  const { path: evidencePath, bundle } = await readEvidenceBundle(options.evidencePath);
-  const packet = evidencePacket(bundle, options.candidateId);
-  const existingIndex = packet.observations.findIndex((item) => item.id === options.observationId);
-  if (existingIndex >= 0 && !options.replace) {
-    throw new ProtocolError(`Observation already exists: ${options.observationId}; pass --replace to overwrite it`);
-  }
 
   const cwd = await safeWorkingDirectory(options.workspace ?? process.cwd(), options.cwd ?? ".");
   const started = performance.now();
@@ -148,52 +215,22 @@ export async function recordCommand(options: RecordCommandOptions): Promise<Reco
   }
 
   const errorCode = (child.error as NodeJS.ErrnoException | undefined)?.code;
-  const termination: RecordedCommand["termination"] = errorCode === "ETIMEDOUT"
+  const termination: ExecutedCommand["termination"] = errorCode === "ETIMEDOUT"
     ? "timed_out"
     : errorCode === "ENOBUFS"
       ? "buffer_exceeded"
       : child.error !== undefined
         ? "spawn_error"
         : "exited";
-  const exitCode = child.status ?? (termination === "timed_out" ? 124 : 127);
-  const observation = {
-    id: options.observationId,
-    kind: "command" as const,
-    cwd: cwd.relative,
+  return {
     argv: [...options.argv],
-    exit_code: exitCode,
+    cwd: cwd.relative,
+    exit_code: child.status ?? (termination === "timed_out" ? 124 : 127),
     duration_ms: durationMs,
-    required: !(options.optional ?? false),
-    stdout_sha256: digest(stdout),
-    stderr_sha256: digest(stderrBuffer),
     termination,
     ...(child.signal === null ? {} : { signal: child.signal }),
-    stdout_bytes: stdout.length,
-    stderr_bytes: stderrBuffer.length,
-  };
-  if (existingIndex >= 0) packet.observations[existingIndex] = observation;
-  else packet.observations.push(observation);
-  packet.known_failures = packet.known_failures.filter(
-    (failure) => !failure.startsWith("TEMPLATE:"),
-  );
-  packet.development.wall_ms += durationMs;
-  if (options.complete) packet.development.status = "completed";
-
-  const passed = exitCode === 0 && termination === "exited";
-  for (const probeId of options.probeIds ?? []) {
-    linkProbe(bundle, options.candidateId, options.observationId, probeId, passed);
-  }
-  for (const reference of options.requirementRefs ?? []) {
-    linkRequirement(bundle, options.candidateId, options.observationId, reference, passed);
-  }
-
-  await writeEvidenceBundle(evidencePath, bundle);
-  return {
-    candidate_id: options.candidateId,
-    observation_id: options.observationId,
-    exit_code: exitCode,
-    duration_ms: durationMs,
-    termination,
+    stdout_sha256: digest(stdout),
+    stderr_sha256: digest(stderrBuffer),
     stdout_bytes: stdout.length,
     stderr_bytes: stderrBuffer.length,
   };

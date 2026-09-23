@@ -173,10 +173,15 @@ Decide does not repeat those scores. It asks:
 ## Current boundaries
 
 - JevLoop is available as `jevrev loop create/next/audit/status/resume/abort`.
-  It has its own append-only event log and `jevrev.round-evidence` envelope;
-  the existing Sift evidence recorder does not write that envelope directly.
-- JevLong, automatic worktree creation, integration/merge automation, a web UI,
-  daemon, and MCP server remain deferred.
+  Its `loop evidence run/metric/artifact` commands fill the bound
+  `jevrev.round-evidence` envelope without advancing state; only `loop audit`
+  changes the Loop state.
+- JevLong is available as `jevrev long create/ingest/status/watch/loop-audit`. It accepts
+  JSONL from a host adapter or stdin. `long loop-audit` verifies a real Loop
+  directory and records its outcome in the observer journal without changing
+  Loop state. Automatic worktree
+  creation, integration/merge automation, a web UI, daemon, and MCP server
+  remain deferred.
 
 JevLoop reuses the same evidence-first trust model, but does not silently turn
 the stateless Sift recorder into a long-running agent controller.

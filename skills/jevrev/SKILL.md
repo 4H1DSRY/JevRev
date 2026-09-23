@@ -1,20 +1,24 @@
 ---
 name: jevrev
-description: Use JevSift to narrow competing mechanisms, run bounded probes, decide from recorded evidence, and run JevLoop as a bounded audit checkpoint for one evolving result.
+description: Use JevRev beside an LLM: JevSift narrows competing mechanisms, JevLoop audits one evolving result, and JevLong observes a long-running session without driving it.
 ---
 
-# JevRev / JevSift
+# JevRev: Sift, Loop, Long
 
-JevRev is the umbrella CLI. The currently implemented layers are:
+JevRev has three product components and a shared evidence protocol:
 
 - **JevSift**: `jevrev sift` (with `run`/`rank` compatibility aliases). It
   filters proposal cards and writes probe work orders. It does not prove code.
-- **Probe/Decide**: `jevrev decide`. It checks evidence and asks Jev about
-  evidence sufficiency and residual risk.
-- **JevLoop** is implemented as an explicit human-controlled round protocol.
-  Use `jevrev loop create`, `loop next`, `loop audit`, and `loop status` when
-  one artifact should improve over multiple agent rounds. It never launches or
-  drives the agent. **JevLong** is not implemented; do not invent its commands.
+- **JevLoop**: `jevrev loop`. It owns one evolving artifact and one active
+  round. The host agent executes the work order; Loop records and audits the
+  result. It never launches or drives the agent.
+- **JevLong**: `jevrev long`. It observes a long-running session from JSONL
+  events, reports stalls, failure loops, drift, and budget risk, and leaves
+  intervention to a human. It is not a daemon and does not drive the agent.
+
+`Probe`, `Evidence`, and `Decide` are shared infrastructure. They are how the
+host agent performs work, records facts, and lets Jev answer narrow questions
+inside Sift and Loop; they are not separate product components.
 
 ## When to use it
 
@@ -32,9 +36,37 @@ Use JevLoop when one implementation should improve over several bounded rounds
 and each round can return fresh command, metric, or artifact evidence. Freeze the
 contract first, let the host agent execute the work order, and submit the
 resulting `jevrev.round-evidence`. Start with `jevrev loop evidence-template`
-when creating the envelope. For judged criteria use `--provider jev`,
+when creating the envelope. Use `jevrev loop evidence run`, `metric`, and
+`artifact` to fill it with recorded facts; only `jevrev loop audit` advances the
+Loop. For judged criteria use `--provider jev`,
 `--provider local`, `--provider semif`, or `--replay`; hard-only loops need no
 provider.
+
+Use JevLong when the host agent or harness will run for long enough that stalls,
+repeated failures, scope drift, or budget burn need a second pair of eyes. Start
+the observer with `jevrev long create`, feed normalized events with
+`jevrev long ingest --input events.jsonl` (or
+`... | jevrev long ingest --input -`), and keep a human cockpit open with
+`jevrev long watch`. After a Loop audit, record the
+bridge event with all of the Loop-owned identifiers and digests:
+
+```bash
+jevrev long loop-audit \
+  --directory .jevrev/long \
+  --loop-directory .jevrev/loop \
+  --loop-id <loop-id> \
+  --round <round-number> \
+  --work-order-sha256 <work-order-sha256> \
+  --outcome <outcome> \
+  --evidence-sha256 <evidence-sha256>
+```
+
+Take these values from the actual `jevrev loop next` and `jevrev loop audit`
+outputs. `<outcome>` must be one of `continue`, `fix_regression`, `verify`,
+`replan`, `waiting_human`, `budget_paused`, or `completed`. The bridge verifies
+the Loop event and digests before granting the
+observation `recorded` provenance; it never accepts a caller-supplied outcome
+for a round that is absent from the Loop event log.
 
 ## Host-agent contract
 

@@ -190,7 +190,7 @@ async function acquireLock(directory: string): Promise<Awaited<ReturnType<typeof
   throw new InputError(`Long store is being updated: ${directory}`);
 }
 
-export async function ingestLongBatch(directoryInput: string, drafts: readonly LongEventDraft[], options: { receivedAt?: Date } = {}): Promise<{ snapshot: LongJournalHead; accepted: LongJournalEvent[]; duplicate_event_ids: string[] }> {
+async function ingestLongBatchInternal(directoryInput: string, drafts: readonly LongEventDraft[], options: { receivedAt?: Date; allowRecorded: boolean }): Promise<{ snapshot: LongJournalHead; accepted: LongJournalEvent[]; duplicate_event_ids: string[] }> {
   if (drafts.length > 256) throw new InputError("Long ingest batch exceeds 256 events");
   const directory = resolve(directoryInput);
   const lock = await acquireLock(directory);
@@ -213,7 +213,7 @@ export async function ingestLongBatch(directoryInput: string, drafts: readonly L
     if (!Number.isFinite(receivedAt.getTime())) throw new InputError("Long ingest receivedAt is invalid");
     const receivedIso = receivedAt.toISOString();
     for (const draft of drafts) {
-      if (draft.source === "recorded") throw new ProtocolError("Long ingest cannot submit recorded events");
+      if (draft.source === "recorded" && options.allowRecorded !== true) throw new ProtocolError("Long ingest cannot submit recorded events");
       const payload = longEventSchema.parse({ ...draft, received_at: receivedIso, sequence: sequence + 1 });
       if (payload.session_id !== spec.session_id || payload.spec_revision !== spec.revision || payload.spec_sha256 !== longHash(spec)) throw new ProtocolError("Long event does not match the frozen spec");
       if (Date.parse(payload.occurred_at) > receivedAt.getTime() + spec.thresholds.max_clock_skew_ms) throw new ProtocolError("Long event occurred_at is too far in the future");
@@ -264,6 +264,14 @@ export async function ingestLongBatch(directoryInput: string, drafts: readonly L
     await lock.close();
     await unlink(join(directory, LOCK_NAME)).catch(() => undefined);
   }
+}
+
+export async function ingestLongBatch(directoryInput: string, drafts: readonly LongEventDraft[], options: { receivedAt?: Date } = {}): Promise<{ snapshot: LongJournalHead; accepted: LongJournalEvent[]; duplicate_event_ids: string[] }> {
+  return ingestLongBatchInternal(directoryInput, drafts, { ...options, allowRecorded: false });
+}
+
+export async function ingestRecordedLongBatch(directoryInput: string, drafts: readonly LongEventDraft[], options: { receivedAt?: Date } = {}): Promise<{ snapshot: LongJournalHead; accepted: LongJournalEvent[]; duplicate_event_ids: string[] }> {
+  return ingestLongBatchInternal(directoryInput, drafts, { ...options, allowRecorded: true });
 }
 
 function processAlive(pid: number): boolean {

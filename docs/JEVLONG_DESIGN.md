@@ -363,14 +363,16 @@ the command represented by an event.
 
 The shipped path is A-D, F-G, and H: deterministic normalization, storage,
 signals, policy, rendering, and JSONL CLI. Module E (Jev observer), retention
-segments, alert acknowledgement/close commands, and the Loop bridge remain
-explicit follow-up work. This keeps ordinary healthy events local, cheap, and
-timely.
+segments, and alert acknowledgement/close commands remain explicit follow-up
+work. The shipped `long loop-audit` command provides the minimal Loop bridge;
+it records an audit outcome for observation and never mutates Loop state. This
+keeps ordinary healthy events local, cheap, and timely.
 
 ## 6. Loop bridge
 
-Long may observe Loop, but the ownership remains separate. A Loop bridge event
-can include:
+Long may observe Loop, but the ownership remains separate. The shipped
+`long loop-audit` command verifies the named Loop directory and writes a bridge
+event containing:
 
 ```text
 loop_id, round_number, work_order_sha256, audit_outcome, evidence_sha256
@@ -379,7 +381,8 @@ loop_id, round_number, work_order_sha256, audit_outcome, evidence_sha256
 Long can display “round 3 audited: fix_regression” and raise a stall or budget
 alert. It must not call `loop next`, mutate Loop state, or reinterpret a Loop
 audit as session completion. JevLoop remains the source of truth for round
-semantics.
+semantics. The command requires `--loop-directory` and rejects copied or stale
+digests; a caller cannot mark an arbitrary Loop audit as trusted.
 
 ## 7. State and alert semantics
 
