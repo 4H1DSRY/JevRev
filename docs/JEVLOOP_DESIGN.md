@@ -24,6 +24,8 @@ own a worktree, or merge code. A host agent calls it between bounded rounds.
   current head; an externally imported exit-code claim cannot complete it.
 - One batched set of narrow Jev questions for the judged criteria in an audit.
   No default mesh, model-driven autonomous agent, TUI, or background daemon.
+- `loop create` creates missing parent directories but requires the final store
+  path to be unused, so an existing run cannot be overwritten.
 - `loop evidence-template` creates the Loop envelope. The Loop-specific
   `loop evidence run/metric/artifact` commands fill it with recorded command,
   metric, and artifact facts; they do not advance Loop state. The older Sift

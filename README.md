@@ -94,6 +94,9 @@ JevLong observes a long-running agent session and reports stalls, repeated
 failures, drift, tool-call problems, budget risk, and progress to a human. It
 does not silently steer, retry, edit, or kill the agent.
 
+`long watch` is the live terminal cockpit. For scripts and machine-readable
+output, use `long status --format json`; `watch` does not accept `--format`.
+
 The result is a simple split: the LLM does the expensive creative work, while
 JevRev prevents the workflow from repeatedly paying for bad directions.
 

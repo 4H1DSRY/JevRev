@@ -24,6 +24,14 @@ function draft(id: string, value = 1) {
 }
 
 describe("JevLong event store", () => {
+  it("creates missing parent directories but keeps the requested store path exclusive", async () => {
+    const root = mkdtempSync(join(tmpdir(), "jevrev-long-nested-")); roots.push(root);
+    const directory = join(root, "state", "sessions", "run-1");
+    await createLongStore(directory, spec);
+    expect((await loadLongStore(directory)).snapshot.sequence).toBe(0);
+    await expect(createLongStore(directory, spec)).rejects.toThrow("must not already exist");
+  });
+
   it("creates, appends a batch, and reloads the verified chain", async () => {
     const directory = await fixture();
     const trustedReceive = new Date("2026-09-22T12:00:00.500Z");
