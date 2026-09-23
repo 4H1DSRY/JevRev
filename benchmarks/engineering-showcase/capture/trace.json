@@ -1,0 +1,216 @@
+{
+  "case": "tenant-safe-idempotency",
+  "loop_id": "jvl_c51cbedce6d0121e",
+  "long_session_id": "jvlng_964f7c5c44c98161",
+  "spec_sha256": "9a0c1d5e957bd418678f84bf0b7bb1fd022028f3c4aaa9013ab94b17551a782e",
+  "baseline_revision": "sha256:76b2741f0ab815a82a9a019d75c9d23125e7838d156651f6002228a0227a7ae8",
+  "rounds": [
+    {
+      "number": 1,
+      "mode": "progress",
+      "source_revision": "sha256:76b2741f0ab815a82a9a019d75c9d23125e7838d156651f6002228a0227a7ae8",
+      "checks": [
+        {
+          "id": "tenant",
+          "case": "tenant",
+          "deliveries": [
+            {
+              "tenant": "north",
+              "eventId": "invoice-42",
+              "expected": "north:accepted",
+              "observed": "north:accepted",
+              "passed": true
+            },
+            {
+              "tenant": "south",
+              "eventId": "invoice-42",
+              "expected": "south:accepted",
+              "observed": "north:accepted",
+              "passed": false
+            }
+          ],
+          "passed": false,
+          "exit_code": 1,
+          "stdout_sha256": "dcca25a62d8c0ccfe0af6d3f116edd41949aa0540f76e38eddcf96ce4413702f"
+        },
+        {
+          "id": "race",
+          "case": "race",
+          "event": {
+            "tenant": "north",
+            "eventId": "invoice-42"
+          },
+          "results": [
+            "accepted",
+            "accepted"
+          ],
+          "calls": 2,
+          "expectedCalls": 1,
+          "passed": false,
+          "exit_code": 1,
+          "stdout_sha256": "09840f969a635a1c0bfd485276edc836f1dac65db4bba89ffb5faf24293f52f9"
+        },
+        {
+          "id": "retry",
+          "case": "retry",
+          "event": {
+            "tenant": "north",
+            "eventId": "invoice-42"
+          },
+          "firstFailed": true,
+          "second": "accepted",
+          "calls": 2,
+          "expectedCalls": 2,
+          "passed": true,
+          "exit_code": 0,
+          "stdout_sha256": "8154071363b906900fcf90a7c7b090b9b3cece2005f0216b24c22649c4234e92"
+        }
+      ],
+      "outcome": "fix_regression",
+      "blocking_criteria": [
+        "tenant",
+        "race"
+      ],
+      "next_action": "fix_regression",
+      "evidence_sha256": "de001bb214a0339c5ee9d3b354a7839da84baa5ef494b31b077e514300e1f5b6"
+    },
+    {
+      "number": 2,
+      "mode": "fix_regression",
+      "source_revision": "sha256:b36573509f7d7c75614a3c0b6c24e4a04969b9e5254d78912abddd2598f9c1b1",
+      "checks": [
+        {
+          "id": "tenant",
+          "case": "tenant",
+          "deliveries": [
+            {
+              "tenant": "north",
+              "eventId": "invoice-42",
+              "expected": "north:accepted",
+              "observed": "north:accepted",
+              "passed": true
+            },
+            {
+              "tenant": "south",
+              "eventId": "invoice-42",
+              "expected": "south:accepted",
+              "observed": "south:accepted",
+              "passed": true
+            }
+          ],
+          "passed": true,
+          "exit_code": 0,
+          "stdout_sha256": "40e0a8020b13fbd493e4deca909c46030d8feafc66f5aa5308ef29c8b846f2e7"
+        },
+        {
+          "id": "race",
+          "case": "race",
+          "event": {
+            "tenant": "north",
+            "eventId": "invoice-42"
+          },
+          "results": [
+            "accepted",
+            "accepted"
+          ],
+          "calls": 1,
+          "expectedCalls": 1,
+          "passed": true,
+          "exit_code": 0,
+          "stdout_sha256": "c204f54a6bebae1e97b3e96459bc7f8fc119164d9b15ff849c38ab05f130a0a0"
+        },
+        {
+          "id": "retry",
+          "case": "retry",
+          "event": {
+            "tenant": "north",
+            "eventId": "invoice-42"
+          },
+          "firstFailed": true,
+          "second": "accepted",
+          "calls": 2,
+          "expectedCalls": 2,
+          "passed": true,
+          "exit_code": 0,
+          "stdout_sha256": "8154071363b906900fcf90a7c7b090b9b3cece2005f0216b24c22649c4234e92"
+        }
+      ],
+      "outcome": "verify",
+      "blocking_criteria": [],
+      "next_action": "verify",
+      "evidence_sha256": "38d07d089a29abaf14a9f4a89c082cf1870442714c3722e5fe2672fc47b5d636"
+    },
+    {
+      "number": 3,
+      "mode": "completion",
+      "source_revision": "sha256:b36573509f7d7c75614a3c0b6c24e4a04969b9e5254d78912abddd2598f9c1b1",
+      "checks": [
+        {
+          "id": "tenant",
+          "case": "tenant",
+          "deliveries": [
+            {
+              "tenant": "north",
+              "eventId": "invoice-42",
+              "expected": "north:accepted",
+              "observed": "north:accepted",
+              "passed": true
+            },
+            {
+              "tenant": "south",
+              "eventId": "invoice-42",
+              "expected": "south:accepted",
+              "observed": "south:accepted",
+              "passed": true
+            }
+          ],
+          "passed": true,
+          "exit_code": 0,
+          "stdout_sha256": "40e0a8020b13fbd493e4deca909c46030d8feafc66f5aa5308ef29c8b846f2e7"
+        },
+        {
+          "id": "race",
+          "case": "race",
+          "event": {
+            "tenant": "north",
+            "eventId": "invoice-42"
+          },
+          "results": [
+            "accepted",
+            "accepted"
+          ],
+          "calls": 1,
+          "expectedCalls": 1,
+          "passed": true,
+          "exit_code": 0,
+          "stdout_sha256": "c204f54a6bebae1e97b3e96459bc7f8fc119164d9b15ff849c38ab05f130a0a0"
+        },
+        {
+          "id": "retry",
+          "case": "retry",
+          "event": {
+            "tenant": "north",
+            "eventId": "invoice-42"
+          },
+          "firstFailed": true,
+          "second": "accepted",
+          "calls": 2,
+          "expectedCalls": 2,
+          "passed": true,
+          "exit_code": 0,
+          "stdout_sha256": "8154071363b906900fcf90a7c7b090b9b3cece2005f0216b24c22649c4234e92"
+        }
+      ],
+      "outcome": "completed",
+      "blocking_criteria": [],
+      "next_action": "stop_success",
+      "evidence_sha256": "8259bc58348f0d0100aa2bc261bd8b88ceb8269323fcd64873e0fd5cd2dbf7d7"
+    }
+  ],
+  "loop_event_count": 7,
+  "loop_event_head_sha256": "b6d0ab1befea3022b3598d2b5964c64a07987767e45b04b80575ae2c6496f23e",
+  "long_event_count": 3,
+  "long_event_head_sha256": "6d0dad0b825948bcc96370bfe57db6987d50c262bb3dd49b50b8bd78a2a65f02",
+  "tampered_bridge_rejected": true,
+  "duplicate_bridge_suppressed": true
+}

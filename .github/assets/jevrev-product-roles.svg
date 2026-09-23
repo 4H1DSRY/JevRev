@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="308" viewBox="0 0 680 308" role="img" aria-labelledby="title desc">
+  <title id="title">JevRev product roles around a host agent</title>
+  <desc id="desc">JevSift selects bounded paths before implementation. JevLoop audits one artifact between agent rounds. Both use Probe, Evidence, and Decide contracts. JevLong watches normalized session events and alerts a human without controlling the agent.</desc>
+  <style>
+    .paper { fill: #f4f1e9; }
+    .ink { fill: #232620; }
+    .muted { fill: #55594f; }
+    .line { stroke: #929486; stroke-width: 1.5; }
+    .strong { stroke: #232620; stroke-width: 2; }
+    text { font-family: Arial, Helvetica, sans-serif; }
+    .small { font-size: 17px; letter-spacing: 1.1px; font-weight: 700; }
+    .body { font-size: 21px; }
+    .role { font-size: 29px; font-weight: 700; }
+    @media (prefers-color-scheme: dark) {
+      .paper { fill: #1b1e1a; }
+      .ink { fill: #eee9dc; }
+      .muted { fill: #c0bdae; }
+      .line { stroke: #797e70; }
+      .strong { stroke: #eee9dc; }
+    }
+  </style>
+  <rect class="paper" width="680" height="308"/>
+  <text x="28" y="39" class="body ink">The host agent proposes, executes, and records.</text>
+  <path class="strong" d="M28 55H652"/>
+  <text x="28" y="88" class="small muted">BEFORE WORK</text>
+  <text x="250" y="88" class="small muted">BETWEEN ROUNDS</text>
+  <text x="480" y="88" class="small muted">ACROSS SESSION</text>
+  <text x="28" y="126" class="role ink">JevSift</text>
+  <text x="250" y="126" class="role ink">JevLoop</text>
+  <text x="480" y="126" class="role ink">JevLong</text>
+  <text x="28" y="159" class="body ink">select probe paths</text>
+  <text x="250" y="159" class="body ink">audit one artifact</text>
+  <text x="480" y="159" class="body ink">observe events</text>
+  <path class="line" d="M28 182H652M232 75V181M462 75V181"/>
+  <text x="28" y="217" class="small muted">SHARED BY SIFT + LOOP</text>
+  <text x="480" y="217" class="small muted">READ ONLY</text>
+  <text x="28" y="252" class="body ink">Probe · Evidence · Decide</text>
+  <text x="480" y="252" class="body ink">alerts a human</text>
+  <path class="line" d="M28 270H445M480 270H652"/>
+  <text x="28" y="294" class="small muted">contracts, not additional agents</text>
+  <text x="480" y="294" class="small muted">never steers the run</text>
+</svg>

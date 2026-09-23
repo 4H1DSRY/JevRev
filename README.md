@@ -1,15 +1,15 @@
 # JevRev
 
 <p align="center">
-  <img src=".github/assets/jevrev-banner.png" alt="JevRev" width="100%" />
+  <img src=".github/assets/jevrev-banner.png" alt="JevRev wordmark with skull illustration" width="620" />
 </p>
 
 <p align="center"><strong>The decision layer beside your LLM.</strong></p>
 
 <p align="center">
-  <a href="https://github.com/Alex314618-create/JevRev/releases"><img alt="Latest release" src="https://img.shields.io/github/v/release/Alex314618-create/JevRev?style=flat-square" /></a>
-  <a href="package.json"><img alt="Node.js 20 or newer" src="https://img.shields.io/badge/Node.js-%3E%3D20-339933?style=flat-square&amp;logo=nodedotjs&amp;logoColor=white" /></a>
-  <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/License-MIT-F4C430?style=flat-square" /></a>
+  <a href="https://github.com/Alex314618-create/JevRev/releases"><img alt="Latest release" src="https://img.shields.io/github/v/release/Alex314618-create/JevRev?style=flat-square&amp;color=555555&amp;labelColor=333333" /></a>
+  <a href="package.json"><img alt="Node.js 20 or newer" src="https://img.shields.io/badge/Node.js-%3E%3D20-555555?style=flat-square&amp;labelColor=333333" /></a>
+  <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/License-MIT-555555?style=flat-square&amp;labelColor=333333" /></a>
 </p>
 
 > Shortlist the options. Score in a loop. Watch the run.
@@ -17,25 +17,12 @@
 Your LLM can imagine, write, test, and revise. It should not have to make every
 cheap routing decision by itself.
 
-JevRev puts Jev beside the LLM: a fast, low-cost semantic layer that filters
+JevRev puts Jev beside the LLM: a semantic layer that filters
 plans, checks progress, and keeps attention on the work worth continuing. The
 LLM supplies breadth and implementation power. JevRev supplies the second look
 before more time and tokens are spent.
 
-```text
-LLM + agent
-    |
-    +--> JevSift  ------------ choose the paths worth trying
-    |
-    +--> JevLoop  ------------ improve one artifact, round by round
-    |       host agent probes -> evidence recorder -> Jev audit -> next action
-    |
-    +--> JevLong ------------- watch the long-running session
-```
-
 That is JevRev: not another coding agent, but the decision system around one.
-`Probe`, `Evidence`, and `Decide` are the shared protocol and infrastructure
-underneath these three parts, not extra products.
 
 ## See the idea
 
@@ -44,7 +31,10 @@ regex shortcut and a more careful state machine. The shortcut wins the paper
 ranking, then fails the correctness check. The state machine is slower, passes
 the same checks, and becomes the evidence winner.
 
-![JevRev routes a paper favorite through correctness evidence and keeps the verified implementation.](.github/assets/jevrev-decision-gate.svg)
+<picture>
+  <source media="(max-width: 600px)" srcset=".github/assets/jevrev-decision-gate-mobile.svg">
+  <img src=".github/assets/jevrev-decision-gate.svg" alt="The paper favorite regex shortcut fails required correctness; the second-ranked state machine passes and wins after both receive the same probes.">
+</picture>
 
 Run the complete case:
 
@@ -70,7 +60,17 @@ Evidence winner: indexed-state-machine
 Decision: winner -> integrate_winner
 ```
 
+Inspect the [executed probe](benchmarks/workflow-fixture/probe.mjs),
+[demo driver](scripts/run-workflow-demo.mjs), and
+[decision tests](tests/workflow-decide.test.ts). The measured throughput varies
+by machine; the required correctness failure is what reverses the ranking.
+
 ## The three parts
+
+<picture>
+  <source media="(max-width: 600px)" srcset=".github/assets/jevrev-product-roles-mobile.svg">
+  <img src=".github/assets/jevrev-product-roles.svg" alt="JevSift selects paths, JevLoop audits one artifact, and read-only JevLong watches the session. Probe, Evidence, and Decide are shared contracts.">
+</picture>
 
 ### JevSift: choose the work
 
@@ -141,12 +141,16 @@ node dist/cli.js sift --input proposals.json --replay examples/parser-jev-respon
 JevRev keeps the decision boundary the same whether Jev is hosted, local, or
 replayed:
 
+Hosted Jev in a POSIX shell:
+
 ```bash
-# Hosted Jev
 export JEVREV_JEV_API_KEY="..."
 node dist/cli.js sift --input proposals.json --provider jev
+```
 
-# Local SemIf through llama.cpp
+Local SemIf through llama.cpp on Windows:
+
+```powershell
 powershell -ExecutionPolicy Bypass -File scripts/start-semif.ps1 -Background
 node dist/cli.js sift --input proposals.json --provider semif
 ```
@@ -172,6 +176,9 @@ the same brief: a conventional first pass and a JevRev-routed evidence dossier.
 
 The point is not a magic visual score. It is that the route chosen by Jev can
 change the artifact's structure, evidence, and final direction together.
+See the [source pages](benchmarks/one-shot-showcase/README.md) and their
+[validation record](benchmarks/one-shot-showcase/VALIDATION.md) before comparing
+the screenshots.
 
 ## Read next
 
@@ -191,6 +198,8 @@ npm test
 npm run build
 npm run demo:all
 npm run demo:workflow
+npm run demo:loop
+npm run demo:engineering
 ```
 
 Node.js 20 or newer is required. JevRev is MIT licensed.

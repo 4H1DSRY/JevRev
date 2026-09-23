@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="315" viewBox="0 0 680 315" role="img" aria-labelledby="title desc">
+  <title id="title">Three recorded JevLoop audits of the delimiter scanner</title>
+  <desc id="desc">Round one records the passing correctness command but has no benchmark command, so Loop continues. Round two records both commands, so Loop requests verification. Round three reruns both commands on the same source revision; the full completion audit returns completed.</desc>
+  <style>
+    .paper { fill: #f4f1e9; }
+    .ink { fill: #232620; }
+    .muted { fill: #55594f; }
+    .line { stroke: #929486; stroke-width: 1.5; }
+    .strong { stroke: #232620; stroke-width: 2; }
+    text { font-family: Arial, Helvetica, sans-serif; }
+    .mono { font-family: Consolas, 'Courier New', monospace; }
+    .small { font-size: 17px; letter-spacing: 1px; font-weight: 700; }
+    .body { font-size: 20px; }
+    .outcome { font-size: 23px; font-weight: 700; }
+    @media (prefers-color-scheme: dark) {
+      .paper { fill: #1b1e1a; }
+      .ink { fill: #eee9dc; }
+      .muted { fill: #c0bdae; }
+      .line { stroke: #797e70; }
+      .strong { stroke: #eee9dc; }
+    }
+  </style>
+  <rect class="paper" width="680" height="315"/>
+  <text x="28" y="39" class="body ink">One scanner revision. Three evidence audits.</text>
+  <path class="strong" d="M28 55H652"/>
+  <text x="28" y="83" class="small muted">ROUND</text>
+  <text x="133" y="83" class="small muted">RECORDED EVIDENCE</text>
+  <text x="515" y="83" class="small muted">AUDIT</text>
+  <path class="line" d="M28 95H652M28 163H652M28 216H652M28 269H652"/>
+  <text x="28" y="135" class="outcome mono ink">01</text>
+  <text x="133" y="123" class="body ink">correctness passed</text>
+  <text x="133" y="146" class="small muted">benchmark still missing</text>
+  <text x="515" y="135" class="outcome ink">continue</text>
+  <text x="28" y="198" class="outcome mono ink">02</text>
+  <text x="133" y="196" class="body ink">both commands recorded</text>
+  <text x="515" y="198" class="outcome ink">verify</text>
+  <text x="28" y="251" class="outcome mono ink">03</text>
+  <text x="133" y="249" class="body ink">both commands rerun</text>
+  <text x="515" y="251" class="outcome ink">completed</text>
+  <text x="28" y="299" class="small muted">A separate full audit requires fresh evidence on the current head.</text>
+</svg>

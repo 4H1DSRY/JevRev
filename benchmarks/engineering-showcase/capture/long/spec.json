@@ -1,0 +1,43 @@
+{
+  "kind": "jevrev.long-spec",
+  "schema_version": "1",
+  "revision": 1,
+  "session_id": "jvlng_964f7c5c44c98161",
+  "title": "Idempotency repair observer",
+  "goal": "Observe verified Loop audit outcomes without editing the ledger",
+  "workspace": ".",
+  "allowed_scope": [
+    "ledger.mjs"
+  ],
+  "protected_surfaces": [],
+  "milestones": [],
+  "budget": {
+    "max_wall_ms": 600000,
+    "max_provider_tokens": 1000,
+    "max_tool_calls": 100
+  },
+  "thresholds": {
+    "stall_after_ms": 60000,
+    "heartbeat_after_ms": 30000,
+    "repeated_failure_window": 60000,
+    "repeated_failure_count": 2,
+    "drift_warning_score": 0.5,
+    "budget_warning_fraction": 0.8,
+    "max_clock_skew_ms": 5000
+  },
+  "alert_policy": {
+    "cooldown_ms": 1000,
+    "max_open_alerts": 16,
+    "max_alert_history": 64,
+    "severity_escalation_window": 60000
+  },
+  "observer_budget": {
+    "provider": "none",
+    "max_calls": 0,
+    "max_tokens": 0,
+    "max_wall_ms": 0,
+    "timeout_ms": 1000,
+    "min_interval_ms": 1000,
+    "max_context_bytes": 4000
+  }
+}

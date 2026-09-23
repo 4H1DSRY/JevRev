@@ -1,0 +1,11 @@
+{
+  "session_id": "jvlng_964f7c5c44c98161",
+  "spec_revision": 1,
+  "spec_sha256": "4d565e119c9a656efb874805e867bc0d5cc6b43c5fc41cc5fdb034322c9c0f3d",
+  "sequence": 3,
+  "event_count": 3,
+  "last_event_at": "2026-09-23T05:18:22.882Z",
+  "last_event_sha256": "6d0dad0b825948bcc96370bfe57db6987d50c262bb3dd49b50b8bd78a2a65f02",
+  "journal_bytes": 3026,
+  "dedupe_bytes": 546
+}

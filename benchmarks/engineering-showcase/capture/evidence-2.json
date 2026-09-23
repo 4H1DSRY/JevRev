@@ -1,0 +1,90 @@
+{
+  "kind": "jevrev.round-evidence",
+  "schema_version": "1",
+  "loop_id": "jvl_c51cbedce6d0121e",
+  "round_number": 2,
+  "spec_sha256": "9a0c1d5e957bd418678f84bf0b7bb1fd022028f3c4aaa9013ab94b17551a782e",
+  "work_order_sha256": "222ce2be0c8bfd639156389152f324cf8a8d23ac7acec5e94f61dadb562c3d6f",
+  "base_revision": "sha256:76b2741f0ab815a82a9a019d75c9d23125e7838d156651f6002228a0227a7ae8",
+  "head_revision": "sha256:b36573509f7d7c75614a3c0b6c24e4a04969b9e5254d78912abddd2598f9c1b1",
+  "wall_ms": 308,
+  "provider_tokens": 0,
+  "changed_files": [
+    "ledger.mjs"
+  ],
+  "observations": [
+    {
+      "id": "tenant",
+      "exit_code": 0,
+      "duration_ms": 107,
+      "head_revision": "sha256:b36573509f7d7c75614a3c0b6c24e4a04969b9e5254d78912abddd2598f9c1b1",
+      "termination": "exited",
+      "source": "recorded",
+      "stdout_sha256": "40e0a8020b13fbd493e4deca909c46030d8feafc66f5aa5308ef29c8b846f2e7",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "id": "race",
+      "exit_code": 0,
+      "duration_ms": 99,
+      "head_revision": "sha256:b36573509f7d7c75614a3c0b6c24e4a04969b9e5254d78912abddd2598f9c1b1",
+      "termination": "exited",
+      "source": "recorded",
+      "stdout_sha256": "c204f54a6bebae1e97b3e96459bc7f8fc119164d9b15ff849c38ab05f130a0a0",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "id": "retry",
+      "exit_code": 0,
+      "duration_ms": 102,
+      "head_revision": "sha256:b36573509f7d7c75614a3c0b6c24e4a04969b9e5254d78912abddd2598f9c1b1",
+      "termination": "exited",
+      "source": "recorded",
+      "stdout_sha256": "8154071363b906900fcf90a7c7b090b9b3cece2005f0216b24c22649c4234e92",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "metrics": [],
+  "artifact_evaluations": [],
+  "criterion_results": [
+    {
+      "id": "tenant",
+      "status": "pass",
+      "freshness": "fresh",
+      "source_round": 2,
+      "head_revision": "sha256:b36573509f7d7c75614a3c0b6c24e4a04969b9e5254d78912abddd2598f9c1b1",
+      "observation_ids": [
+        "tenant"
+      ],
+      "metric_ids": [],
+      "artifact_evaluation_ids": []
+    },
+    {
+      "id": "race",
+      "status": "pass",
+      "freshness": "fresh",
+      "source_round": 2,
+      "head_revision": "sha256:b36573509f7d7c75614a3c0b6c24e4a04969b9e5254d78912abddd2598f9c1b1",
+      "observation_ids": [
+        "race"
+      ],
+      "metric_ids": [],
+      "artifact_evaluation_ids": []
+    },
+    {
+      "id": "retry",
+      "status": "pass",
+      "freshness": "fresh",
+      "source_round": 2,
+      "head_revision": "sha256:b36573509f7d7c75614a3c0b6c24e4a04969b9e5254d78912abddd2598f9c1b1",
+      "observation_ids": [
+        "retry"
+      ],
+      "metric_ids": [],
+      "artifact_evaluation_ids": []
+    }
+  ],
+  "protected_surface_results": [],
+  "known_failures": [],
+  "builder_notes": "Host copied the repaired candidate into the same ledger artifact."
+}

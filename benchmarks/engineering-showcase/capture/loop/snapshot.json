@@ -1,0 +1,110 @@
+{
+  "sequence": 7,
+  "event_sha256": "b6d0ab1befea3022b3598d2b5964c64a07987767e45b04b80575ae2c6496f23e",
+  "state": {
+    "loop_id": "jvl_c51cbedce6d0121e",
+    "spec_revision": 1,
+    "spec_sha256": "9a0c1d5e957bd418678f84bf0b7bb1fd022028f3c4aaa9013ab94b17551a782e",
+    "status": "completed",
+    "last_round": 3,
+    "active_order": null,
+    "last_audit": {
+      "kind": "jevrev.round-audit-result",
+      "schema_version": "1",
+      "loop_id": "jvl_c51cbedce6d0121e",
+      "round_number": 3,
+      "audit_mode": "completion",
+      "outcome": "completed",
+      "criteria": [
+        {
+          "id": "tenant",
+          "status": "pass",
+          "score": 1,
+          "confidence": 1,
+          "source": "command",
+          "freshness": "fresh"
+        },
+        {
+          "id": "race",
+          "status": "pass",
+          "score": 1,
+          "confidence": 1,
+          "source": "command",
+          "freshness": "fresh"
+        },
+        {
+          "id": "retry",
+          "status": "pass",
+          "score": 1,
+          "confidence": 1,
+          "source": "command",
+          "freshness": "fresh"
+        }
+      ],
+      "blocking_criteria": [],
+      "next_action": {
+        "type": "stop_success",
+        "focus_criteria": [],
+        "reason": "All criteria and protected surfaces pass with fresh evidence"
+      },
+      "material_progress": false,
+      "evidence_sha256": "8259bc58348f0d0100aa2bc261bd8b88ceb8269323fcd64873e0fd5cd2dbf7d7",
+      "spec_sha256": "9a0c1d5e957bd418678f84bf0b7bb1fd022028f3c4aaa9013ab94b17551a782e",
+      "provider_profile": "deterministic",
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      }
+    },
+    "cumulative_wall_ms": 904,
+    "cumulative_provider_tokens": 0,
+    "plateau_replans": 0,
+    "consecutive_stalled": 1,
+    "head_revision": "sha256:b36573509f7d7c75614a3c0b6c24e4a04969b9e5254d78912abddd2598f9c1b1"
+  },
+  "spec": {
+    "kind": "jevrev.loop-spec",
+    "schema_version": "1",
+    "revision": 1,
+    "title": "Tenant-safe idempotency ledger",
+    "goal": "Repair a single in-memory event ledger so tenants are isolated, concurrent duplicates share one execution, and failed work can retry",
+    "workspace": ".",
+    "criteria": [
+      {
+        "id": "tenant",
+        "type": "hard",
+        "description": "The same event ID in different tenants has independent outcomes",
+        "required_commands": [
+          "tenant"
+        ]
+      },
+      {
+        "id": "race",
+        "type": "hard",
+        "description": "Concurrent delivery of one event runs its handler once",
+        "required_commands": [
+          "race"
+        ]
+      },
+      {
+        "id": "retry",
+        "type": "hard",
+        "description": "A failed attempt does not poison a later retry",
+        "required_commands": [
+          "retry"
+        ]
+      }
+    ],
+    "protected_surfaces": [],
+    "budget": {
+      "per_round_wall_ms": 120000,
+      "per_round_changed_files": 1,
+      "pause_total_wall_ms": 600000,
+      "pause_total_provider_tokens": 1000
+    },
+    "plateau": {
+      "window": 3,
+      "min_material_delta": 0.01
+    }
+  }
+}

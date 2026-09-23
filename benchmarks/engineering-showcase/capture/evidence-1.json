@@ -1,0 +1,88 @@
+{
+  "kind": "jevrev.round-evidence",
+  "schema_version": "1",
+  "loop_id": "jvl_c51cbedce6d0121e",
+  "round_number": 1,
+  "spec_sha256": "9a0c1d5e957bd418678f84bf0b7bb1fd022028f3c4aaa9013ab94b17551a782e",
+  "work_order_sha256": "5a2c4ea0c9eee2d603406608e993dfa393ba8b73e7ba2fbbd6cb1c7aa311caac",
+  "base_revision": "sha256:76b2741f0ab815a82a9a019d75c9d23125e7838d156651f6002228a0227a7ae8",
+  "head_revision": "sha256:76b2741f0ab815a82a9a019d75c9d23125e7838d156651f6002228a0227a7ae8",
+  "wall_ms": 300,
+  "provider_tokens": 0,
+  "changed_files": [],
+  "observations": [
+    {
+      "id": "tenant",
+      "exit_code": 1,
+      "duration_ms": 111,
+      "head_revision": "sha256:76b2741f0ab815a82a9a019d75c9d23125e7838d156651f6002228a0227a7ae8",
+      "termination": "exited",
+      "source": "recorded",
+      "stdout_sha256": "dcca25a62d8c0ccfe0af6d3f116edd41949aa0540f76e38eddcf96ce4413702f",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "id": "race",
+      "exit_code": 1,
+      "duration_ms": 100,
+      "head_revision": "sha256:76b2741f0ab815a82a9a019d75c9d23125e7838d156651f6002228a0227a7ae8",
+      "termination": "exited",
+      "source": "recorded",
+      "stdout_sha256": "09840f969a635a1c0bfd485276edc836f1dac65db4bba89ffb5faf24293f52f9",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "id": "retry",
+      "exit_code": 0,
+      "duration_ms": 89,
+      "head_revision": "sha256:76b2741f0ab815a82a9a019d75c9d23125e7838d156651f6002228a0227a7ae8",
+      "termination": "exited",
+      "source": "recorded",
+      "stdout_sha256": "8154071363b906900fcf90a7c7b090b9b3cece2005f0216b24c22649c4234e92",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "metrics": [],
+  "artifact_evaluations": [],
+  "criterion_results": [
+    {
+      "id": "tenant",
+      "status": "fail",
+      "freshness": "fresh",
+      "source_round": 1,
+      "head_revision": "sha256:76b2741f0ab815a82a9a019d75c9d23125e7838d156651f6002228a0227a7ae8",
+      "observation_ids": [
+        "tenant"
+      ],
+      "metric_ids": [],
+      "artifact_evaluation_ids": []
+    },
+    {
+      "id": "race",
+      "status": "fail",
+      "freshness": "fresh",
+      "source_round": 1,
+      "head_revision": "sha256:76b2741f0ab815a82a9a019d75c9d23125e7838d156651f6002228a0227a7ae8",
+      "observation_ids": [
+        "race"
+      ],
+      "metric_ids": [],
+      "artifact_evaluation_ids": []
+    },
+    {
+      "id": "retry",
+      "status": "pass",
+      "freshness": "fresh",
+      "source_round": 1,
+      "head_revision": "sha256:76b2741f0ab815a82a9a019d75c9d23125e7838d156651f6002228a0227a7ae8",
+      "observation_ids": [
+        "retry"
+      ],
+      "metric_ids": [],
+      "artifact_evaluation_ids": []
+    }
+  ],
+  "protected_surface_results": [],
+  "known_failures": [],
+  "builder_notes": "Baseline inspection: no code edit; execute frozen invariants."
+}
