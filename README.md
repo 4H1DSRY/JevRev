@@ -21,13 +21,19 @@ LLM supplies breadth and implementation power. JevRev supplies the second look
 before more time and tokens are spent.
 
 ```text
-LLM proposes  ->  JevSift narrows  ->  agent probes  ->  evidence decides
-                                                        |
-                                      JevLoop audits each round
-                                      JevLong watches the session
+LLM + agent
+    |
+    +--> JevSift  ------------ choose the paths worth trying
+    |
+    +--> JevLoop  ------------ improve one artifact, round by round
+    |       host agent probes -> evidence recorder -> Jev audit -> next action
+    |
+    +--> JevLong ------------- watch the long-running session
 ```
 
 That is JevRev: not another coding agent, but the decision system around one.
+`Probe`, `Evidence`, and `Decide` are the shared protocol and infrastructure
+underneath these three parts, not extra products.
 
 ## See the idea
 
@@ -62,21 +68,29 @@ Evidence winner: indexed-state-machine
 Decision: winner -> integrate_winner
 ```
 
-## How JevRev works
+## The three parts
 
-JevRev follows an LLM through the places where a second opinion is valuable:
+### JevSift: choose the work
 
-1. **Explore.** The host LLM proposes a few materially different approaches.
-2. **Sift.** Jev removes weak, duplicate, risky, or low-value paths before they
-   consume implementation budget.
-3. **Probe.** The host agent builds only the survivors and records commands,
-   metrics, artifacts, and revisions.
-4. **Decide.** Deterministic evidence is checked first; Jev then judges the
-   narrow questions that facts cannot settle alone.
-5. **Loop.** After a round, JevRev returns the next useful action for the same
-   evolving artifact.
-6. **Long.** During a long run, JevLong keeps a local view of stalls, failure
-   loops, drift, budget risk, and progress.
+The host LLM proposes a few materially different approaches. JevSift removes
+weak, duplicate, risky, or low-value paths before they consume implementation
+budget, then emits bounded work orders for the survivors.
+
+### JevLoop: improve one artifact
+
+The host agent executes a bounded work order, records what actually happened,
+and submits the round to JevLoop. Loop checks the evidence, asks Jev only the
+narrow questions that facts cannot settle, and returns the next action: continue,
+fix, verify, replan, wait for a human, or finish when every criterion is proven.
+
+This is where `Probe`, `Evidence`, and `Decide` belong in the product story:
+they are Loop's working machinery, not another product surface.
+
+### JevLong: watch the session
+
+JevLong observes a long-running agent session and reports stalls, repeated
+failures, drift, tool-call problems, budget risk, and progress to a human. It
+does not silently steer, retry, edit, or kill the agent.
 
 The result is a simple split: the LLM does the expensive creative work, while
 JevRev prevents the workflow from repeatedly paying for bad directions.
@@ -104,10 +118,12 @@ audit the next round before continuing.
 | Command | Role in the LLM + Jev workflow |
 | --- | --- |
 | `jevrev sift` | Decide which proposed approaches deserve a probe |
-| `jevrev evidence` | Record what the agent actually ran and measured |
-| `jevrev decide` | Decide what the evidence supports |
-| `jevrev loop` | Decide what the agent should do after a round |
+| `jevrev loop` | Audit one artifact after each agent round |
 | `jevrev long` | Observe the health of a long-running session |
+
+`jevrev evidence` and `jevrev decide` are lower-level infrastructure commands.
+They record and adjudicate the facts that JevSift and JevLoop consume; they are
+not a fourth and fifth product component.
 
 From source, use `node dist/cli.js` in place of `jevrev`:
 

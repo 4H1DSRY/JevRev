@@ -10,20 +10,23 @@ product contract, not an implementation detail.
 | Jev / local judge | Supply narrow semantic judgements about proposals or evidence | Override schemas, budgets, command results, hashes, provenance, or state transitions |
 | JevRev core | Validate contracts, hash identities, apply deterministic gates, maintain state, and emit typed next actions | Generate code, run an agent, edit files, create commits, merge branches, or silently continue in the background |
 
-## Component boundaries
+## Product component boundaries
 
 - **JevSift** is stateless proposal pruning. It may issue bounded probe work
   orders, but it never executes them or selects an integration winner.
-- **Probe / Decide** records and checks evidence. Deterministic failures and
-  hard-constraint violations cannot be overturned by Jev. A `winner` result is
-  a recommendation for human review, not a merge command.
 - **JevLoop** owns one evolving artifact and one active round. It issues a
-  work order and audits submitted evidence; the host agent remains responsible
-  for the actual work. `resume`, `abort`, and spec revision approval are
-  explicit human actions.
+  work order, receives the host agent's recorded evidence, and audits the round;
+  the host agent remains responsible for the actual work. `resume`, `abort`, and
+  spec revision approval are explicit human actions.
 - **JevLong** is read-only observation. It ingests normalized events, derives
   snapshots, and raises alerts for a human. It does not start, stop, retry,
   steer, edit, or kill the observed agent.
+
+`Probe`, `Evidence`, and `Decide` are shared infrastructure beneath JevSift and
+JevLoop. Probe is the bounded work the host agent executes; Evidence is the
+recording and validation protocol; Decide is the typed adjudication primitive
+used by Sift and by Loop's round audit. They are not additional product
+components or authorities.
 
 The evidence recorder is a host-agent tool, not an authority. It can execute
 the exact argv supplied by its caller inside the declared workspace boundary

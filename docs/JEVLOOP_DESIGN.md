@@ -1,8 +1,9 @@
 # JevLoop: one artifact, evidence-backed improvement rounds
 
-Status: implementation contract. JevLoop is separate from JevSift, Probe/Decide,
-and the read-only JevLong observer. It does not run an agent, own a worktree, or
-merge code. A host agent calls it between bounded rounds.
+Status: implementation contract. JevLoop is separate from JevSift and the
+read-only JevLong observer. Probe, Evidence, and Decide are its shared working
+infrastructure, not separate product components. JevLoop does not run an agent,
+own a worktree, or merge code. A host agent calls it between bounded rounds.
 
 ## Fixed decisions
 
