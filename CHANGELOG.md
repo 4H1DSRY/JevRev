@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Let Loop artifact evidence keep its completion slot ID separate from the
+  spec's `required_artifacts` reference through `--artifact-id`.
 - Accept UTF-8 BOM and UTF-16 JSON files, including PowerShell 5.1 output, and
   report path-based validation errors.
 - Add `jevrev reconsider` for a bounded second pass on one Sift review
