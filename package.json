@@ -1,7 +1,7 @@
 {
   "name": "jevrev",
   "version": "0.2.0",
-  "description": "An open-source runtime for composing, executing, verifying, and observing intelligent workflows.",
+  "description": "A decision layer beside your LLM for exploring approaches, testing evidence, and continuing the work worth doing.",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -76,13 +76,13 @@
     "access": "public"
   },
   "keywords": [
+    "llm",
     "ai",
     "agents",
     "coding",
     "workflow",
     "evaluation",
-    "cli",
-    "typescript"
+    "cli"
   ],
   "dependencies": {
     "@typesafe-ai/sdk": "^0.6.0",
