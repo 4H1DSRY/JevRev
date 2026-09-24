@@ -65,6 +65,11 @@ Inspect the [executed probe](benchmarks/workflow-fixture/probe.mjs),
 [decision tests](tests/workflow-decide.test.ts). The measured throughput varies
 by machine; the required correctness failure is what reverses the ranking.
 
+For a longer, zero-context run against a real JSONL ingestion problem, see the
+[recorded case](benchmarks/real-jsonl-ingestion/README.md). It includes the
+actual failed shortcut, the evidence that rejected it, three Loop rounds, and
+the Long observer output.
+
 ## The three parts
 
 <picture>

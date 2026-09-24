@@ -1,0 +1,58 @@
+{
+  "date": "2026-09-23",
+  "scenario": "JSONL ingestion with malformed-line isolation, first-seen order, and duplicate idempotency",
+  "input": {
+    "unique_valid_events": 25000,
+    "malformed_or_schema_invalid": 184,
+    "repeated_ids": 258,
+    "candidate_count": 6,
+    "sift_survivors": ["batch-index", "regex-shortcut"]
+  },
+  "sift": { "kept": 2, "review": 1, "rejected": 3 },
+  "evidence": {
+    "batch_index_correctness_exit": 0,
+    "regex_shortcut_correctness_exit": 1,
+    "regex_invalid_expected": 184,
+    "regex_invalid_actual": 65,
+    "batch_mean_events_per_second": 174472.476331,
+    "baseline_mean_events_per_second": 76817.562827,
+    "baseline_sample_sd_n_minus_1": 2281.876607,
+    "batch_sample_sd_n_minus_1": 5335.877281
+  },
+  "decide": {
+    "winner": "batch-index",
+    "provider": "replay",
+    "provider_tokens": 0,
+    "provider_cost_usd": 0
+  },
+  "loop": {
+    "round_1": "fix_regression",
+    "round_2": "verify",
+    "round_3": "completed",
+    "final_head": "demo-head-round3",
+    "recorded_wall_ms": 838,
+    "fixture_provider_tokens": 1628
+  },
+  "long": {
+    "first_ingest_accepted": 13,
+    "replay_duplicates": 13,
+    "final_sequence": 14,
+    "failure_score": 1,
+    "stall_score": 0.03938,
+    "drift_score": 0,
+    "budget_risk": 0.000125,
+    "open_alerts": ["failure_loop", "protocol"]
+  },
+  "direct_vs_routed": {
+    "direct_candidate": "regex-shortcut",
+    "direct_correctness_pass": false,
+    "direct_mean_events_per_second": 180530.904518,
+    "direct_sample_sd_n_minus_1": 8567.371122,
+    "routed_candidate": "batch-index",
+    "routed_correctness_pass": true,
+    "routed_mean_events_per_second": 180317.214988,
+    "routed_sample_sd_n_minus_1": 10486.052789,
+    "interpretation": "The routed path prevented an incorrect shortcut from shipping. These scoped samples do not prove that the full JevRev funnel is cheaper or faster than one command."
+  },
+  "api_key_present": false
+}

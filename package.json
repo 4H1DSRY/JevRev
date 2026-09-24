@@ -36,6 +36,7 @@
     "benchmarks/one-shot-showcase",
     "benchmarks/engineering-showcase",
     "benchmarks/workflow-fixture",
+    "benchmarks/real-jsonl-ingestion",
     "scripts",
     "skills/jevrev",
     "runtime",
