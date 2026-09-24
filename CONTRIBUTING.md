@@ -45,9 +45,6 @@ JevRev puts a hard floor under what the project is allowed to claim:
 - No claim of zero cost, negligible latency, production quality, or guaranteed
   improvement without a recorded run behind it. If you measured something,
   include the command and the platform.
-- No capability described as shipped when it is not implemented. JevSift, Probe,
-  Decide and JevLoop are shipped. JevLong is observation only and remains a
-  roadmap layer.
 - No change that lets a model, a judge, or the runtime promote a lower-trust
   claim into a higher-trust fact.
 
