@@ -123,6 +123,38 @@ to sift them, run only the bounded probes, record the evidence, and let JevRev
 audit the next round before continuing.
 ```
 
+## The interaction layer
+
+JevRev is a command-line protocol that the host LLM calls at decision points.
+You stay in Codex, Claude Code, or another agent; JevRev does not replace that
+agent and does not need to run a second conversation beside it.
+
+The exchange is deliberately plain:
+
+```text
+host agent writes proposals.json
+        -> jevrev sift        -> bounded work orders
+host agent implements and tests a survivor
+        -> evidence run/metric/artifact -> evidence.json
+        -> jevrev decide or loop audit -> next action
+host adapter sends session JSONL
+        -> jevrev long ingest/watch -> status and alerts for a human
+```
+
+The input and output are JSON, so an agent can call JevRev as a normal tool,
+save every decision, and resume after an interruption. Human control stays at
+the meaningful boundaries: define or change the contract, choose a provider,
+approve a resume, abort a loop, and decide whether a reported winner is
+integrated. JevRev can reject an incomplete or failed path and return
+`continue`, `fix_regression`, `verify`, `replan`, `waiting_human`, or
+`completed`; it cannot edit the repository, start or stop the host agent, merge
+a branch, or silently continue in the background.
+
+That is the practical role of the interaction layer: it turns an LLM's free
+form reasoning into inspectable work orders, recorded facts, and typed next
+actions without taking the work away from the LLM or the final decision away
+from the user.
+
 ## The command surface
 
 | Command | Role in the LLM + Jev workflow |
