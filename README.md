@@ -121,6 +121,11 @@ npm run build
 node scripts/install-skill.mjs --target codex
 ```
 
+Installing the skill does not put `jevrev` on PATH. Confirm
+`jevrev --version` before use. In a project with a local JevRev dependency,
+use `npx --no-install jevrev --version` and prefix the skill's commands with
+`npx --no-install` when the bare command is unavailable.
+
 Then give the host agent this instruction:
 
 ```text

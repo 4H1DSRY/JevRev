@@ -5,6 +5,17 @@ description: Use JevRev beside an LLM: JevSift narrows competing mechanisms, Jev
 
 # JevRev: Sift, Loop, Long
 
+## Resolve the CLI before the first command
+
+Installing this skill copies instructions; it does not install the JevRev CLI
+or add a project-local binary to your shell's PATH. Check `jevrev --version`
+before following the commands below. If JevRev is installed in the current
+project but the bare command is unavailable, check
+`npx --no-install jevrev --version` and use `npx --no-install jevrev` wherever
+this skill shows `jevrev`. The `--no-install` flag uses the existing local
+package without installing one during the workflow. If neither command works,
+install or build JevRev first; do not silently skip a JevRev step.
+
 JevRev has three product components and a shared evidence protocol:
 
 - **JevSift**: `jevrev sift` (with `run`/`rank` compatibility aliases). It

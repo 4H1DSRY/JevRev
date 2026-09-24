@@ -67,8 +67,12 @@ describe("JevLoop CLI workflow", () => {
     result = run(["loop", "next", "--directory", directory, "--format", "json"]);
     expect(result.status).toBe(0); const order2 = JSON.parse(result.stdout); expect(order2.mode).toBe("completion");
     const evidence2Path = join(rootDir, "evidence-2.json"); writeFileSync(evidence2Path, JSON.stringify(evidence(order2, "completion")));
-    result = run(["loop", "audit", "--directory", directory, "--evidence", evidence2Path, "--replay", replayPath, "--format", "json"]);
-    expect(result.status).toBe(0); expect(JSON.parse(result.stdout)).toMatchObject({ outcome: "completed", next_action: { type: "stop_success" } });
+    result = run(["loop", "audit", "--directory", directory, "--evidence", evidence2Path, "--replay", replayPath, "--format", "human"]);
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain("round 2  completed");
+    expect(result.stdout).toContain("progress: no new material change (completion verified)");
+    expect(result.stdout).toContain("next: stop_success");
+    expect(result.stdout).not.toContain("progress: stalled");
     result = run(["loop", "status", "--directory", directory, "--format", "json"]);
     expect(result.status).toBe(0); expect(JSON.parse(result.stdout)).toMatchObject({ status: "completed", round: 2 });
   }, 20_000);
