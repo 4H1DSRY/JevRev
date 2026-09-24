@@ -94,7 +94,7 @@ JevLong 盯的是长跑会话，只管报信。卡住了、反复失败、方向
 
 它只报信，不动手：不悄悄给你改方向，不自动重试，不替你改文件，更不会自己把 agent 掐了。
 
-`long watch` 是实时终端面板。要给脚本用、要机器能读的输出，改用 `long status --format json`；`watch` 不接受 `--format`。
+`long watch` 是实时终端面板。非交互终端默认只输出一条紧凑状态；后台持续观察要显式加 `--stream`，固定采样用 `--iterations N`。需要完整快照时，用 `long status --format json`。
 
 说穿了就一句：费钱、要用脑子的活让 LLM 干；JevRev 负责拦住，不让流程一遍遍为走错的方向买单。
 
@@ -140,14 +140,16 @@ POSIX shell 里用云端 Jev：
 
 ```bash
 export JEVREV_JEV_API_KEY="..."
-node dist/cli.js sift --input proposals.json --provider jev
+node dist/cli.js sift --input proposals.json --provider jev \
+  --output campaign.json --summary
 ```
 
 Windows 上通过 llama.cpp 跑本地 SemIf：
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/start-semif.ps1 -Background
-node dist/cli.js sift --input proposals.json --provider semif
+node dist/cli.js sift --input proposals.json --provider semif \
+  --output campaign.json --summary
 ```
 
 重放用的预置数据不需要联网，也不需要 API key。本地模型怎么搭，见 [`docs/SEMIF_LOCAL.md`](docs/SEMIF_LOCAL.md)。

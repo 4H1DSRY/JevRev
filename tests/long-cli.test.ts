@@ -26,6 +26,17 @@ describe("JevLong CLI", () => {
     const status = run(["long", "status", "--directory", directory, "--format", "json"]);
     expect(status.status).toBe(0);
     expect(JSON.parse(status.stdout)).toMatchObject({ snapshot: { sequence: 0 }, signals: { progress_index: "unknown" } });
+    const watch = run(["long", "watch", "--directory", directory]);
+    expect(watch.status).toBe(0);
+    expect(watch.stdout.length).toBeLessThan(400);
+    expect(watch.stdout).toContain("JevLong");
+    const repeated = run(["long", "watch", "--directory", directory, "--iterations", "3", "--interval-ms", "100"]);
+    expect(repeated.status).toBe(0);
+    expect(repeated.stdout).toBe(watch.stdout);
+    const full = run(["long", "watch", "--directory", directory, "--full"]);
+    expect(full.status).toBe(0);
+    expect(full.stdout).toContain("JEVLONG");
+    expect(full.stdout.length).toBeGreaterThan(watch.stdout.length);
     const invalidWatch = run(["long", "watch", "--directory", directory, "--iterations", "0", "--no-clear"]);
     expect(invalidWatch.status).toBe(2);
     expect(invalidWatch.stderr).toContain("must be a positive integer");

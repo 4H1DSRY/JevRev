@@ -47,8 +47,11 @@ Use JevLong when the host agent or harness will run for long enough that stalls,
 repeated failures, scope drift, or budget burn need a second pair of eyes. Start
 the observer with `jevrev long create`, feed normalized events with
 `jevrev long ingest --input events.jsonl` (or
-`... | jevrev long ingest --input -`), and keep a human cockpit open with
-`jevrev long watch`. After a Loop audit, record the
+`... | jevrev long ingest --input -`). The host agent checks
+`jevrev long status` only when it needs a snapshot; it must not poll or capture
+the live dashboard into its context. A human can use `jevrev long watch` in a
+foreground terminal. In a non-interactive shell, watch returns one compact
+summary unless `--stream` or `--iterations` is explicit. After a Loop audit, record the
 bridge event with all of the Loop-owned identifiers and digests:
 
 ```bash
@@ -86,10 +89,12 @@ Jev unless required by the task.
 3. Write the request to a temporary file and run:
 
 ```bash
-jevrev sift --input proposals.json --format json --output campaign.json
+jevrev sift --input proposals.json --format json --output campaign.json --summary
 ```
 
-4. Read `sift.selected` and `work_orders`. Do not implement rejected cards.
+4. Use the short stdout summary to choose work orders. Read only the needed
+   `work_orders` fields from `campaign.json`; do not dump the full file into the
+   host conversation. Do not implement rejected cards.
    If a strong borderline idea is `review`, use `jevrev reconsider` once for
    that candidate instead of silently treating review as approval.
    A `review` card is not approved; ask a human or revise the ideas.
@@ -216,13 +221,13 @@ Hosted Jev:
 
 ```bash
 export JEVREV_JEV_API_KEY="..."
-jevrev sift --input proposals.json --provider jev
+jevrev sift --input proposals.json --provider jev --output campaign.json --summary
 ```
 
 Local SemIf:
 
 ```bash
-jevrev sift --input proposals.json --provider semif
+jevrev sift --input proposals.json --provider semif --output campaign.json --summary
 ```
 
 The same provider flags work for `decide`. Credentials belong in

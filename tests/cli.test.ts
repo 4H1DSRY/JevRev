@@ -43,6 +43,30 @@ describe("jevrev CLI", () => {
     });
   });
 
+  it("writes the full Sift campaign to a file and emits only a compact summary", () => {
+    const output = resolve(root, "tests", "tmp-sift-summary-campaign.json");
+    const result = run([
+      "sift", "--input", request, "--replay", replay, "--summary", "--output", output,
+    ]);
+    try {
+      expect(result.status).toBe(0);
+      expect(result.stderr).toBe("");
+      expect(result.stdout.length).toBeLessThan(1_000);
+      expect(result.stdout).toContain("kept 2/7");
+      expect(result.stdout).toContain("allocation-cut");
+      expect(JSON.parse(readFileSync(output, "utf8"))).toMatchObject({ kind: "jevrev.campaign" });
+    } finally {
+      rmSync(output, { force: true });
+    }
+  });
+
+  it("rejects Sift summary without a JSON output target", () => {
+    const result = run(["sift", "--input", request, "--replay", replay, "--summary"]);
+    expect(result.status).toBe(2);
+    expect(result.stderr).toContain("--summary requires --output and --format json");
+    expect(result.stdout).toBe("");
+  });
+
   it("records command evidence through the CLI and returns the child exit code", () => {
     const sift = run(["sift", "--input", request, "--replay", replay]);
     expect(sift.status).toBe(0);

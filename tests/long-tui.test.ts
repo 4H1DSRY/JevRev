@@ -1,5 +1,7 @@
-import { describe, expect, it } from "vitest";
-import { dashboardFromStatus, longEventSummary, renderLongDashboard, renderLongTui } from "../src/long/tui.js";
+import { PassThrough } from "node:stream";
+import { resolve } from "node:path";
+import { describe, expect, it, vi } from "vitest";
+import { dashboardFromStatus, longEventSummary, renderLongDashboard, renderLongTui, renderLongWatchSummary } from "../src/long/tui.js";
 import { watchLong } from "../src/long/watch.js";
 import type { LongDashboard } from "../src/long/tui.js";
 import type { LongAlert } from "../src/long/schemas.js";
@@ -23,10 +25,43 @@ describe("JevLong TUI", () => {
     const value = dashboardFromStatus({ store: { spec: { session_id: dashboard.sessionId }, snapshot: { sequence: 8, last_event_at: dashboard.lastEventAt } }, signals: { ...dashboard.signals, activity: dashboard.activity, progress_index: dashboard.progress, open_tool_calls: dashboard.openToolCalls, cost: dashboard.cost, evidence_event_ids: {} }, policy: { alerts: dashboard.alerts } });
     expect(value).toMatchObject({ sessionId: dashboard.sessionId, sequence: 8, openToolCalls: 1, progress: 0.5 });
   });
+  it("renders a compact non-interactive watch summary", () => {
+    const output = renderLongWatchSummary(dashboard);
+    expect(output.length).toBeLessThan(400);
+    expect(output).toContain("seq=8");
+    expect(output).toContain("failure=0.80");
+    expect(output).toContain("failure_loop");
+    expect(output).not.toContain("╔");
+  });
   it("watch accepts zero iterations without touching the store", async () => {
     const frames: string[] = []; let sleeps = 0;
     await expect(watchLong("missing", { iterations: 0, onFrame: (frame) => { frames.push(frame); }, sleep: async () => { sleeps += 1; } })).resolves.toBeUndefined();
     expect(frames).toHaveLength(0); expect(sleeps).toBe(0);
+  });
+  it("slows the foreground cockpit after terminal blur and refreshes on focus", async () => {
+    const input = Object.assign(new PassThrough(), { isTTY: true, setRawMode: () => undefined });
+    const output = Object.assign(new PassThrough(), { isTTY: true, columns: 80, rows: 20 });
+    const writes: string[] = [];
+    output.on("data", (chunk: Buffer) => writes.push(chunk.toString("utf8")));
+    const directory = resolve(import.meta.dirname, "..", "benchmarks", "engineering-showcase", "capture", "long");
+    const running = watchLong(directory, { input, output, intervalMs: 100 });
+    const frameCount = () => writes.filter((write) => write.includes("\x1b[H\x1b[2J")).length;
+    try {
+      await vi.waitFor(() => expect(frameCount()).toBeGreaterThan(0), { timeout: 2_000 });
+      input.write("\x1b[O");
+      const blurredCount = frameCount();
+      await new Promise<void>((resolvePromise) => setTimeout(resolvePromise, 350));
+      expect(frameCount()).toBe(blurredCount);
+      input.write("\x1b[I");
+      await vi.waitFor(() => expect(frameCount()).toBeGreaterThan(blurredCount), { timeout: 2_000 });
+    } finally {
+      input.write("q");
+      await running;
+      input.destroy();
+      output.destroy();
+    }
+    expect(writes.join("")).toContain("\x1b[?1004h");
+    expect(writes.join("")).toContain("\x1b[?1004l");
   });
   it("renders the interactive cockpit as a fixed viewport with layered panes", () => {
     const output = renderLongTui({

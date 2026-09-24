@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Bound agent-facing output: non-interactive Long watch now emits one compact
+  status by default, and Sift can write its full campaign to a file while
+  returning a short `--summary` handoff. Foreground TUI slows when unfocused.
 - Make Evidence command recording work with Windows PowerShell shims while
   keeping direct, shell-free argv execution; serialize concurrent Sift evidence
   updates; add the first-class Long `metric` event type; and refresh the

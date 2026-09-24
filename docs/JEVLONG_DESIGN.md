@@ -37,8 +37,10 @@ jevrev long watch    --directory .jevrev/long --interval-ms 1000
 ```
 
 The target directory must be new; missing parent directories are created.
-`watch` is the live terminal cockpit. Scripts should use
-`long status --format json` for structured output.
+`watch` is the live terminal cockpit. In a non-interactive shell it emits one
+compact status by default; `--stream` opts into repeated background samples and
+`--iterations N` bounds a scripted run. Scripts that need the full structured
+snapshot should use `long status --format json`.
 
 `ingest` accepts normalized events. Adapters for Codex, Claude Code, CI, or a
 custom harness convert their native logs into that contract. The observer is

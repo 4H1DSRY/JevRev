@@ -41,6 +41,20 @@ export function dashboardFromStatus(status: { store: { spec: { session_id: strin
   return { sessionId: status.store.spec.session_id, sequence: status.store.snapshot.sequence, activity: status.signals.activity, progress: status.signals.progress_index, signals: { stall_score: status.signals.stall_score, failure_score: status.signals.failure_score, drift_score: status.signals.drift_score, budget_risk: status.signals.budget_risk }, openToolCalls: status.signals.open_tool_calls, cost: status.signals.cost, alerts: status.policy.alerts, lastEventAt: status.store.snapshot.last_event_at };
 }
 
+export function renderLongWatchSummary(dashboard: LongDashboard): string {
+  const open = dashboard.alerts.filter((alert) => alert.status === "open" || alert.status === "acknowledged");
+  const progress = dashboard.progress === "unknown" ? "unknown" : `${Math.round(dashboard.progress * 100)}%`;
+  const lines = [
+    `JevLong ${dashboard.sessionId} seq=${dashboard.sequence} ${dashboard.activity} progress=${progress} alerts=${open.length} tools=${dashboard.openToolCalls} tokens=${dashboard.cost.provider_tokens}`,
+    `risk stall=${dashboard.signals.stall_score.toFixed(2)} failure=${dashboard.signals.failure_score.toFixed(2)} drift=${dashboard.signals.drift_score.toFixed(2)} budget=${dashboard.signals.budget_risk.toFixed(2)}`,
+  ];
+  for (const alert of open.slice(0, 2)) {
+    lines.push(`${alert.severity} ${alert.kind}: ${alert.message.replace(/\s+/g, " ").slice(0, 120)}`);
+  }
+  if (open.length > 2) lines.push(`+${open.length - 2} more alerts`);
+  return `${lines.join("\n")}\n`;
+}
+
 export function renderLongDashboard(dashboard: LongDashboard, options: TuiOptions = {}): string {
   const width = Math.max(64, options.width ?? 100); const color = options.color ?? false;
   const open = dashboard.alerts.filter((alert) => alert.status === "open" || alert.status === "acknowledged");

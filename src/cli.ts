@@ -28,7 +28,7 @@ import { decideCampaign } from "./workflow/decide.js";
 import { buildDecidePlan } from "./workflow/decide-questions.js";
 import { prepareDecision } from "./workflow/evidence.js";
 import { campaignSchema, evidenceBundleSchema, metricObservationSchema } from "./workflow/schemas.js";
-import { renderCampaignHuman, renderDecideHuman, renderWorkflowJson } from "./workflow/report.js";
+import { renderCampaignHuman, renderCampaignSummary, renderDecideHuman, renderWorkflowJson } from "./workflow/report.js";
 import {
   approveLoopSpecCommand, auditLoopCommand, abortLoopCommand, createLoopCommand,
   nextLoopCommand, readLoopSpec, readRoundEvidence, readRoundPlan, renderLoopHuman,
@@ -62,6 +62,7 @@ interface RankOptions {
   semifUrl?: string;
   semifModel?: string;
   output?: string;
+  summary?: boolean;
   top?: number;
 }
 
@@ -337,6 +338,9 @@ async function runRank(options: RankOptions): Promise<void> {
 }
 
 async function runSift(options: RankOptions): Promise<void> {
+  if (options.summary && (options.output === undefined || options.format !== "json")) {
+    throw new InputError("--summary requires --output and --format json");
+  }
   const { request, result } = await evaluateRank(options);
   const campaign = buildCampaign(request, result);
   await emit(
@@ -345,6 +349,7 @@ async function runSift(options: RankOptions): Promise<void> {
       : `${renderCampaignHuman(campaign)}\n`,
     options.output,
   );
+  if (options.summary) stdout.write(renderCampaignSummary(campaign));
 }
 
 async function runReconsider(options: ReconsiderOptions): Promise<void> {
@@ -530,7 +535,7 @@ async function runDoctor(options: DoctorOptions): Promise<void> {
 
 function addRankCommand(program: Command, name: "run" | "rank" | "sift"): void {
   const defaultFormat: OutputFormat = name === "rank" ? "human" : "json";
-  program
+  const command = program
     .command(name)
     .description(
       name === "sift"
@@ -573,8 +578,9 @@ function addRankCommand(program: Command, name: "run" | "rank" | "sift"): void {
       envValue("JEVREV_JEV_MODEL", "TYPESAFE_DEFAULT_MODEL") ?? "jev-latest",
     )
     .option("--top <count>", "override max survivors", parsePositiveInteger)
-    .option("-o, --output <path>", "write the rendered result to a file")
-    .action(async (rawOptions: RankOptions) => {
+    .option("-o, --output <path>", "write the rendered result to a file");
+  if (name === "sift") command.option("--summary", "print a short work-order summary while writing JSON to --output");
+  command.action(async (rawOptions: RankOptions) => {
       validateFormat(rawOptions.format);
       if (name === "sift") await runSift(rawOptions);
       else await runRank(rawOptions);
@@ -885,19 +891,23 @@ function addLongCommand(program: Command): void {
   long.command("watch").description("Render the external JevLong dashboard without driving the agent")
     .requiredOption("--directory <path>", "Long store directory")
     .option("--root <path>", "browse sibling Long sessions in this root")
-    .option("--interval-ms <n>", "refresh interval in milliseconds", parseLongWatchInterval, 1000)
-    .option("--iterations <n>", "stop after N frames; useful for scripts", parseLongWatchIterations)
+    .option("--interval-ms <n>", "refresh interval in milliseconds (foreground: 1000, background: 10000)", parseLongWatchInterval)
+    .option("--iterations <n>", "sample N times; non-interactive output prints changes only", parseLongWatchIterations)
+    .option("--stream", "keep sampling without a terminal; prints compact changes only", false)
+    .option("--full", "print the full dashboard in non-interactive mode", false)
     .option("--width <n>", "dashboard width", parseLongWatchWidth, 100)
     .option("--no-color", "disable ANSI colors")
     .option("--no-clear", "append frames instead of clearing the terminal")
-    .action(async (raw: { directory: string; root?: string; intervalMs: number; iterations?: number; width: number; color: boolean; clear: boolean }) => {
+    .action(async (raw: { directory: string; root?: string; intervalMs?: number; iterations?: number; width: number; color: boolean; clear: boolean; stream: boolean; full: boolean }) => {
       await watchLong(raw.directory, {
-        intervalMs: raw.intervalMs,
+        ...(raw.intervalMs === undefined ? {} : { intervalMs: raw.intervalMs }),
         ...(raw.iterations === undefined ? {} : { iterations: raw.iterations }),
         ...(raw.root === undefined ? {} : { root: raw.root }),
         width: raw.width,
         color: raw.color,
         clear: raw.clear,
+        stream: raw.stream,
+        full: raw.full,
       });
     });
 }

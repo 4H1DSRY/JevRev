@@ -30,6 +30,21 @@ export function renderCampaignHuman(campaign: Campaign): string {
   return lines.join("\n");
 }
 
+export function renderCampaignSummary(campaign: Campaign): string {
+  const lines = [
+    `JevRev ${campaign.campaign_id}: kept ${campaign.sift.selected.length}/${campaign.sift.summary.evaluated}`,
+  ];
+  for (const workOrder of campaign.work_orders) {
+    const probe = workOrder.probe_instruction.replace(/\s+/g, " ").trim();
+    lines.push(`- ${workOrder.candidate_id}: ${probe.length > 180 ? `${probe.slice(0, 177)}...` : probe}`);
+  }
+  if (campaign.review_work_orders.length > 0) {
+    lines.push(`review: ${campaign.review_work_orders.map((order) => order.candidate_id).join(", ")}`);
+  }
+  lines.push(`next: ${campaign.work_orders.length > 0 ? "run bounded probes, then `jevrev decide`" : campaign.sift.next_action}`);
+  return `${lines.join("\n")}\n`;
+}
+
 export function renderDecideHuman(result: DecideResult): string {
   const lines = [
     `JevRev decision ${result.campaign_id}`,

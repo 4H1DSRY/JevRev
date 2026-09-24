@@ -103,8 +103,10 @@ JevLong observes a long-running agent session and reports stalls, repeated
 failures, drift, tool-call problems, budget risk, and progress to a human. It
 does not silently steer, retry, edit, or kill the agent.
 
-`long watch` is the live terminal cockpit. For scripts and machine-readable
-output, use `long status --format json`; `watch` does not accept `--format`.
+`long watch` is the live terminal cockpit. In a non-interactive shell it emits
+one compact status by default; use `--stream` for continuous background sampling
+or `--iterations N` for a fixed sample count. Use `long status --format json`
+when another tool needs the full snapshot.
 
 The result is a simple split: the LLM does the expensive creative work, while
 JevRev prevents the workflow from repeatedly paying for bad directions.
@@ -177,6 +179,15 @@ From source, use `node dist/cli.js` in place of `jevrev`:
 node dist/cli.js sift --input examples/parser-speedup.json --replay examples/parser-jev-response.json
 ```
 
+For an agent handoff, keep the complete campaign on disk and return only a
+short navigation summary:
+
+```bash
+node dist/cli.js sift --input examples/parser-speedup.json \
+  --replay examples/parser-jev-response.json --format json \
+  --output campaign.json --summary
+```
+
 ## Providers
 
 JevRev keeps the decision boundary the same whether Jev is hosted, local, or
@@ -186,14 +197,16 @@ Hosted Jev in a POSIX shell:
 
 ```bash
 export JEVREV_JEV_API_KEY="..."
-node dist/cli.js sift --input examples/parser-speedup.json --provider jev
+node dist/cli.js sift --input examples/parser-speedup.json --provider jev \
+  --output campaign.json --summary
 ```
 
 Local SemIf through llama.cpp on Windows:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/start-semif.ps1 -Background
-node dist/cli.js sift --input examples/parser-speedup.json --provider semif
+node dist/cli.js sift --input examples/parser-speedup.json --provider semif \
+  --output campaign.json --summary
 ```
 
 Replay fixtures work without a network or API key. See

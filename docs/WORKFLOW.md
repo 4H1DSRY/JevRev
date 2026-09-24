@@ -51,7 +51,7 @@ The first release adds two composable primitives without building another
 coding agent:
 
 ```bash
-jevrev sift --input proposals.json --output campaign.json
+jevrev sift --input proposals.json --output campaign.json --summary
 jevrev decide --campaign campaign.json --evidence evidence.json
 ```
 
