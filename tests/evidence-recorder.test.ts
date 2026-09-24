@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { readFileSync, rmSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { recordCommand } from "../src/evidence/recorder.js";
+import { executeCommand, recordCommand } from "../src/evidence/recorder.js";
 import { buildCampaign } from "../src/workflow/campaign.js";
 import { evidenceBundleSchema, type EvidenceBundle } from "../src/workflow/schemas.js";
 import { buildQuestionPlan } from "../src/questions.js";
@@ -181,5 +181,31 @@ describe("trusted evidence command recorder", () => {
     const bundle = evidenceBundleSchema.parse(JSON.parse(readFileSync(path, "utf8")));
     expect(bundle.packets[0]?.development.wall_ms).toBe(second.duration_ms);
     expect(first.duration_ms).toBeGreaterThanOrEqual(0);
+  });
+
+  it("runs the npm PowerShell shim on Windows without enabling shell parsing", async () => {
+    if (process.platform !== "win32") return;
+    const recorded = await executeCommand({ argv: ["npm", "--version"], workspace: root, echo: false });
+    expect(recorded.argv[0]).toMatch(/powershell\.exe$/i);
+    expect(recorded.termination).toBe("exited");
+    expect(recorded.exit_code).toBe(0);
+    expect(recorded.stdout_bytes).toBeGreaterThan(0);
+  });
+
+  it("preserves an explicit executable path in the recorded invocation", async () => {
+    const command = process.platform === "win32" ? "C:\\missing\\npm.cmd" : "/missing/npm";
+    const recorded = await executeCommand({ argv: [command, "--version"], workspace: root, echo: false });
+    expect(recorded.argv[0]).toBe(command);
+    expect(recorded.termination).toBe("spawn_error");
+  });
+
+  it("serializes concurrent command updates without losing observations", async () => {
+    const { workOrder, path } = fixture();
+    await Promise.all([
+      recordCommand({ evidencePath: path, candidateId: workOrder.candidate_id, observationId: "parallel-a", argv: [process.execPath, "-e", "setTimeout(() => {}, 30)"], workspace: root }),
+      recordCommand({ evidencePath: path, candidateId: workOrder.candidate_id, observationId: "parallel-b", argv: [process.execPath, "-e", "setTimeout(() => {}, 30)"], workspace: root }),
+    ]);
+    const bundle = evidenceBundleSchema.parse(JSON.parse(readFileSync(path, "utf8")));
+    expect(bundle.packets[0]?.observations.map((item) => item.id)).toEqual(expect.arrayContaining(["parallel-a", "parallel-b"]));
   });
 });

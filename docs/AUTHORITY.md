@@ -22,16 +22,20 @@ product contract, not an implementation detail.
   snapshots, and raises alerts for a human. It does not start, stop, retry,
   steer, edit, or kill the observed agent.
 
-`Probe`, `Evidence`, and `Decide` are shared infrastructure beneath JevSift and
-JevLoop. Probe is the bounded work the host agent executes; Evidence is the
-recording and validation protocol; Decide is the typed adjudication primitive
-used by Sift and by Loop's round audit. They are not additional product
-components or authorities.
+`Probe`, `Evidence`, and `Decide` are shared workflow concepts and judge
+boundaries beneath JevSift and JevLoop. Probe is the bounded work the host agent
+executes; Evidence is the recording and validation principle; Decide is the
+typed adjudication boundary used by Sift and by Loop's round audit. Sift
+campaigns and Loop rounds intentionally use separate envelopes, recorders, and
+state machines because their lifecycles differ. They are not additional
+product components or authorities.
 
-The evidence recorder is a host-agent tool, not an authority. It can execute
-the exact argv supplied by its caller inside the declared workspace boundary
-and record the result; it cannot mark an observation successful, promote
-provenance, or integrate a candidate. Child output is quiet by default and
+The evidence recorder is a host-agent tool, not an authority. It executes the
+argv supplied by its caller inside the declared workspace boundary, resolves
+bare package-manager names through the documented Windows shim, and records
+the effective invocation;
+it cannot mark an observation successful, promote provenance, or integrate a
+candidate. Child output is quiet by default and
 `--echo` is an explicit operator choice.
 
 ## Trust order

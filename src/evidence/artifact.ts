@@ -6,7 +6,7 @@ import type { EvidenceResultStatus } from "./metric.js";
 import {
   appendUnique,
   evidencePacket,
-  readEvidenceBundle,
+  withEvidenceBundleLock,
   writeEvidenceBundle,
 } from "./store.js";
 
@@ -107,66 +107,57 @@ export async function recordArtifact(options: RecordArtifactOptions) {
       : {}),
   };
 
-  const { path, bundle } = await readEvidenceBundle(options.evidencePath);
-  const packet = evidencePacket(bundle, options.candidateId);
-  packet.artifacts ??= [];
-  const artifactIndex = packet.artifacts.findIndex((item) => item.id === artifact.id);
-  if (artifactIndex >= 0 && !options.replace) {
-    throw new ProtocolError(`Artifact already exists: ${artifact.id}; pass --replace to overwrite it`);
-  }
-  if (artifactIndex >= 0) packet.artifacts[artifactIndex] = artifact;
-  else packet.artifacts.push(artifact);
-
-  if (options.evaluation !== undefined) {
-    packet.artifact_evaluations ??= [];
-    const evaluation = {
-      id: options.evaluation.id,
-      source: "imported" as const,
-      evaluator: options.evaluation.evaluator,
-      artifact_ids: [artifact.id],
-      ...(options.evaluation.criterionId === undefined
-        ? {}
-        : { criterion_id: options.evaluation.criterionId }),
-      status: options.evaluation.status,
-      ...(options.evaluation.score === undefined ? {} : { score: options.evaluation.score }),
-      summary: options.evaluation.summary,
-    };
-    const evaluationIndex = packet.artifact_evaluations.findIndex(
-      (item) => item.id === evaluation.id,
-    );
-    if (evaluationIndex >= 0 && !options.replace) {
-      throw new ProtocolError(`Artifact evaluation already exists: ${evaluation.id}; pass --replace to overwrite it`);
+  return withEvidenceBundleLock(options.evidencePath, async (path, bundle) => {
+    const packet = evidencePacket(bundle, options.candidateId);
+    packet.artifacts ??= [];
+    const artifactIndex = packet.artifacts.findIndex((item) => item.id === artifact.id);
+    if (artifactIndex >= 0 && !options.replace) {
+      throw new ProtocolError(`Artifact already exists: ${artifact.id}; pass --replace to overwrite it`);
     }
-    if (evaluationIndex >= 0) packet.artifact_evaluations[evaluationIndex] = evaluation;
-    else packet.artifact_evaluations.push(evaluation);
+    if (artifactIndex >= 0) packet.artifacts[artifactIndex] = artifact;
+    else packet.artifacts.push(artifact);
 
-    for (const probeId of options.probeIds ?? []) {
-      const probe = packet.probe_results.find((result) => result.evidence_id === probeId);
-      if (probe === undefined) throw new ProtocolError(`Unknown probe evidence ID: ${probeId}`);
-      probe.artifact_evaluation_ids ??= [];
-      appendUnique(probe.artifact_evaluation_ids, evaluation.id);
-      probe.status = evaluation.status;
-    }
-    for (const reference of options.requirementRefs ?? []) {
-      const { kind, criterionId } = parseRequirement(reference);
-      if (evaluation.criterion_id !== criterionId) {
-        throw new ProtocolError(
-          `Artifact evaluation ${evaluation.id} measures ${evaluation.criterion_id ?? "no criterion"}, not ${criterionId}`,
-        );
+    if (options.evaluation !== undefined) {
+      packet.artifact_evaluations ??= [];
+      const evaluation = {
+        id: options.evaluation.id,
+        source: "imported" as const,
+        evaluator: options.evaluation.evaluator,
+        artifact_ids: [artifact.id],
+        ...(options.evaluation.criterionId === undefined ? {} : { criterion_id: options.evaluation.criterionId }),
+        status: options.evaluation.status,
+        ...(options.evaluation.score === undefined ? {} : { score: options.evaluation.score }),
+        summary: options.evaluation.summary,
+      };
+      const evaluationIndex = packet.artifact_evaluations.findIndex((item) => item.id === evaluation.id);
+      if (evaluationIndex >= 0 && !options.replace) {
+        throw new ProtocolError(`Artifact evaluation already exists: ${evaluation.id}; pass --replace to overwrite it`);
       }
-      const requirement = packet.requirement_results.find(
-        (result) => result.kind === kind && result.criterion_id === criterionId,
-      );
-      if (requirement === undefined) throw new ProtocolError(`Unknown requirement: ${reference}`);
-      requirement.artifact_evaluation_ids ??= [];
-      appendUnique(requirement.artifact_evaluation_ids, evaluation.id);
-      requirement.status = evaluation.status;
-    }
-  }
+      if (evaluationIndex >= 0) packet.artifact_evaluations[evaluationIndex] = evaluation;
+      else packet.artifact_evaluations.push(evaluation);
 
-  packet.known_failures = packet.known_failures.filter(
-    (failure) => !failure.startsWith("TEMPLATE:"),
-  );
-  await writeEvidenceBundle(path, bundle);
-  return artifact;
+      for (const probeId of options.probeIds ?? []) {
+        const probe = packet.probe_results.find((result) => result.evidence_id === probeId);
+        if (probe === undefined) throw new ProtocolError(`Unknown probe evidence ID: ${probeId}`);
+        probe.artifact_evaluation_ids ??= [];
+        appendUnique(probe.artifact_evaluation_ids, evaluation.id);
+        probe.status = evaluation.status;
+      }
+      for (const reference of options.requirementRefs ?? []) {
+        const { kind, criterionId } = parseRequirement(reference);
+        if (evaluation.criterion_id !== criterionId) {
+          throw new ProtocolError(`Artifact evaluation ${evaluation.id} measures ${evaluation.criterion_id ?? "no criterion"}, not ${criterionId}`);
+        }
+        const requirement = packet.requirement_results.find((result) => result.kind === kind && result.criterion_id === criterionId);
+        if (requirement === undefined) throw new ProtocolError(`Unknown requirement: ${reference}`);
+        requirement.artifact_evaluation_ids ??= [];
+        appendUnique(requirement.artifact_evaluation_ids, evaluation.id);
+        requirement.status = evaluation.status;
+      }
+    }
+
+    packet.known_failures = packet.known_failures.filter((failure) => !failure.startsWith("TEMPLATE:"));
+    await writeEvidenceBundle(path, bundle);
+    return artifact;
+  });
 }

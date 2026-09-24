@@ -1,6 +1,6 @@
 # JevRev evidence workflow
 
-Status: vertical-slice design
+Status: implemented CLI workflow
 
 ## Product contract
 
@@ -77,6 +77,16 @@ the child exit code after persisting the observation. Use `--echo` only for an
 interactive debugging run because command output may contain secrets. Repeated
 `--probe` and `--requirement` flags bind the real exit status to frozen evidence
 slots.
+
+Concurrent evidence writes are serialized. If a process dies while holding the
+lock, JevRev fails closed; verify that no writer is active before removing the
+reported `.lock` file manually.
+
+On Windows, bare `npm`, `npx`, `pnpm`, `yarn`, and `corepack` commands are mapped
+to their PowerShell shim without enabling shell parsing; prefer these names for
+package scripts. Explicit executable names or paths are preserved exactly as
+supplied and are never silently replaced; a launcher that requires a shell may
+return a recorded `spawn_error` under `shell:false`.
 
 `jevrev evidence metric` appends raw baseline/candidate samples and links them
 to frozen slots only with an explicit result. `jevrev evidence artifact`

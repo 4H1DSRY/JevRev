@@ -272,5 +272,6 @@ export function longEventSummary(event: { event_type: string; payload: { data?: 
   else if (event.event_type === "test_result") summary = `${value("command_id") || "test"} ${value("status") || "reported"}`;
   else if (event.event_type === "file_change") summary = `${value("operation") || "changed"} ${value("path") || "file"}`;
   else if (event.event_type === "milestone") summary = `${value("milestone_id") || "milestone"} ${value("status") || "reported"}`;
+  else if (event.event_type === "metric") summary = `${value("name") || "metric"} reported`;
   return { sequence: event.sequence, at: event.received_at, type: event.event_type, summary, source: event.source };
 }

@@ -16,9 +16,10 @@ JevRev has three product components and a shared evidence protocol:
   events, reports stalls, failure loops, drift, and budget risk, and leaves
   intervention to a human. It is not a daemon and does not drive the agent.
 
-`Probe`, `Evidence`, and `Decide` are shared infrastructure. They are how the
-host agent performs work, records facts, and lets Jev answer narrow questions
-inside Sift and Loop; they are not separate product components.
+`Probe`, `Evidence`, and `Decide` are shared workflow concepts and judge
+boundaries. They are how the host agent performs work, records facts, and lets
+Jev answer narrow questions inside Sift and Loop; Sift campaigns and Loop
+rounds intentionally use separate envelopes and state machines.
 
 ## When to use it
 
@@ -127,11 +128,21 @@ jevrev evidence run \
   -- npm test
 ```
 
+On Windows, use bare `npm`, `npx`, `pnpm`, or another executable name for
+package scripts. The recorder resolves common PowerShell shims safely while
+preserving explicit executable names or paths exactly as supplied; a shell-only
+launcher may therefore produce a recorded `spawn_error` under `shell:false`
+rather than being silently replaced.
+
 The command is executed as direct argv, not through a shell. Its exit code,
 workspace-relative cwd, duration, output digests, byte counts, and termination
 mode are saved before the recorder exits. A failed child command makes the
 recorder exit nonzero but does not lose the recorded failure. Continue the
 workflow by inspecting the evidence file, not by rerunning blindly.
+
+Concurrent evidence writes are serialized. If a writer dies, the recorder
+fails closed on the remaining `.lock` file; verify that no writer is active
+before removing that file manually.
 
 Record raw benchmark samples with:
 

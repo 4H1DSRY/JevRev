@@ -4,7 +4,7 @@ import type { MetricObservation } from "../workflow/schemas.js";
 import {
   appendUnique,
   evidencePacket,
-  readEvidenceBundle,
+  withEvidenceBundleLock,
   writeEvidenceBundle,
 } from "./store.js";
 
@@ -38,38 +38,35 @@ export async function recordMetric(options: RecordMetricOptions) {
   if (links.length > 0 && options.resultStatus === undefined) {
     throw new InputError("--result pass|fail|unknown is required when linking a metric");
   }
-  const { path, bundle } = await readEvidenceBundle(options.evidencePath);
-  const packet = evidencePacket(bundle, options.candidateId);
-  const existingIndex = packet.metrics.findIndex((metric) => metric.id === options.metric.id);
-  if (existingIndex >= 0 && !options.replace) {
-    throw new ProtocolError(`Metric already exists: ${options.metric.id}; pass --replace to overwrite it`);
-  }
-  if (existingIndex >= 0) packet.metrics[existingIndex] = options.metric;
-  else packet.metrics.push(options.metric);
-
-  for (const probeId of options.probeIds ?? []) {
-    const probe = packet.probe_results.find((result) => result.evidence_id === probeId);
-    if (probe === undefined) throw new ProtocolError(`Unknown probe evidence ID: ${probeId}`);
-    appendUnique(probe.metric_ids, options.metric.id);
-    probe.status = options.resultStatus!;
-  }
-  for (const reference of options.requirementRefs ?? []) {
-    const { kind, criterionId } = requirementReference(reference);
-    if (criterionId !== options.metric.criterion_id) {
-      throw new ProtocolError(
-        `Metric ${options.metric.id} measures ${options.metric.criterion_id}, not ${criterionId}`,
-      );
+  return withEvidenceBundleLock(options.evidencePath, async (path, bundle) => {
+    const packet = evidencePacket(bundle, options.candidateId);
+    const existingIndex = packet.metrics.findIndex((metric) => metric.id === options.metric.id);
+    if (existingIndex >= 0 && !options.replace) {
+      throw new ProtocolError(`Metric already exists: ${options.metric.id}; pass --replace to overwrite it`);
     }
-    const requirement = packet.requirement_results.find(
-      (result) => result.kind === kind && result.criterion_id === criterionId,
-    );
-    if (requirement === undefined) throw new ProtocolError(`Unknown requirement: ${reference}`);
-    appendUnique(requirement.metric_ids, options.metric.id);
-    requirement.status = options.resultStatus!;
-  }
-  packet.known_failures = packet.known_failures.filter(
-    (failure) => !failure.startsWith("TEMPLATE:"),
-  );
-  await writeEvidenceBundle(path, bundle);
-  return summarizeMetric(options.metric);
+    if (existingIndex >= 0) packet.metrics[existingIndex] = options.metric;
+    else packet.metrics.push(options.metric);
+
+    for (const probeId of options.probeIds ?? []) {
+      const probe = packet.probe_results.find((result) => result.evidence_id === probeId);
+      if (probe === undefined) throw new ProtocolError(`Unknown probe evidence ID: ${probeId}`);
+      appendUnique(probe.metric_ids, options.metric.id);
+      probe.status = options.resultStatus!;
+    }
+    for (const reference of options.requirementRefs ?? []) {
+      const { kind, criterionId } = requirementReference(reference);
+      if (criterionId !== options.metric.criterion_id) {
+        throw new ProtocolError(`Metric ${options.metric.id} measures ${options.metric.criterion_id}, not ${criterionId}`);
+      }
+      const requirement = packet.requirement_results.find(
+        (result) => result.kind === kind && result.criterion_id === criterionId,
+      );
+      if (requirement === undefined) throw new ProtocolError(`Unknown requirement: ${reference}`);
+      appendUnique(requirement.metric_ids, options.metric.id);
+      requirement.status = options.resultStatus!;
+    }
+    packet.known_failures = packet.known_failures.filter((failure) => !failure.startsWith("TEMPLATE:"));
+    await writeEvidenceBundle(path, bundle);
+    return summarizeMetric(options.metric);
+  });
 }

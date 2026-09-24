@@ -57,6 +57,11 @@ describe("JevLong deterministic signals", () => {
     expect(result.evidence_event_ids.protocol).toHaveLength(1);
     expect(result.evidence_event_ids.protocol[0]).toMatch(/^evt-/);
   });
+  it("accepts metric telemetry without raising an unknown-event protocol signal", () => {
+    const result = reduceLongSignals(spec, [event("metric", "throughput", { name: "events_per_second", value: 42, provider_tokens: 12 })], { evaluatedAt: at });
+    expect(result.evidence_event_ids.protocol).toHaveLength(0);
+    expect(result.cost.provider_tokens).toBe(12);
+  });
   it("treats the workspace root scope as covering all relative paths", () => {
     const rootScoped = { ...spec, allowed_scope: ["."] };
     const result = reduceLongSignals(rootScoped, [event("file_change", "root-file", { path: "src/parser.ts" })], { evaluatedAt: at });

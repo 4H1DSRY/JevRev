@@ -166,4 +166,46 @@ describe("evidence metric, artifact, and status tools", () => {
       item: { kind: "requirement", id: "success:speed" },
     });
   });
+
+  it("serializes concurrent metric updates without losing either metric", async () => {
+    const { workOrder, evidencePath } = fixture();
+    await Promise.all([
+      recordMetric({ evidencePath, candidateId: workOrder.candidate_id, metric: { id: "metric-a", kind: "metric", criterion_id: "speed", unit: "ops/s", direction: "higher", baseline_samples: [10, 11], candidate_samples: [20, 21] } }),
+      recordMetric({ evidencePath, candidateId: workOrder.candidate_id, metric: { id: "metric-b", kind: "metric", criterion_id: "speed", unit: "ops/s", direction: "higher", baseline_samples: [12, 13], candidate_samples: [22, 23] } }),
+    ]);
+    const bundle = evidenceBundleSchema.parse(JSON.parse(readFileSync(evidencePath, "utf8")));
+    expect(bundle.packets[0]?.metrics.map((item) => item.id)).toEqual(expect.arrayContaining(["metric-a", "metric-b"]));
+  });
+
+  it("serializes concurrent artifact updates without losing either artifact", async () => {
+    const { workOrder, evidencePath } = fixture();
+    const first = resolve(root, "tests", `tmp-artifact-a-${Math.random().toString(16).slice(2)}.txt`);
+    const second = resolve(root, "tests", `tmp-artifact-b-${Math.random().toString(16).slice(2)}.txt`);
+    temporaryFiles.push(first, second);
+    writeFileSync(first, "artifact a", "utf8");
+    writeFileSync(second, "artifact b", "utf8");
+
+    await Promise.all([
+      recordArtifact({ evidencePath, candidateId: workOrder.candidate_id, artifactId: "artifact-a", file: first, workspace: root }),
+      recordArtifact({ evidencePath, candidateId: workOrder.candidate_id, artifactId: "artifact-b", file: second, workspace: root }),
+    ]);
+    const bundle = evidenceBundleSchema.parse(JSON.parse(readFileSync(evidencePath, "utf8")));
+    expect(bundle.packets[0]?.artifacts?.map((item) => item.id)).toEqual(expect.arrayContaining(["artifact-a", "artifact-b"]));
+  });
+
+  it("fails closed on a stale evidence lock instead of taking it over", async () => {
+    const { workOrder, evidencePath } = fixture();
+    const lockPath = `${evidencePath}.lock`;
+    temporaryFiles.push(lockPath);
+    writeFileSync(lockPath, JSON.stringify({ pid: 2_147_483_647, token: "stale-owner" }), "utf8");
+
+    await expect(recordMetric({
+      evidencePath,
+      candidateId: workOrder.candidate_id,
+      metric: { id: "blocked", kind: "metric", criterion_id: "speed", unit: "ops/s", direction: "higher", baseline_samples: [1], candidate_samples: [2] },
+    })).rejects.toThrow("stale lock");
+    expect(readFileSync(lockPath, "utf8")).toContain("stale-owner");
+    const bundle = evidenceBundleSchema.parse(JSON.parse(readFileSync(evidencePath, "utf8")));
+    expect(bundle.packets[0]?.metrics).toHaveLength(0);
+  });
 });

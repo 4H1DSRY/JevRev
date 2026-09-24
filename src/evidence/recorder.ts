@@ -1,16 +1,12 @@
 import { createHash } from "node:crypto";
+import { existsSync } from "node:fs";
 import { realpath } from "node:fs/promises";
 import { isAbsolute, relative, resolve } from "node:path";
 import { performance } from "node:perf_hooks";
 import { spawnSync } from "node:child_process";
 import { InputError, ProtocolError } from "../domain/errors.js";
 import type { EvidenceBundle } from "../workflow/schemas.js";
-import {
-  appendUnique,
-  evidencePacket,
-  readEvidenceBundle,
-  writeEvidenceBundle,
-} from "./store.js";
+import { appendUnique, evidencePacket, readEvidenceBundle, withEvidenceBundleLock, writeEvidenceBundle } from "./store.js";
 
 export interface RecordCommandOptions {
   evidencePath: string;
@@ -129,10 +125,9 @@ function linkRequirement(
 }
 
 export async function recordCommand(options: RecordCommandOptions): Promise<RecordedCommand> {
-  const { path: evidencePath, bundle } = await readEvidenceBundle(options.evidencePath);
-  const packet = evidencePacket(bundle, options.candidateId);
-  const existingIndex = packet.observations.findIndex((item) => item.id === options.observationId);
-  if (existingIndex >= 0 && !options.replace) {
+  const initial = await readEvidenceBundle(options.evidencePath);
+  const initialPacket = evidencePacket(initial.bundle, options.candidateId);
+  if (initialPacket.observations.some((item) => item.id === options.observationId) && !options.replace) {
     throw new ProtocolError(`Observation already exists: ${options.observationId}; pass --replace to overwrite it`);
   }
   const executed = await executeCommand(options);
@@ -140,7 +135,7 @@ export async function recordCommand(options: RecordCommandOptions): Promise<Reco
     id: options.observationId,
     kind: "command" as const,
     cwd: executed.cwd,
-    argv: [...options.argv],
+    argv: [...executed.argv],
     exit_code: executed.exit_code,
     duration_ms: executed.duration_ms,
     required: !(options.optional ?? false),
@@ -151,33 +146,33 @@ export async function recordCommand(options: RecordCommandOptions): Promise<Reco
     stdout_bytes: executed.stdout_bytes,
     stderr_bytes: executed.stderr_bytes,
   };
-  const priorDuration = existingIndex >= 0 ? packet.observations[existingIndex]!.duration_ms : 0;
-  if (existingIndex >= 0) packet.observations[existingIndex] = observation;
-  else packet.observations.push(observation);
-  packet.known_failures = packet.known_failures.filter(
-    (failure) => !failure.startsWith("TEMPLATE:"),
-  );
-  packet.development.wall_ms += executed.duration_ms - priorDuration;
-  if (options.complete) packet.development.status = "completed";
+  return withEvidenceBundleLock(options.evidencePath, async (evidencePath, bundle) => {
+    const packet = evidencePacket(bundle, options.candidateId);
+    const existingIndex = packet.observations.findIndex((item) => item.id === options.observationId);
+    if (existingIndex >= 0 && !options.replace) {
+      throw new ProtocolError(`Observation already exists: ${options.observationId}; pass --replace to overwrite it`);
+    }
+    const priorDuration = existingIndex >= 0 ? packet.observations[existingIndex]!.duration_ms : 0;
+    if (existingIndex >= 0) packet.observations[existingIndex] = observation;
+    else packet.observations.push(observation);
+    packet.known_failures = packet.known_failures.filter((failure) => !failure.startsWith("TEMPLATE:"));
+    packet.development.wall_ms += executed.duration_ms - priorDuration;
+    if (options.complete) packet.development.status = "completed";
 
-  const passed = executed.exit_code === 0 && executed.termination === "exited";
-  for (const probeId of options.probeIds ?? []) {
-    linkProbe(bundle, options.candidateId, options.observationId, probeId, passed);
-  }
-  for (const reference of options.requirementRefs ?? []) {
-    linkRequirement(bundle, options.candidateId, options.observationId, reference, passed);
-  }
-
-  await writeEvidenceBundle(evidencePath, bundle);
-  return {
-    candidate_id: options.candidateId,
-    observation_id: options.observationId,
-    exit_code: executed.exit_code,
-    duration_ms: executed.duration_ms,
-    termination: executed.termination,
-    stdout_bytes: executed.stdout_bytes,
-    stderr_bytes: executed.stderr_bytes,
-  };
+    const passed = executed.exit_code === 0 && executed.termination === "exited";
+    for (const probeId of options.probeIds ?? []) linkProbe(bundle, options.candidateId, options.observationId, probeId, passed);
+    for (const reference of options.requirementRefs ?? []) linkRequirement(bundle, options.candidateId, options.observationId, reference, passed);
+    await writeEvidenceBundle(evidencePath, bundle);
+    return {
+      candidate_id: options.candidateId,
+      observation_id: options.observationId,
+      exit_code: executed.exit_code,
+      duration_ms: executed.duration_ms,
+      termination: executed.termination,
+      stdout_bytes: executed.stdout_bytes,
+      stderr_bytes: executed.stderr_bytes,
+    };
+  });
 }
 
 export async function executeCommand(options: ExecuteCommandOptions): Promise<ExecutedCommand> {
@@ -191,7 +186,8 @@ export async function executeCommand(options: ExecuteCommandOptions): Promise<Ex
 
   const cwd = await safeWorkingDirectory(options.workspace ?? process.cwd(), options.cwd ?? ".");
   const started = performance.now();
-  const child = spawnSync(options.argv[0]!, [...options.argv.slice(1)], {
+  const invocation = recordedCommandInvocation(options.argv);
+  const child = spawnSync(invocation.command, invocation.args, {
     cwd: cwd.absolute,
     env: childEnvironment(),
     shell: false,
@@ -223,7 +219,7 @@ export async function executeCommand(options: ExecuteCommandOptions): Promise<Ex
         ? "spawn_error"
         : "exited";
   return {
-    argv: [...options.argv],
+    argv: [invocation.command, ...invocation.args],
     cwd: cwd.relative,
     exit_code: child.status ?? (termination === "timed_out" ? 124 : 127),
     duration_ms: durationMs,
@@ -233,5 +229,38 @@ export async function executeCommand(options: ExecuteCommandOptions): Promise<Ex
     stderr_sha256: digest(stderrBuffer),
     stdout_bytes: stdout.length,
     stderr_bytes: stderrBuffer.length,
+  };
+}
+
+const WINDOWS_POWERSHELL_SHIMS = new Set(["npm", "npx", "pnpm", "pnpx", "yarn", "yarnpkg", "corepack"]);
+
+function recordedCommandInvocation(
+  argv: readonly string[],
+  platform = process.platform,
+  environment: NodeJS.ProcessEnv = process.env,
+): { command: string; args: string[] } {
+  const command = argv[0]!;
+  const args = [...argv.slice(1)];
+  if (platform !== "win32") return { command, args };
+
+  const commandName = command.split(/[\\/]/).at(-1)!.replace(/\.(?:cmd|bat|ps1|exe)$/i, "").toLowerCase();
+  if (!WINDOWS_POWERSHELL_SHIMS.has(commandName)) return { command, args };
+
+  // An explicit executable path is an instruction from the caller. Do not
+  // silently replace it with a different launcher found elsewhere on PATH.
+  if (/\.(?:cmd|bat|ps1|exe)$/i.test(command)) return { command, args };
+
+  const pathEntries = (environment.PATH ?? environment.Path ?? "").split(";").filter(Boolean);
+  const explicitDirectory = /[\\/]/.test(command) ? command.replace(/[\\/][^\\/]+$/, "") : undefined;
+  const directories = explicitDirectory === undefined ? pathEntries : [explicitDirectory];
+  const shim = directories
+    .map((directory) => resolve(directory, `${commandName}.ps1`))
+    .find((candidate) => existsSync(candidate));
+  if (shim === undefined) return { command, args };
+
+  const systemRoot = environment.SystemRoot ?? environment.WINDIR ?? "C:\\Windows";
+  return {
+    command: resolve(systemRoot, "System32", "WindowsPowerShell", "v1.0", "powershell.exe"),
+    args: ["-NoLogo", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", shim, ...args],
   };
 }

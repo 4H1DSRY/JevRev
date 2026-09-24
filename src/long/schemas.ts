@@ -101,7 +101,7 @@ export type LongSource = z.infer<typeof longSourceSchema>;
 export const LONG_KNOWN_EVENT_TYPES = [
   "session_started", "heartbeat", "assistant_turn", "tool_started", "tool_finished",
   "file_change", "test_result", "milestone", "provider_error", "human_input",
-  "session_finished", "loop_audit", "unknown_event",
+  "session_finished", "loop_audit", "metric", "unknown_event",
 ] as const;
 
 export function isKnownLongEventType(value: string): boolean {

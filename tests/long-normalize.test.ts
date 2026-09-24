@@ -36,6 +36,12 @@ describe("JevLong external normalizer", () => {
     expect(result.payload.data).toMatchObject({ original_event_type: "agent_magic" });
   });
 
+  it("accepts metric telemetry as a known event without turning it into a protocol alert", () => {
+    const result = normalizeExternalEvent({ adapter_id: "jsonl", adapter_event_id: "metric-1", event_type: "metric", payload: { name: "throughput", value: 42, provider_tokens: 12 } }, { spec, receivedAt: now });
+    expect(result.event_type).toBe("metric");
+    expect(result.payload.data).toMatchObject({ name: "throughput", value: 42, provider_tokens: 12 });
+  });
+
   it("rejects future timestamps beyond the frozen skew", () => {
     expect(() => normalizeExternalEvent({ adapter_id: "jsonl", adapter_event_id: "1", event_type: "heartbeat", occurred_at: "2026-09-22T12:00:02.000Z", payload: {} }, { spec, receivedAt: now })).toThrow("future");
   });

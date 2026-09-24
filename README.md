@@ -78,7 +78,7 @@ the Long observer output.
 
 <picture>
   <source media="(max-width: 600px)" srcset=".github/assets/jevrev-product-roles-mobile.svg">
-  <img src=".github/assets/jevrev-product-roles.svg" alt="JevSift selects paths, JevLoop audits one artifact, and read-only JevLong watches the session. Probe, Evidence, and Decide are shared contracts.">
+  <img src=".github/assets/jevrev-product-roles.svg" alt="JevSift selects paths, JevLoop audits one artifact, and read-only JevLong watches the session. Probe, Evidence, and Decide are shared workflow boundaries; Sift and Loop keep separate state machines.">
 </picture>
 
 ### JevSift: choose the work
@@ -174,7 +174,7 @@ not a fourth and fifth product component.
 From source, use `node dist/cli.js` in place of `jevrev`:
 
 ```bash
-node dist/cli.js sift --input proposals.json --replay examples/parser-jev-response.json
+node dist/cli.js sift --input examples/parser-speedup.json --replay examples/parser-jev-response.json
 ```
 
 ## Providers
@@ -186,14 +186,14 @@ Hosted Jev in a POSIX shell:
 
 ```bash
 export JEVREV_JEV_API_KEY="..."
-node dist/cli.js sift --input proposals.json --provider jev
+node dist/cli.js sift --input examples/parser-speedup.json --provider jev
 ```
 
 Local SemIf through llama.cpp on Windows:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/start-semif.ps1 -Background
-node dist/cli.js sift --input proposals.json --provider semif
+node dist/cli.js sift --input examples/parser-speedup.json --provider semif
 ```
 
 Replay fixtures work without a network or API key. See

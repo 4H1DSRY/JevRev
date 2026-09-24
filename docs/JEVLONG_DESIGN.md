@@ -170,6 +170,7 @@ Initial event types:
 | `tool_finished` | call_id, exit/termination, duration, output digests | Tool call ended |
 | `file_change` | path, operation, revision | A file was changed; content is not embedded |
 | `test_result` | command_id, status, count, revision | Objective test signal |
+| `metric` | name, value or summary fields, optional token/cost fields | Bounded telemetry such as throughput or cost; never progress by itself |
 | `milestone` | milestone_id, status, evidence_refs | Host declares a milestone observation |
 | `provider_error` | provider, category, retryable, message_digest | Provider/API failure |
 | `human_input` | input_digest, actor | Human intervened |

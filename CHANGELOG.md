@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Make Evidence command recording work with Windows PowerShell shims while
+  keeping direct, shell-free argv execution; serialize concurrent Sift evidence
+  updates; add the first-class Long `metric` event type; and refresh the
+  workflow examples and authority wording.
 - Let Loop artifact evidence keep its completion slot ID separate from the
   spec's `required_artifacts` reference through `--artifact-id`.
 - Accept UTF-8 BOM and UTF-16 JSON files, including PowerShell 5.1 output, and
