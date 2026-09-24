@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 
 import { performance } from "node:perf_hooks";
+import { realpathSync } from "node:fs";
 import { access, stat, writeFile } from "node:fs/promises";
 import { env, stdin as input, stderr, stdout } from "node:process";
-import { pathToFileURL } from "node:url";
+import { fileURLToPath } from "node:url";
 import { dirname, resolve as resolvePath } from "node:path";
 import { Command, CommanderError, InvalidArgumentError } from "commander";
 import { ZodError } from "zod";
@@ -681,9 +682,12 @@ async function runLoopAudit(options: LoopAuditOptions): Promise<void> {
     model: options.model,
     ...(envValue("JEVREV_JEV_API_KEY", "TYPESAFE_API_KEY") === undefined ? {} : { apiKey: envValue("JEVREV_JEV_API_KEY", "TYPESAFE_API_KEY")! }),
   });
+  const progressLabel = result.result.material_progress
+    ? "material"
+    : result.result.outcome === "completed" ? "no new material change (completion verified)" : "stalled";
   const rendered = options.format === "json" ? `${JSON.stringify(result.result, null, 2)}\n` : [
     `round ${result.result.round_number}  ${result.result.outcome}`,
-    `progress: ${result.result.material_progress ? "material" : "stalled"}`,
+    `progress: ${progressLabel}`,
     `blocking: ${result.result.blocking_criteria.join(", ") || "none"}`,
     `next: ${result.result.next_action.type}${result.result.next_action.focus_criteria.length ? ` (${result.result.next_action.focus_criteria.join(", ")})` : ""}`,
     result.result.next_action.reason,
@@ -1205,7 +1209,15 @@ export async function main(argv = process.argv): Promise<number> {
   }
 }
 
-const invokedPath = process.argv[1];
-if (invokedPath !== undefined && import.meta.url === pathToFileURL(invokedPath).href) {
+function invokedAsCli(path: string | undefined): boolean {
+  if (path === undefined) return false;
+  try {
+    return realpathSync(path) === realpathSync(fileURLToPath(import.meta.url));
+  } catch {
+    return false;
+  }
+}
+
+if (invokedAsCli(process.argv[1])) {
   process.exitCode = await main();
 }

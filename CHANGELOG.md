@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Keep linked CLI invocations working, clarify locally installed skill command
+  resolution, and avoid calling a successful Loop completion "stalled".
 - Bound agent-facing output: non-interactive Long watch now emits one compact
   status by default, and Sift can write its full campaign to a file while
   returning a short `--summary` handoff. Foreground TUI slows when unfocused.

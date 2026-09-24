@@ -1,6 +1,7 @@
 import { spawnSync } from "node:child_process";
-import { readFileSync, rmSync, writeFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { buildQuestionPlan } from "../src/questions.js";
 import { makeResponse, minimalRequest } from "./fixtures.js";
@@ -21,6 +22,21 @@ function run(args: string[], stdin?: string, env = process.env) {
 }
 
 describe("jevrev CLI", () => {
+  it("runs through a symlinked CLI path", () => {
+    const directory = mkdtempSync(join(tmpdir(), "jevrev-cli-link-"));
+    try {
+      const linkedRoot = join(directory, "linked-root");
+      symlinkSync(root, linkedRoot, process.platform === "win32" ? "junction" : "dir");
+      const link = join(linkedRoot, "src", "cli.ts");
+      const result = spawnSync(process.execPath, [tsx, link, "--version"], { cwd: root, encoding: "utf8" });
+      expect(result.status).toBe(0);
+      expect(result.stdout.trim()).toBe("0.2.0");
+      expect(result.stderr).toBe("");
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
+  });
+
   it("emits a probe campaign from the sift command", () => {
     const result = run([
       "sift",
